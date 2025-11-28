@@ -1,0 +1,29 @@
+{
+  "name": "baaseteen-case-management",
+  "version": "1.0.0",
+  "description": "Baaseteen and SHND Case Management System",
+  "main": "backend/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm start",
+    "build": "cd frontend && npm run build",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "migrate:welfare-checklist": "node backend/scripts/runWelfareChecklistMigration.js",
+    "migrate": "node backend/scripts/runMigration.js"
+  },
+  "keywords": [
+    "case-management",
+    "welfare",
+    "baaseteen"
+  ],
+  "author": "Baaseteen Development Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "axios": "^1.12.2",
+    "mysql2": "^3.15.1"
+  }
+}
