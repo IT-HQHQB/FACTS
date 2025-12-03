@@ -814,7 +814,7 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
 
           // Handle family members
           if (data.family_members && Array.isArray(data.family_members)) {
-            // Delete existing family members
+            // Delete existing family members for this family_details record
             await pool.execute(
               'DELETE FROM family_members WHERE family_details_id = ?',
               [form.family_details_id]
@@ -823,13 +823,30 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
             // Insert new family members
             for (const member of data.family_members) {
               if (member.name || member.age || member.relation_id) {
+                // Convert empty strings to NULL for foreign keys
+                const relationId = member.relation_id && member.relation_id !== '' ? parseInt(member.relation_id) : null;
+                const educationLevelId = member.education_id && member.education_id !== '' ? parseInt(member.education_id) : null;
+                const occupationId = member.occupation_id && member.occupation_id !== '' ? parseInt(member.occupation_id) : null;
+                
+                // Parse age as integer, convert empty strings to null
+                const age = member.age && member.age !== '' ? parseInt(member.age) : null;
+                
+                // Validate and parse annual_income
+                let annualIncome = null;
+                if (member.annual_income) {
+                  const annualIncomeNum = parseFloat(String(member.annual_income).replace(/[^0-9.-]/g, ''));
+                  if (!isNaN(annualIncomeNum) && annualIncomeNum >= 0) {
+                    annualIncome = annualIncomeNum;
+                  }
+                }
+
                 await pool.execute(`
                   INSERT INTO family_members (
                     family_details_id, name, age, relation_id, education_id, occupation_id, annual_income
                   ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 `, [
-                  form.family_details_id, member.name, member.age, member.relation_id,
-                  member.education_id, member.occupation_id, member.annual_income
+                  form.family_details_id, member.name || null, age, relationId,
+                  educationLevelId, occupationId, annualIncome
                 ]);
               }
             }
@@ -896,13 +913,30 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
           if (data.family_members && Array.isArray(data.family_members)) {
             for (const member of data.family_members) {
               if (member.name || member.age || member.relation_id) {
+                // Convert empty strings to NULL for foreign keys
+                const relationId = member.relation_id && member.relation_id !== '' ? parseInt(member.relation_id) : null;
+                const educationLevelId = member.education_id && member.education_id !== '' ? parseInt(member.education_id) : null;
+                const occupationId = member.occupation_id && member.occupation_id !== '' ? parseInt(member.occupation_id) : null;
+                
+                // Parse age as integer, convert empty strings to null
+                const age = member.age && member.age !== '' ? parseInt(member.age) : null;
+                
+                // Validate and parse annual_income
+                let annualIncome = null;
+                if (member.annual_income) {
+                  const annualIncomeNum = parseFloat(String(member.annual_income).replace(/[^0-9.-]/g, ''));
+                  if (!isNaN(annualIncomeNum) && annualIncomeNum >= 0) {
+                    annualIncome = annualIncomeNum;
+                  }
+                }
+
                 await pool.execute(`
                   INSERT INTO family_members (
                     family_details_id, name, age, relation_id, education_id, occupation_id, annual_income
                   ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 `, [
-                  result.insertId, member.name, member.age, member.relation_id,
-                  member.education_id, member.occupation_id, member.annual_income
+                  result.insertId, member.name || null, age, relationId,
+                  educationLevelId, occupationId, annualIncome
                 ]);
               }
             }
@@ -1515,9 +1549,28 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Update section error:', error);
     console.error('Error stack:', error.stack);
-    console.error('Request data:', req.body);
+    console.error('Request data:', JSON.stringify(req.body, null, 2));
     console.error('Request params:', req.params);
-    res.status(500).json({ error: 'Internal server error', details: error.message });
+    console.error('Section:', req.params.section);
+    console.error('Form ID:', req.params.formId);
+    
+    // Provide more detailed error message
+    let errorMessage = 'Internal server error';
+    if (error.code === 'ER_BAD_FIELD_ERROR') {
+      errorMessage = `Database column error: ${error.message}`;
+    } else if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+      errorMessage = `Foreign key constraint error: Invalid reference in data`;
+    } else if (error.code === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD') {
+      errorMessage = `Data type error: Invalid value for field`;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    res.status(500).json({ 
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      section: req.params.section
+    });
   }
 });
 

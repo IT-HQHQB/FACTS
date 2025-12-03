@@ -97,12 +97,14 @@ const authorizePermission = (resource, action) => {
       // If no roles found in user_roles table, fallback to users.role column (for backward compatibility)
       let rolesToCheck = userRoles;
       if (userRoles.length === 0 && req.user.role) {
+        // Use case-insensitive matching for role name
         const [fallbackRoles] = await pool.execute(`
           SELECT id, name, permissions
           FROM roles
-          WHERE name = ? AND is_active = 1
+          WHERE LOWER(name) = LOWER(?) AND is_active = 1
         `, [req.user.role]);
         rolesToCheck = fallbackRoles;
+        console.log(`[Permission Check] Fallback lookup for role "${req.user.role}": found ${fallbackRoles.length} role(s)`);
       }
 
       // Check if user has the required permission
@@ -158,12 +160,13 @@ const authorizePermission = (resource, action) => {
         const errorMessage = `Insufficient permissions. Required: ${resource}:${action}`;
         console.log(`[Permission Check] DENIED - User ${req.user.id} (${req.user.role}) does not have ${resource}:${action}`);
         console.log(`[Permission Check] Available roles:`, rolesToCheck.map(r => r.name));
-        console.log(`[Permission Check] Sending 403 response with error:`, errorMessage);
+        console.log(`[Permission Check] Sending 200 response with error:`, errorMessage);
         
         // Ensure response is sent properly
         if (!res.headersSent) {
-          res.status(403).json({ 
-            error: errorMessage
+          res.status(200).json({ 
+            error: errorMessage,
+            warning: "You do not have permission to perform this action."
           });
         }
         return;
@@ -711,10 +714,11 @@ const canCreateCaseInStage = async (userId, userRole, stageId) => {
     let rolesToCheck = userRoles;
     if (rolesToCheck.length === 0 && userRole) {
       console.log(`[CanCreateCaseInStage] No roles in user_roles, checking fallback for role: ${userRole}`);
+      // Use case-insensitive matching for role name
       const [fallbackRoles] = await pool.execute(`
         SELECT id, name, permissions
         FROM roles
-        WHERE name = ? AND is_active = 1
+        WHERE LOWER(name) = LOWER(?) AND is_active = 1
       `, [userRole]);
       rolesToCheck = fallbackRoles;
       console.log(`[CanCreateCaseInStage] Found ${fallbackRoles.length} roles in fallback`);

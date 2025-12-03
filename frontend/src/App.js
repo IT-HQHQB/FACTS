@@ -69,6 +69,21 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
+// Default Route Component (redirect to dashboard if logged in, otherwise to login)
+const DefaultRoute = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <Navigate to="/login" replace />;
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -357,7 +372,7 @@ function App() {
             />
 
             {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<DefaultRoute />} />
             
             {/* 404 route */}
             <Route 

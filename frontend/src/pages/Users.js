@@ -24,7 +24,11 @@ const Users = () => {
   // Modal states
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const [editForm, setEditForm] = useState({
     its_number: '',
     full_name: '',
@@ -272,6 +276,52 @@ const Users = () => {
       fetchStats();
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  // Open delete modal
+  const openDeleteModal = (user) => {
+    setUserToDelete(user);
+    setDeleteError('');
+    setDeleteModalOpen(true);
+  };
+
+  // Close delete modal
+  const closeDeleteModal = () => {
+    setUserToDelete(null);
+    setDeleteError('');
+    setDeleteModalOpen(false);
+  };
+
+  // Delete user
+  const deleteUser = async () => {
+    if (!userToDelete) return;
+
+    try {
+      setDeleteLoading(true);
+      setDeleteError('');
+      
+      const response = await fetch(`/api/users/${userToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete user');
+      }
+      
+      setSuccess('User deleted successfully');
+      closeDeleteModal();
+      fetchUsers();
+      fetchStats();
+    } catch (err) {
+      setDeleteError(err.message);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -881,6 +931,16 @@ const Users = () => {
                         >
                           Edit
                         </Button>
+                        {user.role !== 'super_admin' && (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => openDeleteModal(user)}
+                            disabled={user.id === JSON.parse(localStorage.getItem('user'))?.id}
+                          >
+                            Delete
+                          </Button>
+                        )}
                       </div>
                     </Table.Cell>
                   </Table.Row>
@@ -1267,6 +1327,55 @@ const Users = () => {
             Create User
           </Button>
       </div>
+      </Modal>
+
+      {/* Delete User Confirmation Modal */}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={closeDeleteModal}
+        title="Delete User"
+        size="sm"
+      >
+        <div className="space-y-4">
+          {deleteError && (
+            <Alert severity="error">
+              {deleteError}
+            </Alert>
+          )}
+          
+          <p className="text-gray-700">
+            Are you sure you want to delete <strong>{userToDelete?.full_name}</strong>? This action cannot be undone.
+          </p>
+          
+          {userToDelete && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-gray-600">
+                <strong>Email:</strong> {userToDelete.email}
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>Username:</strong> @{userToDelete.username}
+              </p>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex justify-end space-x-3 mt-6">
+          <Button
+            variant="outline"
+            onClick={closeDeleteModal}
+            disabled={deleteLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={deleteUser}
+            loading={deleteLoading}
+            disabled={deleteLoading}
+          >
+            {deleteLoading ? 'Deleting...' : 'Delete User'}
+          </Button>
+        </div>
       </Modal>
     </div>
   );

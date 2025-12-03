@@ -1,6 +1,6 @@
 const express = require('express');
 const { pool } = require('../config/database');
-const { authenticateToken, authorizeRoles } = require('../middleware/auth');
+const { authenticateToken, authorizeRoles, authorizePermission } = require('../middleware/auth');
 const axios = require('axios');
 const https = require('https');
 
@@ -112,7 +112,7 @@ router.get('/:applicantId', authenticateToken, async (req, res) => {
 });
 
 // Create new applicant
-router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/', authenticateToken, authorizePermission('applicants', 'create'), async (req, res) => {
   try {
     const {
       its_number,
@@ -191,10 +191,110 @@ router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) =>
       phone, email, photo || null, address, jamiat_name, jamaat_name, jamiatInternalId, jamaatInternalId
     ]);
 
-    res.status(201).json({
+    const applicantId = result.insertId;
+
+    // If case_data is provided, create case automatically
+    let caseId = null;
+    let caseNumber = null;
+    if (req.body.case_data) {
+      const caseData = req.body.case_data;
+      const { case_type_id, description, notes, status_id, roles, assigned_counselor_id, assigned_role, workflow_stage_id } = caseData;
+
+      if (case_type_id) {
+        try {
+          // Check if user has permission to create cases
+          const { hasPermission } = require('../utils/permissionUtils');
+          const canCreateCase = await hasPermission(req.user.role, 'cases', 'create');
+          
+          if (!canCreateCase) {
+            console.log(`[Create Applicant] User ${req.user.id} (${req.user.role}) does not have cases:create permission, skipping case creation`);
+          } else {
+            // Get the first workflow stage (draft stage) if not provided
+            let stageId = workflow_stage_id;
+            if (!stageId) {
+              const [firstStage] = await pool.execute(
+                'SELECT id FROM workflow_stages WHERE is_active = TRUE ORDER BY sort_order ASC LIMIT 1'
+              );
+              if (firstStage.length > 0) {
+                stageId = firstStage[0].id;
+              }
+            }
+
+            // Get case type name for case number generation
+            const [caseTypeResult] = await pool.execute(
+              'SELECT name FROM case_types WHERE id = ?',
+              [case_type_id]
+            );
+
+            if (caseTypeResult.length > 0) {
+              const caseTypeName = caseTypeResult[0].name;
+
+              // Generate a temporary unique case number
+              const tempCaseNumber = `${caseTypeName.toUpperCase()}-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+
+              // Get default status if not provided
+              let finalStatusId = status_id;
+              if (!finalStatusId) {
+                const [defaultStatus] = await pool.execute(
+                  'SELECT id FROM statuses WHERE name = ?',
+                  ['draft']
+                );
+                finalStatusId = defaultStatus[0]?.id;
+              }
+
+              // Create case
+              const [caseResult] = await pool.execute(`
+                INSERT INTO cases (case_number, applicant_id, case_type_id, status_id, roles, assigned_counselor_id, 
+                                  jamiat_id, jamaat_id, assigned_role, description, notes, created_by, current_workflow_stage_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              `, [tempCaseNumber, applicantId, case_type_id, finalStatusId, roles, assigned_counselor_id, 
+                  jamiatInternalId, jamaatInternalId, assigned_role, description, notes, req.user.id, stageId]);
+
+              caseId = caseResult.insertId;
+
+              // Update case_number to sequential BS-0001 style
+              caseNumber = `BS-${String(caseId).padStart(4, '0')}`;
+              await pool.execute(
+                'UPDATE cases SET case_number = ? WHERE id = ?',
+                [caseNumber, caseId]
+              );
+
+              // Initialize workflow history
+              const workflowHistory = [{
+                stage_id: stageId,
+                stage_name: 'Draft Stage',
+                entered_at: new Date().toISOString(),
+                entered_by: req.user.id,
+                entered_by_name: req.user.full_name || req.user.username,
+                action: 'case_created'
+              }];
+
+              await pool.execute(`
+                UPDATE cases SET workflow_history = ? WHERE id = ?
+              `, [JSON.stringify(workflowHistory), caseId]);
+
+              console.log(`[Create Applicant] Auto-created case with ID: ${caseId}, Number: ${caseNumber}`);
+            }
+          }
+        } catch (caseError) {
+          console.error('Error creating case from applicant endpoint:', caseError);
+          // Don't fail the applicant creation if case creation fails
+        }
+      }
+    }
+
+    const response = {
       message: 'Applicant created successfully',
-      applicantId: result.insertId
-    });
+      applicantId: applicantId
+    };
+
+    if (caseId) {
+      response.caseId = caseId;
+      response.caseNumber = caseNumber;
+      response.message = 'Applicant and case created successfully';
+    }
+
+    res.status(201).json(response);
   } catch (error) {
     console.error('Create applicant error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -202,7 +302,7 @@ router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) =>
 });
 
 // Update applicant
-router.put('/:applicantId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.put('/:applicantId', authenticateToken, authorizePermission('applicants', 'update'), async (req, res) => {
   try {
     const { applicantId } = req.params;
     const updateData = req.body;
@@ -293,8 +393,8 @@ router.put('/:applicantId', authenticateToken, authorizeRoles('admin'), async (r
   }
 });
 
-// Delete applicant (admin only)
-router.delete('/:applicantId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+// Delete applicant
+router.delete('/:applicantId', authenticateToken, authorizePermission('applicants', 'delete'), async (req, res) => {
   try {
     const { applicantId } = req.params;
 

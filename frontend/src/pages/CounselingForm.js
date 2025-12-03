@@ -60,6 +60,29 @@ const validateFileSize = (file) => {
   return null;
 };
 
+// Helper function to handle numeric-only input (for integers)
+const handleIntegerInput = (e) => {
+  const char = String.fromCharCode(e.which);
+  if (!/[0-9]/.test(char)) {
+    e.preventDefault();
+  }
+};
+
+// Helper function to handle numeric input with decimals (for decimal numbers)
+const handleDecimalInput = (e) => {
+  const char = String.fromCharCode(e.which);
+  const value = e.target.value;
+  // Allow: backspace, delete, tab, escape, enter, decimal point
+  if (e.which === 8 || e.which === 46 || e.which === 9 || e.which === 27 || e.which === 13 || 
+      (e.which === 190 || e.which === 110) && value.indexOf('.') === -1) {
+    return;
+  }
+  // Ensure that it is a number and stop the keypress
+  if ((e.shiftKey || (e.which < 48 || e.which > 57)) && (e.which < 96 || e.which > 105)) {
+    e.preventDefault();
+  }
+};
+
 const CounselingForm = () => {
   const { caseId } = useParams();
   const navigate = useNavigate();
@@ -1945,6 +1968,7 @@ const CounselingForm = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="ITS Number"
+                  required
                   {...register('personal_details.its_number', { required: 'ITS number is required' })}
                   error={errors.personal_details?.its_number?.message}
                   disabled={true}
@@ -1953,6 +1977,7 @@ const CounselingForm = () => {
                 <Input
                   label="Age"
                   type="number"
+                  required
                   {...register('personal_details.age', { required: 'Age is required' })}
                   error={errors.personal_details?.age?.message}
                   disabled={true}
@@ -1960,6 +1985,7 @@ const CounselingForm = () => {
                 />
                 <Input
                   label="Jamiat"
+                  required
                   {...register('personal_details.jamiat', { required: 'Jamiat is required' })}
                   error={errors.personal_details?.jamiat?.message}
                   disabled={true}
@@ -1967,6 +1993,7 @@ const CounselingForm = () => {
                 />
                 <Input
                   label="Jamaat"
+                  required
                   {...register('personal_details.jamaat', { required: 'Jamaat is required' })}
                   error={errors.personal_details?.jamaat?.message}
                   disabled={true}
@@ -1974,6 +2001,7 @@ const CounselingForm = () => {
                 />
                 <Input
                   label="Contact Number"
+                  required
                   {...register('personal_details.contact_number', { required: 'Contact number is required' })}
                   error={errors.personal_details?.contact_number?.message}
                   disabled={true}
@@ -1982,6 +2010,7 @@ const CounselingForm = () => {
                 <Input
                   label="Email ID"
                   type="email"
+                  required
                   {...register('personal_details.email', { required: 'Email ID is required' })}
                   error={errors.personal_details?.email?.message}
                   disabled={true}
@@ -1992,6 +2021,7 @@ const CounselingForm = () => {
               <div className="space-y-4">
                 <Input
                   label="Residential Address"
+                  required
                   {...register('personal_details.residential_address', { required: 'Residential address is required' })}
                   error={errors.personal_details?.residential_address?.message}
                   disabled={true}
@@ -1999,6 +2029,7 @@ const CounselingForm = () => {
                 />
                 <Input
                   label="Present Occupation"
+                  required
                   {...register('personal_details.present_occupation', { required: 'Present occupation is required' })}
                   error={errors.personal_details?.present_occupation?.message}
                   disabled={!canUpdateSection('personal')}
@@ -2006,6 +2037,7 @@ const CounselingForm = () => {
                 />
                 <Input
                   label="Occupation Address"
+                  required
                   {...register('personal_details.occupation_address', { required: 'Occupation address is required' })}
                   error={errors.personal_details?.occupation_address?.message}
                   disabled={!canUpdateSection('personal')}
@@ -2013,6 +2045,7 @@ const CounselingForm = () => {
                 />
                 <Input
                   label="Other Relevant Information"
+                  required
                   {...register('personal_details.other_info', { required: 'Other relevant information is required' })}
                   error={errors.personal_details?.other_info?.message}
                   disabled={!canUpdateSection('personal')}
@@ -2082,6 +2115,7 @@ const CounselingForm = () => {
                       <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                         <Input
                           label="Name"
+                          required
                           {...register(`family_details.family_members.${index}.name`, { required: 'Name is required' })}
                           error={errors.family_details?.family_members?.[index]?.name?.message}
                           disabled={shouldDisableFirstRow}
@@ -2090,6 +2124,8 @@ const CounselingForm = () => {
                         <Input
                           label="Age"
                           type="number"
+                          required
+                          onKeyPress={handleIntegerInput}
                           {...register(`family_details.family_members.${index}.age`, { required: 'Age is required' })}
                           error={errors.family_details?.family_members?.[index]?.age?.message}
                           disabled={shouldDisableFirstRow}
@@ -2097,6 +2133,7 @@ const CounselingForm = () => {
                         />
                         <Select
                           label="Relation"
+                          required
                           {...register(`family_details.family_members.${index}.relation_id`, { required: 'Relation is required' })}
                           error={errors.family_details?.family_members?.[index]?.relation_id?.message}
                           disabled={shouldDisableFirstRow}
@@ -2111,6 +2148,7 @@ const CounselingForm = () => {
                         </Select>
                         <Select
                           label="Education"
+                          required
                           {...register(`family_details.family_members.${index}.education_id`, { required: 'Education is required' })}
                           error={errors.family_details?.family_members?.[index]?.education_id?.message}
                           disabled={!canUpdateSection('family')}
@@ -2125,6 +2163,7 @@ const CounselingForm = () => {
                         </Select>
                         <Select
                           label="Occupation"
+                          required
                           {...register(`family_details.family_members.${index}.occupation_id`, { required: 'Occupation is required' })}
                           error={errors.family_details?.family_members?.[index]?.occupation_id?.message}
                           disabled={!canUpdateSection('family')}
@@ -2140,6 +2179,9 @@ const CounselingForm = () => {
                         <div className="flex items-end space-x-2">
                           <Input
                             label="Annual Income"
+                            type="number"
+                            required
+                            onKeyPress={handleDecimalInput}
                             {...register(`family_details.family_members.${index}.annual_income`, { required: 'Annual income is required' })}
                             error={errors.family_details?.family_members?.[index]?.annual_income?.message}
                             disabled={!canUpdateSection('family')}
@@ -2166,6 +2208,7 @@ const CounselingForm = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <Input
                     label="Family Structure (Joint/Nuclear)"
+                    required
                     {...register('family_details.family_structure', { required: 'Family structure is required' })}
                     error={errors.family_details?.family_structure?.message}
                     disabled={!canUpdateSection('family')}
@@ -2173,6 +2216,7 @@ const CounselingForm = () => {
                   />
                   <Input
                     label="Other Details"
+                    required
                     {...register('family_details.other_details', { required: 'Other details is required' })}
                     error={errors.family_details?.other_details?.message}
                     disabled={!canUpdateSection('family')}
@@ -2187,6 +2231,7 @@ const CounselingForm = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
                     label="Housing"
+                    required
                     {...register('family_details.wellbeing.housing', { required: 'Housing is required' })}
                     error={errors.family_details?.wellbeing?.housing?.message}
                     disabled={!canUpdateSection('family')}
@@ -2194,6 +2239,7 @@ const CounselingForm = () => {
                   />
                   <Input
                     label="Education"
+                    required
                     {...register('family_details.wellbeing.education', { required: 'Education is required' })}
                     error={errors.family_details?.wellbeing?.education?.message}
                     disabled={!canUpdateSection('family')}
@@ -2201,6 +2247,7 @@ const CounselingForm = () => {
                   />
                   <Input
                     label="Health"
+                    required
                     {...register('family_details.wellbeing.health', { required: 'Health is required' })}
                     error={errors.family_details?.wellbeing?.health?.message}
                     disabled={!canUpdateSection('family')}
@@ -2208,6 +2255,7 @@ const CounselingForm = () => {
                   />
                   <Input
                     label="Deeni"
+                    required
                     {...register('family_details.wellbeing.deeni', { required: 'Deeni is required' })}
                     error={errors.family_details?.wellbeing?.deeni?.message}
                     disabled={!canUpdateSection('family')}
@@ -2215,6 +2263,7 @@ const CounselingForm = () => {
                   />
                   <Input
                     label="Ziyarat/Travel/Recreation"
+                    required
                     {...register('family_details.wellbeing.ziyarat_travel_recreation', { required: 'Ziyarat/Travel/Recreation is required' })}
                     error={errors.family_details?.wellbeing?.ziyarat_travel_recreation?.message}
                     disabled={!canUpdateSection('family')}
@@ -2247,13 +2296,14 @@ const CounselingForm = () => {
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">a</td>
-                        <td className="border border-gray-300 px-3 py-2">Business</td>
+                        <td className="border border-gray-300 px-3 py-2">Business <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className={`w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${!canUpdateSection('family') ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                             {...register('family_details.income_expense.income.business_monthly', { required: 'Business monthly income is required', valueAsNumber: true })}
                             disabled={!canUpdateSection('family')}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               if (!canUpdateSection('family')) return;
                               const monthlyValue = parseFloat(e.target.value) || 0;
@@ -2267,6 +2317,7 @@ const CounselingForm = () => {
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.income.business_yearly', { required: 'Business yearly income is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const yearlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.income.business_monthly', yearlyValue / 12);
@@ -2277,12 +2328,13 @@ const CounselingForm = () => {
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">b</td>
-                        <td className="border border-gray-300 px-3 py-2">Salary</td>
+                        <td className="border border-gray-300 px-3 py-2">Salary <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.income.salary_monthly', { required: 'Salary monthly income is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const monthlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.income.salary_yearly', monthlyValue * 12);
@@ -2295,6 +2347,7 @@ const CounselingForm = () => {
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.income.salary_yearly', { required: 'Salary yearly income is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const yearlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.income.salary_monthly', yearlyValue / 12);
@@ -2305,12 +2358,13 @@ const CounselingForm = () => {
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">c</td>
-                        <td className="border border-gray-300 px-3 py-2">Home Industry</td>
+                        <td className="border border-gray-300 px-3 py-2">Home Industry <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.income.home_industry_monthly', { required: 'Home industry monthly income is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const monthlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.income.home_industry_yearly', monthlyValue * 12);
@@ -2323,6 +2377,7 @@ const CounselingForm = () => {
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.income.home_industry_yearly', { required: 'Home industry yearly income is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const yearlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.income.home_industry_monthly', yearlyValue / 12);
@@ -2333,12 +2388,13 @@ const CounselingForm = () => {
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">d</td>
-                        <td className="border border-gray-300 px-3 py-2">Others ________________________________________________________</td>
+                        <td className="border border-gray-300 px-3 py-2">Others ________________________________________________________ <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.income.others_monthly', { required: 'Others monthly income is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const monthlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.income.others_yearly', monthlyValue * 12);
@@ -2351,6 +2407,7 @@ const CounselingForm = () => {
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.income.others_yearly', { required: 'Others yearly income is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const yearlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.income.others_monthly', yearlyValue / 12);
@@ -2389,12 +2446,13 @@ const CounselingForm = () => {
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">a</td>
-                        <td className="border border-gray-300 px-3 py-2">Food: Groceries plus others</td>
+                        <td className="border border-gray-300 px-3 py-2">Food: Groceries plus others <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.food_monthly', { required: 'Food monthly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const monthlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.expenses.food_yearly', monthlyValue * 12);
@@ -2407,6 +2465,7 @@ const CounselingForm = () => {
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.food_yearly', { required: 'Food yearly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const yearlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.expenses.food_monthly', yearlyValue / 12);
@@ -2417,12 +2476,13 @@ const CounselingForm = () => {
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">b</td>
-                        <td className="border border-gray-300 px-3 py-2">Housing: Rent, Maintenance, Electricity etc.</td>
+                        <td className="border border-gray-300 px-3 py-2">Housing: Rent, Maintenance, Electricity etc. <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.housing_monthly', { required: 'Housing monthly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const monthlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.expenses.housing_yearly', monthlyValue * 12);
@@ -2435,6 +2495,7 @@ const CounselingForm = () => {
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.housing_yearly', { required: 'Housing yearly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const yearlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.expenses.housing_monthly', yearlyValue / 12);
@@ -2445,12 +2506,13 @@ const CounselingForm = () => {
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">c</td>
-                        <td className="border border-gray-300 px-3 py-2">Health: Doctor, Medicine</td>
+                        <td className="border border-gray-300 px-3 py-2">Health: Doctor, Medicine <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.health_monthly', { required: 'Health monthly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('health', parseFloat(e.target.value) || 0)}
                           />
                         </td>
@@ -2459,18 +2521,20 @@ const CounselingForm = () => {
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.health_yearly', { required: 'Health yearly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('health', undefined, parseFloat(e.target.value) || 0)}
                           />
                         </td>
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">d</td>
-                        <td className="border border-gray-300 px-3 py-2">Education: Fees, Books, Tuitions, etc.</td>
+                        <td className="border border-gray-300 px-3 py-2">Education: Fees, Books, Tuitions, etc. <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.education_monthly', { required: 'Education monthly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('education', parseFloat(e.target.value) || 0)}
                           />
                         </td>
@@ -2479,18 +2543,20 @@ const CounselingForm = () => {
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.education_yearly', { required: 'Education yearly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('education', undefined, parseFloat(e.target.value) || 0)}
                           />
                         </td>
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">e</td>
-                        <td className="border border-gray-300 px-3 py-2">Essentials: Clothes, Personal Care, etc.</td>
+                        <td className="border border-gray-300 px-3 py-2">Essentials: Clothes, Personal Care, etc. <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.essentials_monthly', { required: 'Essentials monthly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('essentials', parseFloat(e.target.value) || 0)}
                           />
                         </td>
@@ -2499,18 +2565,20 @@ const CounselingForm = () => {
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.essentials_yearly', { required: 'Essentials yearly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('essentials', undefined, parseFloat(e.target.value) || 0)}
                           />
                         </td>
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">f</td>
-                        <td className="border border-gray-300 px-3 py-2">Local Transport</td>
+                        <td className="border border-gray-300 px-3 py-2">Local Transport <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.transport_monthly', { required: 'Transport monthly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('transport', parseFloat(e.target.value) || 0)}
                           />
                         </td>
@@ -2519,18 +2587,20 @@ const CounselingForm = () => {
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.transport_yearly', { required: 'Transport yearly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('transport', undefined, parseFloat(e.target.value) || 0)}
                           />
                         </td>
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">g</td>
-                        <td className="border border-gray-300 px-3 py-2">Deeni: Sabeel, Wajebaat, Niyaaz etc.</td>
+                        <td className="border border-gray-300 px-3 py-2">Deeni: Sabeel, Wajebaat, Niyaaz etc. <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.deeni_monthly', { required: 'Deeni monthly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('deeni', parseFloat(e.target.value) || 0)}
                           />
                         </td>
@@ -2539,18 +2609,20 @@ const CounselingForm = () => {
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.deeni_yearly', { required: 'Deeni yearly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('deeni', undefined, parseFloat(e.target.value) || 0)}
                           />
                         </td>
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">h</td>
-                        <td className="border border-gray-300 px-3 py-2">Non essentials: Recreational etc.</td>
+                        <td className="border border-gray-300 px-3 py-2">Non essentials: Recreational etc. <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.non_essentials_monthly', { required: 'Non-essentials monthly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('non_essentials', parseFloat(e.target.value) || 0)}
                           />
                         </td>
@@ -2559,18 +2631,20 @@ const CounselingForm = () => {
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.non_essentials_yearly', { required: 'Non-essentials yearly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('non_essentials', undefined, parseFloat(e.target.value) || 0)}
                           />
                         </td>
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">i</td>
-                        <td className="border border-gray-300 px-3 py-2">Others</td>
+                        <td className="border border-gray-300 px-3 py-2">Others <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.others_monthly', { required: 'Others monthly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('others', parseFloat(e.target.value) || 0)}
                           />
                         </td>
@@ -2579,6 +2653,7 @@ const CounselingForm = () => {
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.expenses.others_yearly', { required: 'Others yearly expense is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('others', undefined, parseFloat(e.target.value) || 0)}
                           />
                         </td>
@@ -2647,12 +2722,13 @@ const CounselingForm = () => {
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">3</td>
-                        <td className="border border-gray-300 px-3 py-2">Scholarship</td>
+                        <td className="border border-gray-300 px-3 py-2">Scholarship <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.scholarship_monthly', { required: 'Scholarship monthly is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const monthlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.scholarship_yearly', monthlyValue * 12);
@@ -2664,6 +2740,7 @@ const CounselingForm = () => {
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.scholarship_yearly', { required: 'Scholarship yearly is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const yearlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.scholarship_monthly', yearlyValue / 12);
@@ -2673,12 +2750,13 @@ const CounselingForm = () => {
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">4</td>
-                        <td className="border border-gray-300 px-3 py-2">Borrowing/Qardan etc.</td>
+                        <td className="border border-gray-300 px-3 py-2">Borrowing/Qardan etc. <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.borrowing_monthly', { required: 'Borrowing monthly is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const monthlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.borrowing_yearly', monthlyValue * 12);
@@ -2690,6 +2768,7 @@ const CounselingForm = () => {
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.borrowing_yearly', { required: 'Borrowing yearly is required', valueAsNumber: true })}
+                            onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const yearlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.borrowing_monthly', yearlyValue / 12);
@@ -2712,32 +2791,50 @@ const CounselingForm = () => {
                     <div className="space-y-3">
                       <Input
                         label="Residential"
-                        {...register('family_details.assets_liabilities.assets.residential', { required: 'Residential assets is required' })}
+                        type="number"
+                        required
+                        onKeyPress={handleDecimalInput}
+                        {...register('family_details.assets_liabilities.assets.residential', { required: 'Residential assets is required', valueAsNumber: true })}
                         error={errors.family_details?.assets_liabilities?.assets?.residential?.message}
                       />
                       <Input
                         label="Shop/Godown/Land"
-                        {...register('family_details.assets_liabilities.assets.shop_godown_land', { required: 'Shop/Godown/Land is required' })}
+                        type="number"
+                        required
+                        onKeyPress={handleDecimalInput}
+                        {...register('family_details.assets_liabilities.assets.shop_godown_land', { required: 'Shop/Godown/Land is required', valueAsNumber: true })}
                         error={errors.family_details?.assets_liabilities?.assets?.shop_godown_land?.message}
                       />
                       <Input
                         label="Machinery/Vehicle"
-                        {...register('family_details.assets_liabilities.assets.machinery_vehicle', { required: 'Machinery/Vehicle is required' })}
+                        type="number"
+                        required
+                        onKeyPress={handleDecimalInput}
+                        {...register('family_details.assets_liabilities.assets.machinery_vehicle', { required: 'Machinery/Vehicle is required', valueAsNumber: true })}
                         error={errors.family_details?.assets_liabilities?.assets?.machinery_vehicle?.message}
                       />
                       <Input
                         label="Stock/Raw material"
-                        {...register('family_details.assets_liabilities.assets.stock_raw_material', { required: 'Stock/Raw material is required' })}
+                        type="number"
+                        required
+                        onKeyPress={handleDecimalInput}
+                        {...register('family_details.assets_liabilities.assets.stock_raw_material', { required: 'Stock/Raw material is required', valueAsNumber: true })}
                         error={errors.family_details?.assets_liabilities?.assets?.stock_raw_material?.message}
                       />
                       <Input
                         label="Goods sold on credit"
-                        {...register('family_details.assets_liabilities.assets.goods_sold_credit', { required: 'Goods sold on credit is required' })}
+                        type="number"
+                        required
+                        onKeyPress={handleDecimalInput}
+                        {...register('family_details.assets_liabilities.assets.goods_sold_credit', { required: 'Goods sold on credit is required', valueAsNumber: true })}
                         error={errors.family_details?.assets_liabilities?.assets?.goods_sold_credit?.message}
                       />
                       <Input
                         label="Others"
-                        {...register('family_details.assets_liabilities.assets.others', { required: 'Other assets is required' })}
+                        type="number"
+                        required
+                        onKeyPress={handleDecimalInput}
+                        {...register('family_details.assets_liabilities.assets.others', { required: 'Other assets is required', valueAsNumber: true })}
                         error={errors.family_details?.assets_liabilities?.assets?.others?.message}
                       />
                     </div>
@@ -2749,6 +2846,8 @@ const CounselingForm = () => {
                       <Input
                         label="Borrowing/Qardan"
                         type="number"
+                        required
+                        onKeyPress={handleDecimalInput}
                         {...register('family_details.assets_liabilities.liabilities.borrowing_qardan', { required: 'Borrowing/Qardan is required', valueAsNumber: true })}
                         error={errors.family_details?.assets_liabilities?.liabilities?.borrowing_qardan?.message}
                         onChange={(e) => {
@@ -2759,6 +2858,8 @@ const CounselingForm = () => {
                       <Input
                         label="Goods taken on credit"
                         type="number"
+                        required
+                        onKeyPress={handleDecimalInput}
                         {...register('family_details.assets_liabilities.liabilities.goods_credit', { required: 'Goods taken on credit is required', valueAsNumber: true })}
                         error={errors.family_details?.assets_liabilities?.liabilities?.goods_credit?.message}
                         onChange={(e) => {
@@ -2769,6 +2870,8 @@ const CounselingForm = () => {
                       <Input
                         label="Others"
                         type="number"
+                        required
+                        onKeyPress={handleDecimalInput}
                         {...register('family_details.assets_liabilities.liabilities.others', { required: 'Other liabilities is required', valueAsNumber: true })}
                         error={errors.family_details?.assets_liabilities?.liabilities?.others?.message}
                         onChange={(e) => {
@@ -2832,6 +2935,7 @@ const CounselingForm = () => {
                 <div className="space-y-4">
                   <Input
                     label="3.1.1. Education"
+                    required
                     {...register('assessment.background.education', { required: 'Education is required' })}
                     error={errors.assessment?.background?.education?.message}
                     disabled={!canUpdateSection('assessment')}
@@ -2839,6 +2943,7 @@ const CounselingForm = () => {
                   />
                   <Input
                     label="3.1.2. Past work experience after education"
+                    required
                     {...register('assessment.background.work_experience', { required: 'Work experience is required' })}
                     error={errors.assessment?.background?.work_experience?.message}
                     disabled={!canUpdateSection('assessment')}
@@ -2846,6 +2951,7 @@ const CounselingForm = () => {
                   />
                   <Input
                     label="3.1.3. Present Business/Family Business"
+                    required
                     {...register('assessment.background.family_business', { required: 'Present Business/Family Business is required' })}
                     error={errors.assessment?.background?.family_business?.message}
                     disabled={!canUpdateSection('assessment')}
@@ -2853,6 +2959,7 @@ const CounselingForm = () => {
                   />
                   <Input
                     label="3.1.4. Skills and Knowledge"
+                    required
                     {...register('assessment.background.skills_knowledge', { required: 'Skills and Knowledge is required' })}
                     error={errors.assessment?.background?.skills_knowledge?.message}
                     disabled={!canUpdateSection('assessment')}
@@ -2860,7 +2967,7 @@ const CounselingForm = () => {
                   />
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      3.1.5. Counselor's assessment of applicant's profile
+                      3.1.5. Counselor's assessment of applicant's profile <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${!canUpdateSection('assessment') ? 'bg-gray-100 cursor-not-allowed' : ''}`}
@@ -2981,7 +3088,7 @@ const CounselingForm = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            <u>Trade Mark</u> (if any)
+                            <u>Trade Mark</u> (if any) <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="text"
@@ -2995,7 +3102,7 @@ const CounselingForm = () => {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Online Presence (if any)
+                            Online Presence (if any) <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="text"
@@ -3009,7 +3116,7 @@ const CounselingForm = () => {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Digital / Social Media Marketing (if any)
+                            Digital / Social Media Marketing (if any) <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="text"
@@ -3023,7 +3130,7 @@ const CounselingForm = () => {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Physical Store Location
+                            Physical Store Location <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="text"
@@ -3040,16 +3147,19 @@ const CounselingForm = () => {
                   </div>
                   <Input
                     label="3.2.2. Sourcing: Typical Suppliers & Credit period"
+                    required
                     {...register('assessment.proposed_business.sourcing', { required: 'Sourcing is required' })}
                     error={errors.assessment?.proposed_business?.sourcing?.message}
                   />
                   <Input
                     label="3.2.3. Selling: Typical Customers & Competitors"
+                    required
                     {...register('assessment.proposed_business.selling', { required: 'Selling is required' })}
                     error={errors.assessment?.proposed_business?.selling?.message}
                   />
                   <Input
                     label="3.2.4. Major expenses & overheads? amount?"
+                    required
                     {...register('assessment.proposed_business.major_expenses', { required: 'Major expenses is required' })}
                     error={errors.assessment?.proposed_business?.major_expenses?.message}
                   />
@@ -3062,7 +3172,7 @@ const CounselingForm = () => {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      3.3.1. Demand supply scenario of given product and services in target market
+                      3.3.1. Demand supply scenario of given product and services in target market <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -3075,7 +3185,7 @@ const CounselingForm = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      3.3.2. Future growth potential considering applicant's present income
+                      3.3.2. Future growth potential considering applicant's present income <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -3088,7 +3198,7 @@ const CounselingForm = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      3.3.3. How the applicant will grow business? How will he compete in market and increase number of customers & profit over the years?
+                      3.3.3. How the applicant will grow business? How will he compete in market and increase number of customers & profit over the years? <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -3170,7 +3280,7 @@ const CounselingForm = () => {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      What financials assistance may be needed to implement above mentioned business plan?
+                      What financials assistance may be needed to implement above mentioned business plan? <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -3202,22 +3312,26 @@ const CounselingForm = () => {
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <Input
                               label="Timeline"
+                              required
                               {...register(`financial_assistance.timeline.${index}.timeline`, { required: 'Timeline is required' })}
                               error={errors.financial_assistance?.timeline?.[index]?.timeline?.message}
                             />
                             <Input
                               label="Purpose (end-use)"
+                              required
                               {...register(`financial_assistance.timeline.${index}.purpose`, { required: 'Purpose is required' })}
                               error={errors.financial_assistance?.timeline?.[index]?.purpose?.message}
                             />
                             <Input
                               label="Amount required"
+                              required
                               {...register(`financial_assistance.timeline.${index}.amount`, { required: 'Amount is required' })}
                               error={errors.financial_assistance?.timeline?.[index]?.amount?.message}
                             />
                             <div className="flex items-end space-x-2">
                               <Input
                                 label="Support Document"
+                                required
                                 {...register(`financial_assistance.timeline.${index}.support_document`, { required: 'Support document is required' })}
                                 error={errors.financial_assistance?.timeline?.[index]?.support_document?.message}
                               />
@@ -3238,11 +3352,13 @@ const CounselingForm = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
                       label="Self-funding Available"
+                      required
                       {...register('financial_assistance.self_funding', { required: 'Self-funding available is required' })}
                       error={errors.financial_assistance?.self_funding?.message}
                     />
                     <Input
                       label="Rahen Available"
+                      required
                       {...register('financial_assistance.rahen_available', { required: 'Rahen available is required' })}
                       error={errors.financial_assistance?.rahen_available?.message}
                     />
@@ -3616,7 +3732,7 @@ const CounselingForm = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   <tr className="bg-white">
                     <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">REVENUE / Sales (Amount) (1)</div>
+                      <div className="text-sm font-medium text-gray-900">REVENUE / Sales (Amount) (1) <span className="text-red-500">*</span></div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <Input
@@ -3719,7 +3835,7 @@ const CounselingForm = () => {
                   <tr className="bg-white">
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">a) Raw material / stock</div>
+                        <div className="text-sm font-medium text-gray-900">a) Raw material / stock <span className="text-red-500">*</span></div>
                         <div className="text-sm text-gray-500">Cost of raw materials and inventory</div>
                       </div>
                     </td>
@@ -5204,7 +5320,7 @@ const CounselingForm = () => {
 
                 <Input
                   label="Any other comments"
-                  {...register('declaration.other_comments', { required: 'Other comments is required' })}
+                  {...register('declaration.other_comments')}
                   error={errors.declaration?.other_comments?.message}
                 />
 
@@ -5247,7 +5363,7 @@ const CounselingForm = () => {
                   {/* Date Picker */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Declaration Date
+                      Declaration Date <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="date"
@@ -5334,7 +5450,7 @@ const CounselingForm = () => {
 
                 <Input
                   label="Any other comments"
-                  {...register('declaration.counselor_comments', { required: 'Counselor comments is required' })}
+                  {...register('declaration.counselor_comments')}
                   error={errors.declaration?.counselor_comments?.message}
                 />
 

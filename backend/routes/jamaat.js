@@ -1,6 +1,6 @@
 const express = require('express');
 const { pool } = require('../config/database');
-const { authenticateToken, authorizeRoles } = require('../middleware/auth');
+const { authenticateToken, authorizeRoles, authorizePermission } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -55,7 +55,7 @@ router.get('/by-jamiat/:jamiatId', authenticateToken, authorizeRoles('admin', 'd
 });
 
 // Get single jamaat
-router.get('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.get('/:id', authenticateToken, authorizePermission('users', 'read'), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -79,7 +79,7 @@ router.get('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) 
 });
 
 // Create jamaat
-router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/', authenticateToken, authorizePermission('users', 'create'), async (req, res) => {
   try {
     const { jamiat_id, jamaat_id, name, is_active } = req.body;
     
@@ -130,7 +130,7 @@ router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) =>
 });
 
 // Update jamaat
-router.put('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.put('/:id', authenticateToken, authorizePermission('users', 'update'), async (req, res) => {
   try {
     const { id } = req.params;
     const { jamiat_id, jamaat_id, name, is_active } = req.body;
@@ -210,7 +210,7 @@ router.put('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) 
 });
 
 // Delete jamaat
-router.delete('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, authorizePermission('users', 'delete'), async (req, res) => {
   try {
     const { id } = req.params;
     

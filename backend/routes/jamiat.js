@@ -1,6 +1,6 @@
 const express = require('express');
 const { pool } = require('../config/database');
-const { authenticateToken, authorizeRoles } = require('../middleware/auth');
+const { authenticateToken, authorizeRoles, authorizePermission } = require('../middleware/auth');
 const multer = require('multer');
 const xlsx = require('xlsx');
 
@@ -41,7 +41,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get single jamiat
-router.get('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.get('/:id', authenticateToken, authorizePermission('users', 'read'), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -63,7 +63,7 @@ router.get('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) 
 });
 
 // Create jamiat
-router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/', authenticateToken, authorizePermission('users', 'create'), async (req, res) => {
   try {
     const { name, jamiat_id, is_active } = req.body;
     
@@ -103,7 +103,7 @@ router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) =>
 });
 
 // Update jamiat
-router.put('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.put('/:id', authenticateToken, authorizePermission('users', 'update'), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, jamiat_id, is_active } = req.body;
@@ -167,7 +167,7 @@ router.put('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) 
 });
 
 // Delete jamiat
-router.delete('/:id', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, authorizePermission('users', 'delete'), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -192,7 +192,7 @@ router.delete('/:id', authenticateToken, authorizeRoles('admin'), async (req, re
 });
 
 // Download sample Excel template
-router.get('/template/download', authenticateToken, authorizeRoles('admin'), (req, res) => {
+router.get('/template/download', authenticateToken, authorizePermission('users', 'read'), (req, res) => {
   try {
     // Create sample data for template
     const sampleData = [
@@ -249,7 +249,7 @@ router.get('/template/download', authenticateToken, authorizeRoles('admin'), (re
 });
 
 // Import Excel file
-router.post('/import', authenticateToken, authorizeRoles('admin'), upload.single('file'), async (req, res) => {
+router.post('/import', authenticateToken, authorizePermission('users', 'create'), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -374,7 +374,7 @@ router.post('/import', authenticateToken, authorizeRoles('admin'), upload.single
 });
 
 // Export to Excel
-router.get('/export/excel', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.get('/export/excel', authenticateToken, authorizePermission('users', 'read'), async (req, res) => {
   try {
     // Get all jamiat with their jamaat
     const [jamiat] = await pool.execute(`

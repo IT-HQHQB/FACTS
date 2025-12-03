@@ -801,6 +801,7 @@ const Cases = () => {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
       
+      // Prepare applicant data for auto-creation
       const applicantData = {
         its_number: data.its_number,
         first_name: firstName,
@@ -817,24 +818,9 @@ const Cases = () => {
         jamaat_id: createApiJamaatId
       };
       
-      console.log('💾 Creating applicant with data:', {
-        ...applicantData,
-        photo: applicantData.photo ? `Photo included (${(applicantData.photo.length / 1024).toFixed(2)} KB)` : 'NO PHOTO'
-      });
-      
-      // Create applicant first using direct axios call to avoid mutation side effects
-      const applicantResponse = await axios.post('/api/applicants', applicantData);
-      const applicantId = applicantResponse.data.applicantId;
-      
-      if (!applicantId) {
-        throw new Error('Failed to get applicant ID from response');
-      }
-      
-      console.log('✅ Applicant created successfully with ID:', applicantId);
-      
-      // Create case with the newly created applicant
+      // Create case with applicant_data - backend will auto-create applicant
       const caseData = {
-        applicant_id: applicantId,
+        applicant_data: applicantData, // Send applicant data for auto-creation
         case_type_id: data.case_type_id,
         roles: null,
         assigned_counselor_id: null,
@@ -845,12 +831,18 @@ const Cases = () => {
         notes: data.notes || null
       };
       
-      console.log('💾 Creating case with data:', caseData);
+      console.log('💾 Creating case with applicant data (bidirectional creation):', {
+        ...caseData,
+        applicant_data: {
+          ...applicantData,
+          photo: applicantData.photo ? `Photo included (${(applicantData.photo.length / 1024).toFixed(2)} KB)` : 'NO PHOTO'
+        }
+      });
       
-      // Create case - let the mutation's onSuccess handle cleanup
+      // Create case - backend will auto-create applicant if needed
       await createCaseMutation.mutateAsync(caseData);
       
-      console.log('✅ Case created successfully');
+      console.log('✅ Case and applicant created successfully');
     } catch (error) {
       console.error('❌ Failed to create applicant or case:', error);
       console.error('❌ Error response:', error.response?.data);

@@ -108,7 +108,7 @@ router.get('/available-counselors', authenticateToken, async (req, res) => {
 });
 
 // Get counselor permissions for all workflow stages
-router.get('/counselor-permissions/:counselorId', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.get('/counselor-permissions/:counselorId', authenticateToken, authorizePermission('cases', 'read'), async (req, res) => {
   try {
     const { counselorId } = req.params;
 
@@ -879,7 +879,7 @@ router.get('/available-counselors', authenticateToken, async (req, res) => {
 });
 
 // Get counselor permissions for all workflow stages
-router.get('/counselor-permissions/:counselorId', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.get('/counselor-permissions/:counselorId', authenticateToken, authorizePermission('cases', 'read'), async (req, res) => {
   try {
     const { counselorId } = req.params;
 
@@ -945,10 +945,162 @@ router.post('/', authenticateToken, authorizePermission('cases', 'create'), asyn
       assigned_role,
       description,
       notes,
-      workflow_stage_id
+      workflow_stage_id,
+      // Optional applicant data for auto-creation
+      applicant_data
     } = req.body;
 
-    if (!applicant_id || !case_type_id) {
+    let finalApplicantId = applicant_id;
+    // Store internal IDs for case creation (will be looked up if applicant_data is provided)
+    let jamiatInternalId = null;
+    let jamaatInternalId = null;
+
+    // If applicant_id is not provided but applicant_data is present, create applicant first
+    if (!finalApplicantId && applicant_data) {
+      const {
+        its_number,
+        first_name,
+        last_name,
+        age,
+        gender,
+        phone,
+        email,
+        photo,
+        address,
+        jamiat_name,
+        jamaat_name
+      } = applicant_data;
+
+      // Validate required applicant fields
+      if (!its_number || !first_name || !last_name) {
+        return res.status(400).json({ error: 'ITS number, first name, and last name are required when creating applicant' });
+      }
+
+      // Check if ITS number already exists
+      const [existingApplicants] = await pool.execute(
+        'SELECT id FROM applicants WHERE its_number = ?',
+        [its_number]
+      );
+
+      if (existingApplicants.length > 0) {
+        // Use existing applicant
+        finalApplicantId = existingApplicants[0].id;
+        // Still need to look up internal IDs for case creation
+        const applicantJamiatId = applicant_data.jamiat_id || jamiat_id;
+        const applicantJamaatId = applicant_data.jamaat_id || jamaat_id;
+        
+        if (applicantJamiatId) {
+          try {
+            const [jamiatResult] = await pool.execute(
+              'SELECT id FROM jamiat WHERE jamiat_id = ?',
+              [applicantJamiatId]
+            );
+            jamiatInternalId = jamiatResult.length > 0 ? jamiatResult[0].id : null;
+          } catch (dbError) {
+            console.error('Error looking up jamiat internal ID:', dbError);
+          }
+        }
+        
+        if (applicantJamaatId) {
+          try {
+            let jamaatQuery = 'SELECT id FROM jamaat WHERE jamaat_id = ?';
+            const jamaatParams = [applicantJamaatId];
+            
+            if (jamiatInternalId) {
+              jamaatQuery += ' AND jamiat_id = ?';
+              jamaatParams.push(jamiatInternalId);
+            }
+            
+            const [jamaatResult] = await pool.execute(jamaatQuery, jamaatParams);
+            jamaatInternalId = jamaatResult.length > 0 ? jamaatResult[0].id : null;
+          } catch (dbError) {
+            console.error('Error looking up jamaat internal ID:', dbError);
+          }
+        }
+      } else {
+        // Look up internal IDs from database for foreign key constraints
+        const applicantJamiatId = applicant_data.jamiat_id || jamiat_id;
+        const applicantJamaatId = applicant_data.jamaat_id || jamaat_id;
+        
+        if (applicantJamiatId) {
+          try {
+            const [jamiatResult] = await pool.execute(
+              'SELECT id FROM jamiat WHERE jamiat_id = ?',
+              [applicantJamiatId]
+            );
+            jamiatInternalId = jamiatResult.length > 0 ? jamiatResult[0].id : null;
+          } catch (dbError) {
+            console.error('Error looking up jamiat internal ID:', dbError);
+          }
+        }
+        
+        if (applicantJamaatId) {
+          try {
+            let jamaatQuery = 'SELECT id FROM jamaat WHERE jamaat_id = ?';
+            const jamaatParams = [applicantJamaatId];
+            
+            if (jamiatInternalId) {
+              jamaatQuery += ' AND jamiat_id = ?';
+              jamaatParams.push(jamiatInternalId);
+            }
+            
+            const [jamaatResult] = await pool.execute(jamaatQuery, jamaatParams);
+            jamaatInternalId = jamaatResult.length > 0 ? jamaatResult[0].id : null;
+          } catch (dbError) {
+            console.error('Error looking up jamaat internal ID:', dbError);
+          }
+        }
+
+        // Create applicant
+        const [applicantResult] = await pool.execute(`
+          INSERT INTO applicants (
+            its_number, full_name, age, gender, 
+            phone, email, photo, address, jamiat_name, jamaat_name, jamiat_id, jamaat_id
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          its_number, `${first_name} ${last_name}`.trim(), age, gender,
+          phone, email, photo || null, address, jamiat_name, jamaat_name, jamiatInternalId, jamaatInternalId
+        ]);
+
+        finalApplicantId = applicantResult.insertId;
+        console.log(`[Create Case] Auto-created applicant with ID: ${finalApplicantId}`);
+      }
+    } else if (finalApplicantId && (jamiat_id || jamaat_id)) {
+      // If applicant_id is provided but we have external jamiat/jamaat IDs, look up internal IDs
+      const externalJamiatId = jamiat_id;
+      const externalJamaatId = jamaat_id;
+      
+      if (externalJamiatId) {
+        try {
+          const [jamiatResult] = await pool.execute(
+            'SELECT id FROM jamiat WHERE jamiat_id = ?',
+            [externalJamiatId]
+          );
+          jamiatInternalId = jamiatResult.length > 0 ? jamiatResult[0].id : null;
+        } catch (dbError) {
+          console.error('Error looking up jamiat internal ID:', dbError);
+        }
+      }
+      
+      if (externalJamaatId) {
+        try {
+          let jamaatQuery = 'SELECT id FROM jamaat WHERE jamaat_id = ?';
+          const jamaatParams = [externalJamaatId];
+          
+          if (jamiatInternalId) {
+            jamaatQuery += ' AND jamiat_id = ?';
+            jamaatParams.push(jamiatInternalId);
+          }
+          
+          const [jamaatResult] = await pool.execute(jamaatQuery, jamaatParams);
+          jamaatInternalId = jamaatResult.length > 0 ? jamaatResult[0].id : null;
+        } catch (dbError) {
+          console.error('Error looking up jamaat internal ID:', dbError);
+        }
+      }
+    }
+
+    if (!finalApplicantId || !case_type_id) {
       return res.status(400).json({ error: 'Applicant ID and case type are required' });
     }
 
@@ -996,13 +1148,16 @@ router.post('/', authenticateToken, authorizePermission('cases', 'create'), asyn
       finalStatusId = defaultStatus[0]?.id;
     }
 
-    // Create case
+    // Create case - use internal IDs if they were looked up, otherwise use external IDs from request
+    const finalJamiatId = jamiatInternalId !== null ? jamiatInternalId : jamiat_id;
+    const finalJamaatId = jamaatInternalId !== null ? jamaatInternalId : jamaat_id;
+    
     const [result] = await pool.execute(`
       INSERT INTO cases (case_number, applicant_id, case_type_id, status_id, roles, assigned_counselor_id, 
                         jamiat_id, jamaat_id, assigned_role, description, notes, created_by, current_workflow_stage_id)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [caseNumber, applicant_id, case_type_id, finalStatusId, roles, assigned_counselor_id, 
-        jamiat_id, jamaat_id, assigned_role, description, notes, req.user.id, stageId]);
+    `, [caseNumber, finalApplicantId, case_type_id, finalStatusId, roles, assigned_counselor_id, 
+        finalJamiatId, finalJamaatId, assigned_role, description, notes, req.user.id, stageId]);
 
     const caseId = result.insertId;
 
@@ -1083,7 +1238,14 @@ router.post('/', authenticateToken, authorizePermission('cases', 'create'), asyn
     });
   } catch (error) {
     console.error('Create case error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', JSON.stringify(req.body, null, 2));
+    console.error('User:', { id: req.user?.id, role: req.user?.role });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useQuery, useMutation } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import axios from 'axios';
@@ -16,6 +16,7 @@ import {
 
 const Applicants = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredApplicants, setFilteredApplicants] = useState([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -521,24 +522,8 @@ const Applicants = () => {
         jamaat_id: createApiJamaatId
       };
       
-      console.log('💾 Creating applicant with data:', {
-        ...applicantData,
-        photo: applicantData.photo ? `Photo included (${(applicantData.photo.length / 1024).toFixed(2)} KB)` : 'NO PHOTO'
-      });
-      
-      // Create applicant first using direct axios call to avoid mutation side effects
-      const applicantResponse = await axios.post('/api/applicants', applicantData);
-      const applicantId = applicantResponse.data.applicantId;
-      
-      if (!applicantId) {
-        throw new Error('Failed to get applicant ID from response');
-      }
-      
-      console.log('✅ Applicant created successfully with ID:', applicantId);
-      
-      // Create case with the newly created applicant
+      // Prepare case data for auto-creation
       const caseData = {
-        applicant_id: applicantId,
         case_type_id: data.case_type_id,
         roles: null,
         assigned_counselor_id: null,
@@ -549,12 +534,39 @@ const Applicants = () => {
         notes: data.notes || null
       };
       
-      console.log('💾 Creating case with data:', caseData);
+      // Create applicant with case_data - backend will auto-create case
+      const requestData = {
+        ...applicantData,
+        case_data: caseData // Send case data for auto-creation
+      };
       
-      // Create case - let the mutation's onSuccess handle cleanup
-      await createCaseMutation.mutateAsync(caseData);
+      console.log('💾 Creating applicant with case data (bidirectional creation):', {
+        ...requestData,
+        photo: requestData.photo ? `Photo included (${(requestData.photo.length / 1024).toFixed(2)} KB)` : 'NO PHOTO'
+      });
       
-      console.log('✅ Case created successfully');
+      // Create applicant - backend will auto-create case if case_data is provided
+      const applicantResponse = await axios.post('/api/applicants', requestData);
+      
+      if (!applicantResponse.data.applicantId) {
+        throw new Error('Failed to get applicant ID from response');
+      }
+      
+      console.log('✅ Applicant created successfully with ID:', applicantResponse.data.applicantId);
+      
+      if (applicantResponse.data.caseId) {
+        console.log('✅ Case auto-created successfully with ID:', applicantResponse.data.caseId);
+        // Refresh the applicants list
+        queryClient.invalidateQueries(['applicants']);
+        // If we have a case ID, we could navigate to the case, but for now just show success
+        setCreateSuccess('Applicant and case created successfully!');
+      } else {
+        setCreateSuccess('Applicant created successfully!');
+      }
+      
+      // Reset form
+      reset();
+      setCreateModalOpen(false);
     } catch (error) {
       console.error('❌ Failed to create applicant or case:', error);
       console.error('❌ Error response:', error.response?.data);

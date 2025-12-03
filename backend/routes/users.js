@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const { pool } = require('../config/database');
-const { authenticateToken, authorizeRoles } = require('../middleware/auth');
+const { authenticateToken, authorizeRoles, authorizePermission } = require('../middleware/auth');
 const { hasPermission } = require('../utils/permissionUtils');
 
 const router = express.Router();
@@ -33,7 +33,7 @@ router.get('/roles', authenticateToken, async (req, res) => {
 });
 
 // Create new user
-router.post('/', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.post('/', authenticateToken, authorizePermission('users', 'create'), async (req, res) => {
   try {
     const { 
       full_name, 
@@ -280,7 +280,7 @@ router.get('/by-role/:role', authenticateToken, async (req, res) => {
 });
 
 // Get single user
-router.get('/:userId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.get('/:userId', authenticateToken, authorizePermission('users', 'read'), async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -347,7 +347,7 @@ router.get('/:userId', authenticateToken, authorizeRoles('admin'), async (req, r
 });
 
 // Update user
-router.put('/:userId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.put('/:userId', authenticateToken, authorizePermission('users', 'update'), async (req, res) => {
   try {
     const { userId } = req.params;
     const { full_name, username, email, phone, its_number, jamiat, jamaat, role, is_active, password, photo } = req.body;
@@ -522,7 +522,7 @@ router.put('/:userId', authenticateToken, authorizeRoles('admin'), async (req, r
 });
 
 // Deactivate/Activate user
-router.put('/:userId/toggle-status', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.put('/:userId/toggle-status', authenticateToken, authorizePermission('users', 'update'), async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -549,7 +549,7 @@ router.put('/:userId/toggle-status', authenticateToken, authorizeRoles('admin'),
 });
 
 // Update user status
-router.put('/:id/status', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.put('/:id/status', authenticateToken, authorizePermission('users', 'update'), async (req, res) => {
   try {
     const { id } = req.params;
     const { is_active } = req.body;
@@ -671,6 +671,54 @@ router.put('/:userId/assign-executive-level', authenticateToken, authorizeRoles(
 
   } catch (error) {
     console.error('Assign executive level error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete user
+router.delete('/:userId', authenticateToken, authorizePermission('users', 'delete'), async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Prevent deleting self
+    if (parseInt(userId) === req.user.id) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+
+    // Check if user exists
+    const [users] = await pool.execute(
+      'SELECT id, full_name, role FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Prevent deleting super_admin users
+    if (users[0].role === 'super_admin') {
+      return res.status(400).json({ error: 'Cannot delete super admin users' });
+    }
+
+    // Delete user role assignments first (if any)
+    await pool.execute(
+      'DELETE FROM user_roles WHERE user_id = ?',
+      [userId]
+    );
+
+    // Delete the user
+    const [result] = await pool.execute(
+      'DELETE FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
