@@ -99,6 +99,7 @@ const Cases = () => {
     }
   };
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const [filters, setFilters] = useState({
     status: '',
     case_type: '',
@@ -496,18 +497,18 @@ const Cases = () => {
   };
 
   const { data: casesData, isLoading, error, refetch } = useQuery(
-    ['cases', page, filters],
+    ['cases', page, filters, limit],
     () => axios.get('/api/cases', {
       params: {
         page,
-        limit: 10,
+        limit,
         ...filters,
       },
     }).then(res => {
       // Permissions are now included in the API response
       return {
         cases: res.data.cases || [],
-        pagination: res.data.pagination || { total: 0, page: 1, limit: 10, pages: 0 }
+        pagination: res.data.pagination || { total: 0, page: 1, limit: 20, pages: 0 }
       };
     }),
     {
@@ -771,6 +772,11 @@ const Cases = () => {
     }));
     setPage(1); // Reset to first page when filters change
   };
+
+  // Reset page to 1 when limit changes
+  useEffect(() => {
+    setPage(1);
+  }, [limit]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -1167,7 +1173,23 @@ const Cases = () => {
               </Button>
             </form>
             
-            <div className="flex space-x-2">
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2">
+                <label className="text-sm text-gray-700 whitespace-nowrap">Rows per page:</label>
+                <Select
+                  value={limit.toString()}
+                  onChange={(e) => setLimit(Number(e.target.value))}
+                  className="w-32"
+                >
+                  <Select.Option value="20">20</Select.Option>
+                  <Select.Option value="50">50</Select.Option>
+                  <Select.Option value="100">100</Select.Option>
+                  <Select.Option value="500">500</Select.Option>
+                  <Select.Option value="1500">1500</Select.Option>
+                  <Select.Option value="2000">2000</Select.Option>
+                  <Select.Option value="2500">2500</Select.Option>
+                </Select>
+              </div>
               <Button
                 variant="outline"
                 onClick={() => setFilterModalOpen(true)}
@@ -1776,11 +1798,11 @@ const Cases = () => {
               )}
 
               {/* Pagination */}
-              {casesData?.total_pages > 1 && (
+              {casesData?.pagination?.pages > 1 && (
                 <div className="mt-6">
                   <Pagination
                     currentPage={page}
-                    totalPages={casesData.total_pages}
+                    totalPages={casesData.pagination.pages}
                     onPageChange={setPage}
                   />
                 </div>

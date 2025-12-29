@@ -120,30 +120,72 @@ const CounselingForm = () => {
     { id: 'attachments', number: 7, title: 'Attachments', date: null }
   ];
   
-  const [qhGroups, setQhGroups] = useState([{ 
+  const [qhGroups, setQhGroups] = useState([
+    { 
     id: 1, 
     name: 'QH1', 
     year1: '', 
     year2: '', 
     year3: '', 
     year4: '', 
-    year5: '',
-    month1: '',
-    month2: '',
-    month3: '',
-    month4: '',
-    month5: ''
-  }]);
-
-  const [enayatGroups, setEnayatGroups] = useState([{ 
-    id: 1, 
-    name: 'Enayat 1', 
+    year5: ''
+    },
+    { 
+      id: 2, 
+      name: 'QH2', 
     year1: '', 
     year2: '', 
     year3: '', 
     year4: '', 
-    year5: '' 
-  }]);
+      year5: ''
+    },
+    { 
+      id: 3, 
+      name: 'QH3', 
+      year1: '', 
+      year2: '', 
+      year3: '', 
+      year4: '', 
+      year5: ''
+    },
+    { 
+      id: 4, 
+      name: 'Local QH', 
+      year1: '', 
+      year2: '', 
+      year3: '', 
+      year4: '', 
+      year5: ''
+    }
+  ]);
+
+
+  // Action Plan state - organized by timeline period
+  // Each period starts with at least one fixed action that cannot be removed
+  const [actionPlanItems, setActionPlanItems] = useState({
+    upto_1st_year_end: [{ id: Date.now() + Math.random(), action_text: '' }],
+    '2nd_and_3rd_year': [{ id: Date.now() + Math.random() + 1, action_text: '' }],
+    '4th_and_5th_year': [{ id: Date.now() + Math.random() + 2, action_text: '' }]
+  });
+
+  // Timeline Assistance state - organized by timeline period
+  // Each period starts with at least one fixed action that cannot be removed
+  const [timelineAssistanceItems, setTimelineAssistanceItems] = useState({
+    immediate: [{ id: Date.now() + Math.random() + 10, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+    after_1st_yr: [{ id: Date.now() + Math.random() + 11, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+    after_2nd_yr: [{ id: Date.now() + Math.random() + 12, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+    after_3rd_yr: [{ id: Date.now() + Math.random() + 13, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+    after_4th_yr: [{ id: Date.now() + Math.random() + 14, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+    '5th_yr': [{ id: Date.now() + Math.random() + 15, purpose_cost: '', enayat: '', qardan: '', months: '' }]
+  });
+
+  // Mentor states for Support needed section
+  const [mentorItsInput, setMentorItsInput] = useState('');
+  const [mentorLoading, setMentorLoading] = useState(false);
+  const [mentorError, setMentorError] = useState('');
+  const [trCommitteeItsInput, setTrCommitteeItsInput] = useState('');
+  const [trCommitteeLoading, setTrCommitteeLoading] = useState(false);
+  const [trCommitteeError, setTrCommitteeError] = useState('');
 
   // Fetch dropdown data
   const { data: relations } = useQuery(
@@ -184,7 +226,9 @@ const CounselingForm = () => {
     defaultValues: {
       personal_details: {
         its_number: '',
+        name: '',
         age: '',
+        education: '',
         jamiat: '',
         jamaat: '',
         contact_number: '',
@@ -196,14 +240,13 @@ const CounselingForm = () => {
       },
       family_details: {
         family_members: [],
-        family_structure: '',
         other_details: '',
         wellbeing: {
+          food: '',
           housing: '',
           education: '',
           health: '',
-          deeni: '',
-          ziyarat_travel_recreation: ''
+          deeni: ''
         },
       income_expense: {
         income: {
@@ -273,14 +316,17 @@ const CounselingForm = () => {
           counselor_assessment: ''
         },
         proposed_business: {
-          products_services: [],
+          present_business_condition: '',
           trade_mark: '',
           online_presence: '',
           digital_marketing: '',
           store_location: '',
           sourcing: '',
           selling: '',
-          major_expenses: ''
+          major_expenses: '',
+          goods_purchase: '',
+          revenue: '',
+          profit_margin: ''
         },
         counselor_assessment: {
           demand_supply: '',
@@ -301,11 +347,14 @@ const CounselingForm = () => {
           year4: '',
           year5: ''
         },
-        non_financial_mentoring: '',
-        non_financial_skill_development: '',
-        non_financial_sourcing_support: '',
-        non_financial_sales_market_access: '',
-        non_financial_other_solar: ''
+        support_needed: [],
+        support_industry_knowledge_desc: '',
+        support_sourcing_desc: '',
+        support_sales_market_desc: '',
+        support_internship_desc: '',
+        support_mentoring_handholding_desc: '',
+        support_bookkeeping_desc: '',
+        support_mentors: []
       },
       economic_growth: {
         projections: [],
@@ -421,6 +470,12 @@ const CounselingForm = () => {
         profit_qardan_repayment_year3: 0,
         profit_qardan_repayment_year4: 0,
         profit_qardan_repayment_year5: 0,
+        profit_other_income_last_year: 0,
+        profit_other_income_year1: 0,
+        profit_other_income_year2: 0,
+        profit_other_income_year3: 0,
+        profit_other_income_year4: 0,
+        profit_other_income_year5: 0,
         profit_household_expense_last_year: 0,
         profit_household_expense_year1: 0,
         profit_household_expense_year2: 0,
@@ -434,6 +489,12 @@ const CounselingForm = () => {
         cash_surplus_year3: 0,
         cash_surplus_year4: 0,
         cash_surplus_year5: 0,
+        cash_surplus_additional_enayat_last_year: 0,
+        cash_surplus_additional_enayat_year1: 0,
+        cash_surplus_additional_enayat_year2: 0,
+        cash_surplus_additional_enayat_year3: 0,
+        cash_surplus_additional_enayat_year4: 0,
+        cash_surplus_additional_enayat_year5: 0,
         cash_surplus_additional_qardan_last_year: 0,
         cash_surplus_additional_qardan_year1: 0,
         cash_surplus_additional_qardan_year2: 0,
@@ -461,6 +522,12 @@ const CounselingForm = () => {
         income_tax_return_file: null,
         financial_statements: false,
         financial_statements_file: null,
+        cancelled_cheque: false,
+        cancelled_cheque_file: null,
+        pan_card: false,
+        pan_card_file: null,
+        aadhar_card: false,
+        aadhar_card_file: null,
         other_documents: false,
         other_documents_files: []
       }
@@ -494,11 +561,6 @@ const CounselingForm = () => {
       year3: '', 
       year4: '', 
       year5: '',
-      month1: '',
-      month2: '',
-      month3: '',
-      month4: '',
-      month5: ''
     }]);
   };
 
@@ -515,43 +577,138 @@ const CounselingForm = () => {
   };
 
   // Enayat Groups management
-  const addEnayatGroup = () => {
-    const nextId = Math.max(...enayatGroups.map(g => g.id), 0) + 1;
-    const nextName = `Enayat ${nextId}`;
-    setEnayatGroups([...enayatGroups, { 
-      id: nextId, 
-      name: nextName, 
-      year1: '', 
-      year2: '', 
-      year3: '', 
-      year4: '', 
-      year5: '' 
-    }]);
+
+  // Action Plan management functions
+  const addActionPlanItem = (period) => {
+    const newId = Date.now() + Math.random(); // Unique ID
+    setActionPlanItems(prev => ({
+      ...prev,
+      [period]: [...prev[period], { id: newId, action_text: '' }]
+    }));
   };
 
-  const removeEnayatGroup = (id) => {
-    if (enayatGroups.length > 1) {
-      setEnayatGroups(enayatGroups.filter(group => group.id !== id));
+  const removeActionPlanItem = (period, index) => {
+    // Prevent removing the first action (index 0) - it must always exist
+    if (index === 0) {
+      return;
     }
+    // Only allow removal if there's more than 1 action
+    setActionPlanItems(prev => {
+      if (prev[period].length <= 1) {
+        return prev; // Don't remove if it's the last one
+      }
+      return {
+        ...prev,
+        [period]: prev[period].filter((_, i) => i !== index)
+      };
+    });
   };
 
-  const updateEnayatGroupField = (groupId, fieldName, value) => {
-    setEnayatGroups(enayatGroups.map(group => 
-      group.id === groupId ? { ...group, [fieldName]: value } : group
-    ));
+  const updateActionPlanItem = (period, index, value) => {
+    setActionPlanItems(prev => ({
+      ...prev,
+      [period]: prev[period].map((item, i) => 
+        i === index ? { ...item, action_text: value } : item
+      )
+    }));
   };
 
-  const { fields: productsServices, append: appendProductService, remove: removeProductService } = useFieldArray({
-    control,
-    name: 'assessment.proposed_business.products_services'
-  });
-
-  // Initialize products/services table with one empty row
-  useEffect(() => {
-    if (productsServices.length === 0) {
-      appendProductService({ product_service: '', unit: '', cost: '', price: '' });
+  // Calculate sequential action numbers
+  const getActionNumber = (period, index) => {
+    const periods = ['upto_1st_year_end', '2nd_and_3rd_year', '4th_and_5th_year'];
+    const currentPeriodIndex = periods.indexOf(period);
+    let actionNumber = 1;
+    
+    // Sum actions from previous periods
+    for (let i = 0; i < currentPeriodIndex; i++) {
+      actionNumber += actionPlanItems[periods[i]].length;
     }
-  }, [productsServices.length, appendProductService]);
+    
+    // Add current index (0-based, so +1 for display)
+    return actionNumber + index;
+  };
+
+  // Timeline Assistance management functions
+  const addTimelineAssistanceItem = (period) => {
+    const newId = Date.now() + Math.random();
+    setTimelineAssistanceItems(prev => ({
+      ...prev,
+      [period]: [...prev[period], { id: newId, purpose_cost: '', enayat: '', qardan: '', months: '' }]
+    }));
+  };
+
+  const removeTimelineAssistanceItem = (period, index) => {
+    // Prevent removing the first action (index 0) - it must always exist
+    if (index === 0) {
+      return;
+    }
+    // Only allow removal if there's more than 1 action
+    setTimelineAssistanceItems(prev => {
+      if (prev[period].length <= 1) {
+        return prev; // Don't remove if it's the last one
+      }
+      return {
+        ...prev,
+        [period]: prev[period].filter((_, i) => i !== index)
+      };
+    });
+  };
+
+  const updateTimelineAssistanceItem = (period, index, field, value) => {
+    setTimelineAssistanceItems(prev => ({
+      ...prev,
+      [period]: prev[period].map((item, i) => 
+        i === index ? { ...item, [field]: value } : item
+      )
+    }));
+  };
+
+  // Calculate sequential timeline assistance numbers
+  const getTimelineAssistanceNumber = (period, index) => {
+    const periods = ['immediate', 'after_1st_yr', 'after_2nd_yr', 'after_3rd_yr', 'after_4th_yr', '5th_yr'];
+    const currentPeriodIndex = periods.indexOf(period);
+    let actionNumber = 1;
+    
+    // Sum actions from previous periods
+    for (let i = 0; i < currentPeriodIndex; i++) {
+      actionNumber += timelineAssistanceItems[periods[i]].length;
+    }
+    
+    // Add current index (0-based, so +1 for display)
+    return actionNumber + index;
+  };
+
+  // Calculate total Enayat across all periods
+  const calculateTotalEnayat = () => {
+    const periods = ['immediate', 'after_1st_yr', 'after_2nd_yr', 'after_3rd_yr', 'after_4th_yr', '5th_yr'];
+    let total = 0;
+    
+    periods.forEach(period => {
+      timelineAssistanceItems[period]?.forEach(item => {
+        const value = parseFloat(item.enayat) || 0;
+        total += value;
+      });
+    });
+    
+    return total;
+  };
+
+  // Calculate total Qardan across all periods
+  const calculateTotalQardan = () => {
+    const periods = ['immediate', 'after_1st_yr', 'after_2nd_yr', 'after_3rd_yr', 'after_4th_yr', '5th_yr'];
+    let total = 0;
+    
+    periods.forEach(period => {
+      timelineAssistanceItems[period]?.forEach(item => {
+        const value = parseFloat(item.qardan) || 0;
+        total += value;
+      });
+    });
+    
+    return total;
+  };
+
+
 
 
   // Calculation functions
@@ -577,14 +734,12 @@ const CounselingForm = () => {
     const housingMonthly = parseFloat(watch('family_details.income_expense.expenses.housing_monthly')) || 0;
     const healthMonthly = parseFloat(watch('family_details.income_expense.expenses.health_monthly')) || 0;
     const educationMonthly = parseFloat(watch('family_details.income_expense.expenses.education_monthly')) || 0;
-    const essentialsMonthly = parseFloat(watch('family_details.income_expense.expenses.essentials_monthly')) || 0;
     const transportMonthly = parseFloat(watch('family_details.income_expense.expenses.transport_monthly')) || 0;
     const deeniMonthly = parseFloat(watch('family_details.income_expense.expenses.deeni_monthly')) || 0;
-    const nonEssentialsMonthly = parseFloat(watch('family_details.income_expense.expenses.non_essentials_monthly')) || 0;
     const othersMonthly = parseFloat(watch('family_details.income_expense.expenses.others_monthly')) || 0;
     
     const totalMonthly = foodMonthly + housingMonthly + healthMonthly + educationMonthly + 
-                        essentialsMonthly + transportMonthly + deeniMonthly + nonEssentialsMonthly + othersMonthly;
+                        transportMonthly + deeniMonthly + othersMonthly;
     const totalYearly = totalMonthly * 12;
     
     
@@ -735,6 +890,60 @@ const CounselingForm = () => {
     setValue('economic_growth.profit_year3', profitYear3, { shouldDirty: false });
     setValue('economic_growth.profit_year4', profitYear4, { shouldDirty: false });
     setValue('economic_growth.profit_year5', profitYear5, { shouldDirty: false });
+    
+    // Recalculate cash surplus after profit is calculated
+    calculateCashSurplus();
+  };
+
+  // Calculate Cash Surplus (PROFIT - Qardan Repayment - House hold expense + Other Income) for each year
+  const calculateCashSurplus = () => {
+    // Get profit values
+    const profitLastYear = parseFloat(watch('economic_growth.profit_last_year')) || 0;
+    const profitYear1 = parseFloat(watch('economic_growth.profit_year1')) || 0;
+    const profitYear2 = parseFloat(watch('economic_growth.profit_year2')) || 0;
+    const profitYear3 = parseFloat(watch('economic_growth.profit_year3')) || 0;
+    const profitYear4 = parseFloat(watch('economic_growth.profit_year4')) || 0;
+    const profitYear5 = parseFloat(watch('economic_growth.profit_year5')) || 0;
+
+    // Get Qardan Repayment values
+    const qardanRepaymentLastYear = parseFloat(watch('economic_growth.profit_qardan_repayment_last_year')) || 0;
+    const qardanRepaymentYear1 = parseFloat(watch('economic_growth.profit_qardan_repayment_year1')) || 0;
+    const qardanRepaymentYear2 = parseFloat(watch('economic_growth.profit_qardan_repayment_year2')) || 0;
+    const qardanRepaymentYear3 = parseFloat(watch('economic_growth.profit_qardan_repayment_year3')) || 0;
+    const qardanRepaymentYear4 = parseFloat(watch('economic_growth.profit_qardan_repayment_year4')) || 0;
+    const qardanRepaymentYear5 = parseFloat(watch('economic_growth.profit_qardan_repayment_year5')) || 0;
+
+    // Get House hold expense values
+    const householdExpenseLastYear = parseFloat(watch('economic_growth.profit_household_expense_last_year')) || 0;
+    const householdExpenseYear1 = parseFloat(watch('economic_growth.profit_household_expense_year1')) || 0;
+    const householdExpenseYear2 = parseFloat(watch('economic_growth.profit_household_expense_year2')) || 0;
+    const householdExpenseYear3 = parseFloat(watch('economic_growth.profit_household_expense_year3')) || 0;
+    const householdExpenseYear4 = parseFloat(watch('economic_growth.profit_household_expense_year4')) || 0;
+    const householdExpenseYear5 = parseFloat(watch('economic_growth.profit_household_expense_year5')) || 0;
+
+    // Get Other Income values
+    const otherIncomeLastYear = parseFloat(watch('economic_growth.profit_other_income_last_year')) || 0;
+    const otherIncomeYear1 = parseFloat(watch('economic_growth.profit_other_income_year1')) || 0;
+    const otherIncomeYear2 = parseFloat(watch('economic_growth.profit_other_income_year2')) || 0;
+    const otherIncomeYear3 = parseFloat(watch('economic_growth.profit_other_income_year3')) || 0;
+    const otherIncomeYear4 = parseFloat(watch('economic_growth.profit_other_income_year4')) || 0;
+    const otherIncomeYear5 = parseFloat(watch('economic_growth.profit_other_income_year5')) || 0;
+
+    // Calculate cash surplus for each year: PROFIT - Qardan Repayment - House hold expense + Other Income
+    const cashSurplusLastYear = profitLastYear - qardanRepaymentLastYear - householdExpenseLastYear + otherIncomeLastYear;
+    const cashSurplusYear1 = profitYear1 - qardanRepaymentYear1 - householdExpenseYear1 + otherIncomeYear1;
+    const cashSurplusYear2 = profitYear2 - qardanRepaymentYear2 - householdExpenseYear2 + otherIncomeYear2;
+    const cashSurplusYear3 = profitYear3 - qardanRepaymentYear3 - householdExpenseYear3 + otherIncomeYear3;
+    const cashSurplusYear4 = profitYear4 - qardanRepaymentYear4 - householdExpenseYear4 + otherIncomeYear4;
+    const cashSurplusYear5 = profitYear5 - qardanRepaymentYear5 - householdExpenseYear5 + otherIncomeYear5;
+
+    // Update form values without triggering re-render
+    setValue('economic_growth.cash_surplus_last_year', cashSurplusLastYear, { shouldDirty: false });
+    setValue('economic_growth.cash_surplus_year1', cashSurplusYear1, { shouldDirty: false });
+    setValue('economic_growth.cash_surplus_year2', cashSurplusYear2, { shouldDirty: false });
+    setValue('economic_growth.cash_surplus_year3', cashSurplusYear3, { shouldDirty: false });
+    setValue('economic_growth.cash_surplus_year4', cashSurplusYear4, { shouldDirty: false });
+    setValue('economic_growth.cash_surplus_year5', cashSurplusYear5, { shouldDirty: false });
   };
 
   // Fetch form data
@@ -767,13 +976,17 @@ const CounselingForm = () => {
               : form.personal_details;
             setValue('personal_details', personalDetails);
             
-            // Auto-populate applicant name and contact from applicant info
+            // Auto-populate applicant name, contact, and ITS from applicant info and personal details
             if (form.applicant_info) {
               setValue('declaration.applicant_name', form.applicant_info.full_name || '');
               setValue('declaration.applicant_contact', form.applicant_info.phone || '');
             }
+            // Auto-populate applicant ITS from personal details
+            if (personalDetails && personalDetails.its_number) {
+              setValue('declaration.applicant_its', personalDetails.its_number);
+            }
             
-            // Auto-populate counselor name and contact from counselor info (if not already set)
+            // Auto-populate counselor name, contact, and ITS from counselor info (if not already set)
             if (form.counselor_info) {
               const currentCounselorName = watch('declaration.counselor_name');
               const currentCounselorContact = watch('declaration.counselor_contact');
@@ -783,6 +996,10 @@ const CounselingForm = () => {
               }
               if (!currentCounselorContact && form.counselor_info.contact) {
                 setValue('declaration.counselor_contact', form.counselor_info.contact);
+              }
+              // Auto-populate counselor ITS
+              if (form.counselor_info.its_number) {
+                setValue('declaration.counselor_its', form.counselor_info.its_number);
               }
             }
           }
@@ -922,6 +1139,18 @@ const CounselingForm = () => {
               if (!declaration.counselor_contact && form.counselor_info.contact) {
                 declaration.counselor_contact = form.counselor_info.contact;
               }
+              if (!declaration.counselor_its && form.counselor_info.its_number) {
+                declaration.counselor_its = form.counselor_info.its_number;
+              }
+            }
+            // Auto-populate applicant ITS if not already set
+            if (form.personal_details) {
+              const personalDetails = typeof form.personal_details === 'string' 
+                ? JSON.parse(form.personal_details) 
+                : form.personal_details;
+              if (personalDetails && personalDetails.its_number && !declaration.applicant_its) {
+                declaration.applicant_its = personalDetails.its_number;
+              }
             }
             
             setValue('declaration', declaration);
@@ -947,6 +1176,9 @@ const CounselingForm = () => {
             setValue('attachments.product_brochure', attachments.product_brochure || false);
             setValue('attachments.income_tax_return', attachments.income_tax_return || false);
             setValue('attachments.financial_statements', attachments.financial_statements || false);
+            setValue('attachments.cancelled_cheque', attachments.cancelled_cheque || false);
+            setValue('attachments.pan_card', attachments.pan_card || false);
+            setValue('attachments.aadhar_card', attachments.aadhar_card || false);
             setValue('attachments.other_documents', attachments.other_documents || false);
           }
         }
@@ -1054,6 +1286,74 @@ const CounselingForm = () => {
             support_document: ''
           }]);
         }
+
+        // Initialize timeline assistance items
+        if (financialAssistance.timeline_assistance && typeof financialAssistance.timeline_assistance === 'object') {
+          // Ensure each period has at least one action
+          const periods = ['immediate', 'after_1st_yr', 'after_2nd_yr', 'after_3rd_yr', 'after_4th_yr', '5th_yr'];
+          const loadedItems = { ...financialAssistance.timeline_assistance };
+          
+          periods.forEach(period => {
+            if (!loadedItems[period] || loadedItems[period].length === 0) {
+              loadedItems[period] = [{ id: Date.now() + Math.random(), purpose_cost: '', enayat: '', qardan: '', months: '' }];
+            }
+          });
+          
+          setTimelineAssistanceItems(loadedItems);
+        } else {
+          // Reset to default timeline assistance items with one fixed action per period
+          setTimelineAssistanceItems({
+            immediate: [{ id: Date.now() + Math.random() + 10, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+            after_1st_yr: [{ id: Date.now() + Math.random() + 11, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+            after_2nd_yr: [{ id: Date.now() + Math.random() + 12, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+            after_3rd_yr: [{ id: Date.now() + Math.random() + 13, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+            after_4th_yr: [{ id: Date.now() + Math.random() + 14, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+            '5th_yr': [{ id: Date.now() + Math.random() + 15, purpose_cost: '', enayat: '', qardan: '', months: '' }]
+          });
+        }
+
+        // Initialize action plan items
+        if (financialAssistance.action_plan && Array.isArray(financialAssistance.action_plan) && financialAssistance.action_plan.length > 0) {
+          // Group action plan items by timeline_period
+          const groupedActions = {
+            upto_1st_year_end: [],
+            '2nd_and_3rd_year': [],
+            '4th_and_5th_year': []
+          };
+
+          financialAssistance.action_plan.forEach(item => {
+            if (item.timeline_period && groupedActions[item.timeline_period]) {
+              groupedActions[item.timeline_period].push({
+                id: item.id || Date.now() + Math.random(),
+                action_text: item.action_text || ''
+              });
+            }
+          });
+
+          // Ensure each period has at least one action (fixed default)
+          const periods = ['upto_1st_year_end', '2nd_and_3rd_year', '4th_and_5th_year'];
+          periods.forEach(period => {
+            if (groupedActions[period].length === 0) {
+              groupedActions[period] = [{ id: Date.now() + Math.random(), action_text: '' }];
+            }
+          });
+
+          setActionPlanItems(groupedActions);
+        } else {
+          // Reset to default action plan with one fixed action per period
+          setActionPlanItems({
+            upto_1st_year_end: [{ id: Date.now() + Math.random(), action_text: '' }],
+            '2nd_and_3rd_year': [{ id: Date.now() + Math.random() + 1, action_text: '' }],
+            '4th_and_5th_year': [{ id: Date.now() + Math.random() + 2, action_text: '' }]
+          });
+          // Reset to default timeline assistance items with one fixed action per period
+          setTimelineAssistanceItems({
+            immediate: [{ id: Date.now() + Math.random() + 10, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+            after_1st_yr: [{ id: Date.now() + Math.random() + 11, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+            after_2nd_yr: [{ id: Date.now() + Math.random() + 12, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+            after_3rd_yr: [{ id: Date.now() + Math.random() + 13, purpose_cost: '', enayat: '', qardan: '', months: '' }]
+          });
+        }
       } else {
         // If no financial assistance data exists, still show default timeline item
         replaceTimelineItems([{
@@ -1062,6 +1362,21 @@ const CounselingForm = () => {
           amount: '',
           support_document: ''
         }]);
+        // Reset to default action plan with one fixed action per period
+        setActionPlanItems({
+          upto_1st_year_end: [{ id: Date.now() + Math.random(), action_text: '' }],
+          '2nd_and_3rd_year': [{ id: Date.now() + Math.random() + 1, action_text: '' }],
+          '4th_and_5th_year': [{ id: Date.now() + Math.random() + 2, action_text: '' }]
+        });
+        // Reset to default timeline assistance items with one fixed action per period
+        setTimelineAssistanceItems({
+          immediate: [{ id: Date.now() + Math.random() + 10, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+          after_1st_yr: [{ id: Date.now() + Math.random() + 11, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+          after_2nd_yr: [{ id: Date.now() + Math.random() + 12, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+          after_3rd_yr: [{ id: Date.now() + Math.random() + 13, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+          after_4th_yr: [{ id: Date.now() + Math.random() + 14, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+          '5th_yr': [{ id: Date.now() + Math.random() + 15, purpose_cost: '', enayat: '', qardan: '', months: '' }]
+        });
       }
 
       // Initialize QH groups - always ensure QH1 is shown by default
@@ -1071,64 +1386,115 @@ const CounselingForm = () => {
           : form.financial_assistance;
         
         if (financialAssistance.qh_fields && Array.isArray(financialAssistance.qh_fields) && financialAssistance.qh_fields.length > 0) {
-          setQhGroups(financialAssistance.qh_fields);
-        } else {
-          // Reset to default QH1 group if no data or empty array
-          setQhGroups([{ 
-            id: 1, 
-            name: 'QH1', 
+          // Ensure all four QH entries exist
+          const requiredQhNames = ['QH1', 'QH2', 'QH3', 'Local QH'];
+          const loadedQhGroups = [...financialAssistance.qh_fields];
+          
+          // Find or create each required QH entry
+          requiredQhNames.forEach((qhName, index) => {
+            const existingQh = loadedQhGroups.find(g => 
+              g.name === qhName || 
+              g.name === qhName.replace(' ', '') || 
+              (qhName === 'Local QH' && g.name.toLowerCase().includes('local'))
+            );
+            
+            if (!existingQh) {
+              // Create missing QH entry
+              loadedQhGroups.push({
+                id: Math.max(...loadedQhGroups.map(g => g.id), 0) + index + 1,
+                name: qhName,
             year1: '', 
             year2: '', 
             year3: '', 
             year4: '', 
             year5: '',
-            month1: '',
-            month2: '',
-            month3: '',
-            month4: '',
-            month5: ''
-          }]);
+              });
         }
+          });
 
-        if (financialAssistance.enayat_fields && Array.isArray(financialAssistance.enayat_fields) && financialAssistance.enayat_fields.length > 0) {
-          setEnayatGroups(financialAssistance.enayat_fields);
+          setQhGroups(loadedQhGroups);
         } else {
-          // Reset to default Enayat 1 group if no data or empty array
-          setEnayatGroups([{ 
+          // Reset to default QH groups (all four)
+          setQhGroups([
+            { 
             id: 1, 
-            name: 'Enayat 1', 
+              name: 'QH1', 
             year1: '', 
             year2: '', 
             year3: '', 
             year4: '', 
-            year5: '' 
-          }]);
+              year5: ''
+            },
+            { 
+              id: 2, 
+              name: 'QH2', 
+              year1: '', 
+              year2: '', 
+              year3: '', 
+              year4: '', 
+              year5: ''
+            },
+            { 
+              id: 3, 
+              name: 'QH3', 
+              year1: '', 
+              year2: '', 
+              year3: '', 
+              year4: '', 
+              year5: ''
+            },
+            { 
+              id: 4, 
+              name: 'Local QH', 
+              year1: '', 
+              year2: '', 
+              year3: '', 
+              year4: '', 
+              year5: ''
+            }
+          ]);
         }
+
       } else {
-        // If no financial assistance data exists, still show default QH1 and Enayat 1
-        setQhGroups([{ 
+        // If no financial assistance data exists, still show default QH groups (all four)
+        setQhGroups([
+          { 
           id: 1, 
           name: 'QH1', 
           year1: '', 
           year2: '', 
           year3: '', 
           year4: '', 
-          year5: '',
-          month1: '',
-          month2: '',
-          month3: '',
-          month4: '',
-          month5: ''
-        }]);
-        setEnayatGroups([{ 
-          id: 1, 
-          name: 'Enayat 1', 
+          year5: ''
+          },
+          { 
+            id: 2, 
+            name: 'QH2', 
           year1: '', 
           year2: '', 
           year3: '', 
           year4: '', 
-          year5: '' 
-        }]);
+            year5: ''
+          },
+          { 
+            id: 3, 
+            name: 'QH3', 
+            year1: '', 
+            year2: '', 
+            year3: '', 
+            year4: '', 
+            year5: ''
+          },
+          { 
+            id: 4, 
+            name: 'Local QH', 
+            year1: '', 
+            year2: '', 
+            year3: '', 
+            year4: '', 
+            year5: ''
+          }
+        ]);
       }
       
       // Initialize growth projections
@@ -1157,10 +1523,8 @@ const CounselingForm = () => {
     'family_details.income_expense.expenses.housing_monthly',
     'family_details.income_expense.expenses.health_monthly',
     'family_details.income_expense.expenses.education_monthly',
-    'family_details.income_expense.expenses.essentials_monthly',
     'family_details.income_expense.expenses.transport_monthly',
     'family_details.income_expense.expenses.deeni_monthly',
-    'family_details.income_expense.expenses.non_essentials_monthly',
     'family_details.income_expense.expenses.others_monthly'
   ]);
 
@@ -1236,12 +1600,49 @@ const CounselingForm = () => {
     }
   }, [watchedRevenueAndExpensesFields, activeTab, formData]);
 
+  // Watch for changes in Profit, Qardan Repayment, Household Expense, and Other Income fields for cash surplus calculation
+  const watchedCashSurplusFields = watch([
+    'economic_growth.profit_last_year',
+    'economic_growth.profit_year1',
+    'economic_growth.profit_year2',
+    'economic_growth.profit_year3',
+    'economic_growth.profit_year4',
+    'economic_growth.profit_year5',
+    'economic_growth.profit_qardan_repayment_last_year',
+    'economic_growth.profit_qardan_repayment_year1',
+    'economic_growth.profit_qardan_repayment_year2',
+    'economic_growth.profit_qardan_repayment_year3',
+    'economic_growth.profit_qardan_repayment_year4',
+    'economic_growth.profit_qardan_repayment_year5',
+    'economic_growth.profit_household_expense_last_year',
+    'economic_growth.profit_household_expense_year1',
+    'economic_growth.profit_household_expense_year2',
+    'economic_growth.profit_household_expense_year3',
+    'economic_growth.profit_household_expense_year4',
+    'economic_growth.profit_household_expense_year5',
+    'economic_growth.profit_other_income_last_year',
+    'economic_growth.profit_other_income_year1',
+    'economic_growth.profit_other_income_year2',
+    'economic_growth.profit_other_income_year3',
+    'economic_growth.profit_other_income_year4',
+    'economic_growth.profit_other_income_year5'
+  ]);
+
+  // Auto-calculate Cash Surplus when profit, qardan repayment, household expense, or other income change
+  useEffect(() => {
+    // Only calculate if we're on the growth tab and have form data loaded
+    if (activeTab === 'growth' && formData?.form) {
+      calculateCashSurplus();
+    }
+  }, [watchedCashSurplusFields, activeTab, formData]);
+
   // Auto-populate counselor info when declaration tab is selected
   useEffect(() => {
     if (activeTab === 'declaration' && formData?.form?.counselor_info) {
       const counselorInfo = formData.form.counselor_info;
       const currentCounselorName = watch('declaration.counselor_name');
       const currentCounselorContact = watch('declaration.counselor_contact');
+      const currentCounselorIts = watch('declaration.counselor_its');
       
       // Only populate if fields are empty
       if (!currentCounselorName && counselorInfo.name) {
@@ -1250,8 +1651,30 @@ const CounselingForm = () => {
       if (!currentCounselorContact && counselorInfo.contact) {
         setValue('declaration.counselor_contact', counselorInfo.contact);
       }
+      if (!currentCounselorIts && counselorInfo.its_number) {
+        setValue('declaration.counselor_its', counselorInfo.its_number);
+      }
+    }
+    // Auto-populate applicant ITS when declaration tab is selected
+    if (activeTab === 'declaration' && formData?.form?.personal_details) {
+      const personalDetails = typeof formData.form.personal_details === 'string' 
+        ? JSON.parse(formData.form.personal_details) 
+        : formData.form.personal_details;
+      const currentApplicantIts = watch('declaration.applicant_its');
+      
+      if (!currentApplicantIts && personalDetails?.its_number) {
+        setValue('declaration.applicant_its', personalDetails.its_number);
+      }
     }
   }, [activeTab, formData, watch, setValue]);
+
+  // Sync TR Committee ITS input with form value
+  useEffect(() => {
+    const trCommitteeIts = watch('declaration.tr_committee_its');
+    if (trCommitteeIts && !trCommitteeItsInput) {
+      setTrCommitteeItsInput(trCommitteeIts);
+    }
+  }, [watch('declaration.tr_committee_its'), trCommitteeItsInput]);
 
   // Set initial active tab to next incomplete step when form data is loaded
   useEffect(() => {
@@ -1341,6 +1764,18 @@ const CounselingForm = () => {
           case 'financial_statements':
             setValue('attachments.financial_statements_file', fileObjects[0] || null);
             setValue('attachments.financial_statements', true);
+            break;
+          case 'cancelled_cheque':
+            setValue('attachments.cancelled_cheque_file', fileObjects[0] || null);
+            setValue('attachments.cancelled_cheque', true);
+            break;
+          case 'pan_card':
+            setValue('attachments.pan_card_file', fileObjects[0] || null);
+            setValue('attachments.pan_card', true);
+            break;
+          case 'aadhar_card':
+            setValue('attachments.aadhar_card_file', fileObjects[0] || null);
+            setValue('attachments.aadhar_card', true);
             break;
           case 'other_documents':
             setValue('attachments.other_documents_files', fileObjects);
@@ -1564,6 +1999,9 @@ const CounselingForm = () => {
         queueFilesForDeletion('product_brochure', attachmentsData.product_brochure_files, existingAttachmentsData);
         queueFilesForDeletion('income_tax_return', attachmentsData.income_tax_return_file, existingAttachmentsData);
         queueFilesForDeletion('financial_statements', attachmentsData.financial_statements_file, existingAttachmentsData);
+        queueFilesForDeletion('cancelled_cheque', attachmentsData.cancelled_cheque_file, existingAttachmentsData);
+        queueFilesForDeletion('pan_card', attachmentsData.pan_card_file, existingAttachmentsData);
+        queueFilesForDeletion('aadhar_card', attachmentsData.aadhar_card_file, existingAttachmentsData);
         queueFilesForDeletion('other_documents', attachmentsData.other_documents_files, existingAttachmentsData);
       }
 
@@ -1639,6 +2077,42 @@ const CounselingForm = () => {
         );
       }
 
+      // Handle cancelled cheque file (single)
+      if (attachmentsData.cancelled_cheque_file && !attachmentsData.cancelled_cheque_file.id) {
+        const formData_cheque = new FormData();
+        formData_cheque.append('file', attachmentsData.cancelled_cheque_file);
+        formData_cheque.append('stage', 'cancelled_cheque');
+        uploadPromises.push(
+          axios.post(`/api/attachments/upload/${caseId}`, formData_cheque, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          })
+        );
+      }
+
+      // Handle PAN card file (single)
+      if (attachmentsData.pan_card_file && !attachmentsData.pan_card_file.id) {
+        const formData_pan = new FormData();
+        formData_pan.append('file', attachmentsData.pan_card_file);
+        formData_pan.append('stage', 'pan_card');
+        uploadPromises.push(
+          axios.post(`/api/attachments/upload/${caseId}`, formData_pan, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          })
+        );
+      }
+
+      // Handle Aadhar card file (single)
+      if (attachmentsData.aadhar_card_file && !attachmentsData.aadhar_card_file.id) {
+        const formData_aadhar = new FormData();
+        formData_aadhar.append('file', attachmentsData.aadhar_card_file);
+        formData_aadhar.append('stage', 'aadhar_card');
+        uploadPromises.push(
+          axios.post(`/api/attachments/upload/${caseId}`, formData_aadhar, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          })
+        );
+      }
+
       // Handle other documents files (multiple)
         if (attachmentsData.other_documents_files?.length > 0) {
           // Only upload new files (files without id property)
@@ -1676,6 +2150,9 @@ const CounselingForm = () => {
         product_brochure: attachmentsData.product_brochure,
         income_tax_return: attachmentsData.income_tax_return,
         financial_statements: attachmentsData.financial_statements,
+        cancelled_cheque: attachmentsData.cancelled_cheque,
+        pan_card: attachmentsData.pan_card,
+        aadhar_card: attachmentsData.aadhar_card,
         other_documents: attachmentsData.other_documents
       };
 
@@ -1975,6 +2452,14 @@ const CounselingForm = () => {
                   className="bg-gray-100"
                 />
                 <Input
+                  label="Name"
+                  required
+                  {...register('personal_details.name', { required: 'Name is required' })}
+                  error={errors.personal_details?.name?.message}
+                  disabled={true}
+                  className="bg-gray-100"
+                />
+                <Input
                   label="Age"
                   type="number"
                   required
@@ -1982,6 +2467,13 @@ const CounselingForm = () => {
                   error={errors.personal_details?.age?.message}
                   disabled={true}
                   className="bg-gray-100"
+                />
+                <Input
+                  label="Education"
+                  {...register('personal_details.education')}
+                  error={errors.personal_details?.education?.message}
+                  disabled={!canUpdateSection('personal')}
+                  className={!canUpdateSection('personal') ? 'bg-gray-100' : ''}
                 />
                 <Input
                   label="Jamiat"
@@ -2004,8 +2496,8 @@ const CounselingForm = () => {
                   required
                   {...register('personal_details.contact_number', { required: 'Contact number is required' })}
                   error={errors.personal_details?.contact_number?.message}
-                  disabled={true}
-                  className="bg-gray-100"
+                  disabled={!canUpdateSection('personal')}
+                  className={!canUpdateSection('personal') ? 'bg-gray-100' : ''}
                 />
                 <Input
                   label="Email ID"
@@ -2013,8 +2505,8 @@ const CounselingForm = () => {
                   required
                   {...register('personal_details.email', { required: 'Email ID is required' })}
                   error={errors.personal_details?.email?.message}
-                  disabled={true}
-                  className="bg-gray-100"
+                  disabled={!canUpdateSection('personal')}
+                  className={!canUpdateSection('personal') ? 'bg-gray-100' : ''}
                 />
               </div>
 
@@ -2024,8 +2516,8 @@ const CounselingForm = () => {
                   required
                   {...register('personal_details.residential_address', { required: 'Residential address is required' })}
                   error={errors.personal_details?.residential_address?.message}
-                  disabled={true}
-                  className="bg-gray-100"
+                  disabled={!canUpdateSection('personal')}
+                  className={!canUpdateSection('personal') ? 'bg-gray-100' : ''}
                 />
                 <Input
                   label="Present Occupation"
@@ -2205,23 +2697,28 @@ const CounselingForm = () => {
                   })}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <Input
-                    label="Family Structure (Joint/Nuclear)"
-                    required
-                    {...register('family_details.family_structure', { required: 'Family structure is required' })}
-                    error={errors.family_details?.family_structure?.message}
-                    disabled={!canUpdateSection('family')}
-                    className={!canUpdateSection('family') ? 'bg-gray-100' : ''}
-                  />
-                  <Input
-                    label="Other Details"
-                    required
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Other Details
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 ${
+                      errors.family_details?.other_details?.message 
+                        ? 'border-red-300 focus:ring-red-500' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    } ${
+                      !canUpdateSection('family') 
+                        ? 'bg-gray-100 cursor-not-allowed' 
+                        : 'bg-white'
+                    }`}
                     {...register('family_details.other_details', { required: 'Other details is required' })}
-                    error={errors.family_details?.other_details?.message}
                     disabled={!canUpdateSection('family')}
-                    className={!canUpdateSection('family') ? 'bg-gray-100' : ''}
                   />
+                  {errors.family_details?.other_details?.message && (
+                    <p className="mt-1 text-sm text-red-600">{errors.family_details.other_details.message}</p>
+                  )}
                 </div>
               </div>
 
@@ -2229,6 +2726,14 @@ const CounselingForm = () => {
               <div>
                 <h4 className="text-md font-medium text-gray-900 mb-4">2.2 Present Family Wellbeing/Lifestyle</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Food"
+                    required
+                    {...register('family_details.wellbeing.food', { required: 'Food is required' })}
+                    error={errors.family_details?.wellbeing?.food?.message}
+                    disabled={!canUpdateSection('family')}
+                    className={!canUpdateSection('family') ? 'bg-gray-100' : ''}
+                  />
                   <Input
                     label="Housing"
                     required
@@ -2258,14 +2763,6 @@ const CounselingForm = () => {
                     required
                     {...register('family_details.wellbeing.deeni', { required: 'Deeni is required' })}
                     error={errors.family_details?.wellbeing?.deeni?.message}
-                    disabled={!canUpdateSection('family')}
-                    className={!canUpdateSection('family') ? 'bg-gray-100' : ''}
-                  />
-                  <Input
-                    label="Ziyarat/Travel/Recreation"
-                    required
-                    {...register('family_details.wellbeing.ziyarat_travel_recreation', { required: 'Ziyarat/Travel/Recreation is required' })}
-                    error={errors.family_details?.wellbeing?.ziyarat_travel_recreation?.message}
                     disabled={!canUpdateSection('family')}
                     className={!canUpdateSection('family') ? 'bg-gray-100' : ''}
                   />
@@ -2388,12 +2885,12 @@ const CounselingForm = () => {
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">d</td>
-                        <td className="border border-gray-300 px-3 py-2">Others ________________________________________________________ <span className="text-red-500">*</span></td>
+                        <td className="border border-gray-300 px-3 py-2">Others</td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            {...register('family_details.income_expense.income.others_monthly', { required: 'Others monthly income is required', valueAsNumber: true })}
+                            {...register('family_details.income_expense.income.others_monthly', { valueAsNumber: true })}
                             onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const monthlyValue = parseFloat(e.target.value) || 0;
@@ -2406,7 +2903,7 @@ const CounselingForm = () => {
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            {...register('family_details.income_expense.income.others_yearly', { required: 'Others yearly income is required', valueAsNumber: true })}
+                            {...register('family_details.income_expense.income.others_yearly', { valueAsNumber: true })}
                             onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const yearlyValue = parseFloat(e.target.value) || 0;
@@ -2550,34 +3047,12 @@ const CounselingForm = () => {
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">e</td>
-                        <td className="border border-gray-300 px-3 py-2">Essentials: Clothes, Personal Care, etc. <span className="text-red-500">*</span></td>
+                        <td className="border border-gray-300 px-3 py-2">Others Essentials: Clothes, Personal Care, Local Transport, Misc etc. <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            {...register('family_details.income_expense.expenses.essentials_monthly', { required: 'Essentials monthly expense is required', valueAsNumber: true })}
-                            onKeyPress={handleDecimalInput}
-                            onChange={(e) => handleExpenseChange('essentials', parseFloat(e.target.value) || 0)}
-                          />
-                        </td>
-                        <td className="border border-gray-300 px-3 py-2">
-                          <input
-                            type="number"
-                            className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            {...register('family_details.income_expense.expenses.essentials_yearly', { required: 'Essentials yearly expense is required', valueAsNumber: true })}
-                            onKeyPress={handleDecimalInput}
-                            onChange={(e) => handleExpenseChange('essentials', undefined, parseFloat(e.target.value) || 0)}
-                          />
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="border border-gray-300 px-3 py-2 text-center">f</td>
-                        <td className="border border-gray-300 px-3 py-2">Local Transport <span className="text-red-500">*</span></td>
-                        <td className="border border-gray-300 px-3 py-2">
-                          <input
-                            type="number"
-                            className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            {...register('family_details.income_expense.expenses.transport_monthly', { required: 'Transport monthly expense is required', valueAsNumber: true })}
+                            {...register('family_details.income_expense.expenses.transport_monthly', { required: 'Others Essentials monthly expense is required', valueAsNumber: true })}
                             onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('transport', parseFloat(e.target.value) || 0)}
                           />
@@ -2586,14 +3061,14 @@ const CounselingForm = () => {
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            {...register('family_details.income_expense.expenses.transport_yearly', { required: 'Transport yearly expense is required', valueAsNumber: true })}
+                            {...register('family_details.income_expense.expenses.transport_yearly', { required: 'Others Essentials yearly expense is required', valueAsNumber: true })}
                             onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('transport', undefined, parseFloat(e.target.value) || 0)}
                           />
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-gray-300 px-3 py-2 text-center">g</td>
+                        <td className="border border-gray-300 px-3 py-2 text-center">f</td>
                         <td className="border border-gray-300 px-3 py-2">Deeni: Sabeel, Wajebaat, Niyaaz etc. <span className="text-red-500">*</span></td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
@@ -2615,35 +3090,13 @@ const CounselingForm = () => {
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-gray-300 px-3 py-2 text-center">h</td>
-                        <td className="border border-gray-300 px-3 py-2">Non essentials: Recreational etc. <span className="text-red-500">*</span></td>
+                        <td className="border border-gray-300 px-3 py-2 text-center">g</td>
+                        <td className="border border-gray-300 px-3 py-2">Others</td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            {...register('family_details.income_expense.expenses.non_essentials_monthly', { required: 'Non-essentials monthly expense is required', valueAsNumber: true })}
-                            onKeyPress={handleDecimalInput}
-                            onChange={(e) => handleExpenseChange('non_essentials', parseFloat(e.target.value) || 0)}
-                          />
-                        </td>
-                        <td className="border border-gray-300 px-3 py-2">
-                          <input
-                            type="number"
-                            className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            {...register('family_details.income_expense.expenses.non_essentials_yearly', { required: 'Non-essentials yearly expense is required', valueAsNumber: true })}
-                            onKeyPress={handleDecimalInput}
-                            onChange={(e) => handleExpenseChange('non_essentials', undefined, parseFloat(e.target.value) || 0)}
-                          />
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="border border-gray-300 px-3 py-2 text-center">i</td>
-                        <td className="border border-gray-300 px-3 py-2">Others <span className="text-red-500">*</span></td>
-                        <td className="border border-gray-300 px-3 py-2">
-                          <input
-                            type="number"
-                            className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            {...register('family_details.income_expense.expenses.others_monthly', { required: 'Others monthly expense is required', valueAsNumber: true })}
+                            {...register('family_details.income_expense.expenses.others_monthly', { valueAsNumber: true })}
                             onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('others', parseFloat(e.target.value) || 0)}
                           />
@@ -2652,7 +3105,7 @@ const CounselingForm = () => {
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            {...register('family_details.income_expense.expenses.others_yearly', { required: 'Others yearly expense is required', valueAsNumber: true })}
+                            {...register('family_details.income_expense.expenses.others_yearly', { valueAsNumber: true })}
                             onKeyPress={handleDecimalInput}
                             onChange={(e) => handleExpenseChange('others', undefined, parseFloat(e.target.value) || 0)}
                           />
@@ -2722,24 +3175,39 @@ const CounselingForm = () => {
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">3</td>
-                        <td className="border border-gray-300 px-3 py-2">Scholarship <span className="text-red-500">*</span></td>
+                        <td className="border border-gray-300 px-3 py-2">
+                          Scholarship (Enayat/Muwasat Etc.)
+                          {watch('family_details.income_expense.deficit_monthly') > 0 && <span className="text-red-500"> *</span>}
+                        </td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            {...register('family_details.income_expense.scholarship_monthly', { required: 'Scholarship monthly is required', valueAsNumber: true })}
+                            {...register('family_details.income_expense.scholarship_monthly', { 
+                              valueAsNumber: true,
+                              validate: (value) => {
+                                const deficit = watch('family_details.income_expense.deficit_monthly');
+                                if (deficit > 0 && (!value || value === 0)) {
+                                  return 'Scholarship is required when there is a deficit';
+                                }
+                                return true;
+                              }
+                            })}
                             onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const monthlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.scholarship_yearly', monthlyValue * 12);
                             }}
                           />
+                          {errors.family_details?.income_expense?.scholarship_monthly && (
+                            <span className="text-red-500 text-xs">{errors.family_details.income_expense.scholarship_monthly.message}</span>
+                          )}
                         </td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            {...register('family_details.income_expense.scholarship_yearly', { required: 'Scholarship yearly is required', valueAsNumber: true })}
+                            {...register('family_details.income_expense.scholarship_yearly', { valueAsNumber: true })}
                             onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const yearlyValue = parseFloat(e.target.value) || 0;
@@ -2750,24 +3218,39 @@ const CounselingForm = () => {
                       </tr>
                       <tr>
                         <td className="border border-gray-300 px-3 py-2 text-center">4</td>
-                        <td className="border border-gray-300 px-3 py-2">Borrowing/Qardan etc. <span className="text-red-500">*</span></td>
+                        <td className="border border-gray-300 px-3 py-2">
+                          Borrowing/Qardan etc.
+                          {watch('family_details.income_expense.deficit_monthly') > 0 && <span className="text-red-500"> *</span>}
+                        </td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            {...register('family_details.income_expense.borrowing_monthly', { required: 'Borrowing monthly is required', valueAsNumber: true })}
+                            {...register('family_details.income_expense.borrowing_monthly', { 
+                              valueAsNumber: true,
+                              validate: (value) => {
+                                const deficit = watch('family_details.income_expense.deficit_monthly');
+                                if (deficit > 0 && (!value || value === 0)) {
+                                  return 'Borrowing is required when there is a deficit';
+                                }
+                                return true;
+                              }
+                            })}
                             onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const monthlyValue = parseFloat(e.target.value) || 0;
                               setValue('family_details.income_expense.borrowing_yearly', monthlyValue * 12);
                             }}
                           />
+                          {errors.family_details?.income_expense?.borrowing_monthly && (
+                            <span className="text-red-500 text-xs">{errors.family_details.income_expense.borrowing_monthly.message}</span>
+                          )}
                         </td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            {...register('family_details.income_expense.borrowing_yearly', { required: 'Borrowing yearly is required', valueAsNumber: true })}
+                            {...register('family_details.income_expense.borrowing_yearly', { valueAsNumber: true })}
                             onKeyPress={handleDecimalInput}
                             onChange={(e) => {
                               const yearlyValue = parseFloat(e.target.value) || 0;
@@ -2791,51 +3274,51 @@ const CounselingForm = () => {
                     <div className="space-y-3">
                       <Input
                         label="Residential"
-                        type="number"
                         required
-                        onKeyPress={handleDecimalInput}
-                        {...register('family_details.assets_liabilities.assets.residential', { required: 'Residential assets is required', valueAsNumber: true })}
+                        {...register('family_details.assets_liabilities.assets.residential', { required: 'Residential assets is required' })}
                         error={errors.family_details?.assets_liabilities?.assets?.residential?.message}
+                        disabled={!canUpdateSection('family')}
+                        className={!canUpdateSection('family') ? 'bg-gray-100' : ''}
                       />
                       <Input
                         label="Shop/Godown/Land"
-                        type="number"
                         required
-                        onKeyPress={handleDecimalInput}
-                        {...register('family_details.assets_liabilities.assets.shop_godown_land', { required: 'Shop/Godown/Land is required', valueAsNumber: true })}
+                        {...register('family_details.assets_liabilities.assets.shop_godown_land', { required: 'Shop/Godown/Land is required' })}
                         error={errors.family_details?.assets_liabilities?.assets?.shop_godown_land?.message}
+                        disabled={!canUpdateSection('family')}
+                        className={!canUpdateSection('family') ? 'bg-gray-100' : ''}
                       />
                       <Input
                         label="Machinery/Vehicle"
-                        type="number"
                         required
-                        onKeyPress={handleDecimalInput}
-                        {...register('family_details.assets_liabilities.assets.machinery_vehicle', { required: 'Machinery/Vehicle is required', valueAsNumber: true })}
+                        {...register('family_details.assets_liabilities.assets.machinery_vehicle', { required: 'Machinery/Vehicle is required' })}
                         error={errors.family_details?.assets_liabilities?.assets?.machinery_vehicle?.message}
+                        disabled={!canUpdateSection('family')}
+                        className={!canUpdateSection('family') ? 'bg-gray-100' : ''}
                       />
                       <Input
                         label="Stock/Raw material"
-                        type="number"
                         required
-                        onKeyPress={handleDecimalInput}
-                        {...register('family_details.assets_liabilities.assets.stock_raw_material', { required: 'Stock/Raw material is required', valueAsNumber: true })}
+                        {...register('family_details.assets_liabilities.assets.stock_raw_material', { required: 'Stock/Raw material is required' })}
                         error={errors.family_details?.assets_liabilities?.assets?.stock_raw_material?.message}
+                        disabled={!canUpdateSection('family')}
+                        className={!canUpdateSection('family') ? 'bg-gray-100' : ''}
                       />
                       <Input
                         label="Goods sold on credit"
-                        type="number"
                         required
-                        onKeyPress={handleDecimalInput}
-                        {...register('family_details.assets_liabilities.assets.goods_sold_credit', { required: 'Goods sold on credit is required', valueAsNumber: true })}
+                        {...register('family_details.assets_liabilities.assets.goods_sold_credit', { required: 'Goods sold on credit is required' })}
                         error={errors.family_details?.assets_liabilities?.assets?.goods_sold_credit?.message}
+                        disabled={!canUpdateSection('family')}
+                        className={!canUpdateSection('family') ? 'bg-gray-100' : ''}
                       />
                       <Input
                         label="Others"
-                        type="number"
                         required
-                        onKeyPress={handleDecimalInput}
-                        {...register('family_details.assets_liabilities.assets.others', { required: 'Other assets is required', valueAsNumber: true })}
+                        {...register('family_details.assets_liabilities.assets.others', { required: 'Other assets is required' })}
                         error={errors.family_details?.assets_liabilities?.assets?.others?.message}
+                        disabled={!canUpdateSection('family')}
+                        className={!canUpdateSection('family') ? 'bg-gray-100' : ''}
                       />
                     </div>
                   </div>
@@ -2942,7 +3425,7 @@ const CounselingForm = () => {
                     className={!canUpdateSection('assessment') ? 'bg-gray-100' : ''}
                   />
                   <Input
-                    label="3.1.2. Past work experience after education"
+                    label="3.1.2. Past Business/Service Experience"
                     required
                     {...register('assessment.background.work_experience', { required: 'Work experience is required' })}
                     error={errors.assessment?.background?.work_experience?.message}
@@ -2950,7 +3433,7 @@ const CounselingForm = () => {
                     className={!canUpdateSection('assessment') ? 'bg-gray-100' : ''}
                   />
                   <Input
-                    label="3.1.3. Present Business/Family Business"
+                    label="3.1.3. Current Business/Service"
                     required
                     {...register('assessment.background.family_business', { required: 'Present Business/Family Business is required' })}
                     error={errors.assessment?.background?.family_business?.message}
@@ -2985,106 +3468,19 @@ const CounselingForm = () => {
 
               {/* Proposed Business */}
               <div>
-                <h4 className="text-lg font-bold italic text-blue-600 mb-4">3.2. Applicant's Proposed Business</h4>
+                <h4 className="text-lg font-bold italic text-blue-600 mb-4">3.2. Applicant's Present Business</h4>
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      3.2.1. Specific Products/Service (Attach brochure, product catalogue if available)
-                    </label>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Mention top products, <u>specification</u>, units as applicable and costing and pricing details
-                    </p>
-                    
-                    {/* Products/Services Table */}
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full border border-gray-300 rounded-lg">
-                        <thead className="bg-green-50">
-                          <tr>
-                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-300">
-                              Specific Products / Service (Attach brochure, product catalogue if available)
-                            </th>
-                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-300">
-                              Unit (Nos. / Kg / liter)
-                            </th>
-                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-300">
-                              Cost
-                            </th>
-                            <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-300">
-                              Price
-                            </th>
-                            <th className="px-4 py-3 text-center text-sm font-medium text-gray-700 border-b border-gray-300">
-                              Action
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {productsServices.map((field, index) => (
-                            <tr key={field.id} className="border-b border-gray-200">
-                              <td className="px-4 py-3">
-                    <textarea
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                  rows={2}
-                                  {...register(`assessment.proposed_business.products_services.${index}.product_service`)}
-                                  placeholder="Product/Service name and details"
-                                />
-                              </td>
-                              <td className="px-4 py-3">
-                                <input
-                                  type="text"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                  {...register(`assessment.proposed_business.products_services.${index}.unit`)}
-                                  placeholder="Nos./Kg/Liter"
-                                />
-                              </td>
-                              <td className="px-4 py-3">
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                  {...register(`assessment.proposed_business.products_services.${index}.cost`)}
-                                  placeholder="0.00"
-                                />
-                              </td>
-                              <td className="px-4 py-3">
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                  {...register(`assessment.proposed_business.products_services.${index}.price`)}
-                                  placeholder="0.00"
-                                />
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => removeProductService(index)}
-                                  className="text-red-600 hover:text-red-800"
-                                >
-                                  Remove
-                                </Button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    
-                    <div className="mt-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => appendProductService({ product_service: '', unit: '', cost: '', price: '' })}
-                        className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-                      >
-                        + Add Product/Service
-                      </Button>
-                    </div>
-                    
-                    {/* Additional Business Information */}
-                    <div className="mt-6 pt-4 border-t border-gray-200">
+                  <Input
+                    label="3.2.1. Present Business Condition"
+                    required
+                    {...register('assessment.proposed_business.present_business_condition', { required: 'Present Business Condition is required' })}
+                    error={errors.assessment?.proposed_business?.present_business_condition?.message}
+                    disabled={!canUpdateSection('assessment')}
+                    className={!canUpdateSection('assessment') ? 'bg-gray-100' : ''}
+                  />
+                  
+                  {/* Additional Business Information */}
+                  <div className="pt-4 border-t border-gray-200">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -3144,7 +3540,6 @@ const CounselingForm = () => {
                         </div>
                       </div>
                     </div>
-                  </div>
                   <Input
                     label="3.2.2. Sourcing: Typical Suppliers & Credit period"
                     required
@@ -3158,10 +3553,48 @@ const CounselingForm = () => {
                     error={errors.assessment?.proposed_business?.selling?.message}
                   />
                   <Input
-                    label="3.2.4. Major expenses & overheads? amount?"
-                    required
-                    {...register('assessment.proposed_business.major_expenses', { required: 'Major expenses is required' })}
+                    label="3.2.4. Business Expenses"
+                    {...register('assessment.proposed_business.major_expenses')}
                     error={errors.assessment?.proposed_business?.major_expenses?.message}
+                    disabled={!canUpdateSection('assessment')}
+                    className={!canUpdateSection('assessment') ? 'bg-gray-100' : ''}
+                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      3.2.5. From where goods purchase/credit period/cash, products/services
+                    </label>
+                    <textarea
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      rows={4}
+                      {...register('assessment.proposed_business.goods_purchase')}
+                      placeholder="Enter details about goods purchase, credit period, cash, products/services"
+                      disabled={!canUpdateSection('assessment')}
+                    />
+                    {errors.assessment?.proposed_business?.goods_purchase && (
+                      <p className="text-red-500 text-sm mt-1">{errors.assessment.proposed_business.goods_purchase.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      3.2.6. Revenue
+                    </label>
+                    <textarea
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      rows={4}
+                      {...register('assessment.proposed_business.revenue')}
+                      placeholder="Enter revenue details"
+                      disabled={!canUpdateSection('assessment')}
+                    />
+                    {errors.assessment?.proposed_business?.revenue && (
+                      <p className="text-red-500 text-sm mt-1">{errors.assessment.proposed_business.revenue.message}</p>
+                    )}
+                  </div>
+                  <Input
+                    label="3.2.7. Profit Margin"
+                    {...register('assessment.proposed_business.profit_margin')}
+                    error={errors.assessment?.proposed_business?.profit_margin?.message}
+                    disabled={!canUpdateSection('assessment')}
+                    className={!canUpdateSection('assessment') ? 'bg-gray-100' : ''}
                   />
                 </div>
               </div>
@@ -3173,11 +3606,15 @@ const CounselingForm = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       3.3.1. Demand supply scenario of given product and services in target market <span className="text-red-500">*</span>
+                      <span className="text-gray-500 text-xs ml-2">(min 100 characters)</span>
                     </label>
                     <textarea
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                       rows={3}
-                      {...register('assessment.counselor_assessment.demand_supply', { required: 'Demand supply scenario is required' })}
+                      {...register('assessment.counselor_assessment.demand_supply', { 
+                        required: 'Demand supply scenario is required',
+                        minLength: { value: 100, message: 'Minimum 100 characters required' }
+                      })}
                     />
                     {errors.assessment?.counselor_assessment?.demand_supply && (
                       <p className="text-red-500 text-sm mt-1">{errors.assessment.counselor_assessment.demand_supply.message}</p>
@@ -3186,11 +3623,15 @@ const CounselingForm = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       3.3.2. Future growth potential considering applicant's present income <span className="text-red-500">*</span>
+                      <span className="text-gray-500 text-xs ml-2">(min 100 characters)</span>
                     </label>
                     <textarea
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                       rows={3}
-                      {...register('assessment.counselor_assessment.growth_potential', { required: 'Growth potential is required' })}
+                      {...register('assessment.counselor_assessment.growth_potential', { 
+                        required: 'Growth potential is required',
+                        minLength: { value: 100, message: 'Minimum 100 characters required' }
+                      })}
                     />
                     {errors.assessment?.counselor_assessment?.growth_potential && (
                       <p className="text-red-500 text-sm mt-1">{errors.assessment.counselor_assessment.growth_potential.message}</p>
@@ -3199,41 +3640,19 @@ const CounselingForm = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       3.3.3. How the applicant will grow business? How will he compete in market and increase number of customers & profit over the years? <span className="text-red-500">*</span>
+                      <span className="text-gray-500 text-xs ml-2">(min 100 characters)</span>
                     </label>
                     <textarea
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                       rows={3}
-                      {...register('assessment.counselor_assessment.competition_strategy', { required: 'Competition strategy is required' })}
+                      {...register('assessment.counselor_assessment.competition_strategy', { 
+                        required: 'Competition strategy is required',
+                        minLength: { value: 100, message: 'Minimum 100 characters required' }
+                      })}
                     />
                     {errors.assessment?.counselor_assessment?.competition_strategy && (
                       <p className="text-red-500 text-sm mt-1">{errors.assessment.counselor_assessment.competition_strategy.message}</p>
                     )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      3.3.4. Support needed in below mentioned areas
-                    </label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {[
-                        'Industry/Product Knowledge',
-                        'Sourcing Support',
-                        'Sales/Market Access',
-                        'Internship/Skill Development',
-                        'Mentoring & Handholding',
-                        'Book keeping'
-                      ].map((support) => (
-                        <label key={support} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            value={support}
-                            {...register('assessment.counselor_assessment.support_needed')}
-                            className="mr-2"
-                          />
-                          <span className="text-sm">{support}</span>
-                        </label>
-                      ))}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -3293,60 +3712,754 @@ const CounselingForm = () => {
                     )}
                   </div>
 
-                  {/* Timeline */}
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h5 className="text-sm font-medium text-gray-700">Timeline (Tentative)</h5>
+                  {/* 4.1 Action Plan */}
+                  <div className="mt-6">
+                    <h4 className="text-md font-medium text-gray-900 mb-4">4.1 Action Plan</h4>
+                    
+                    {/* Context Questions */}
+                    <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
+                      <div className="space-y-2 text-sm">
+                        <p className="font-medium text-gray-800">
+                          How the applicant can take advantage of available opportunity in phased manner?
+                        </p>
+                        <p className="font-medium text-gray-800">
+                          What action plan is proposed over next 3 to 5 year to increase income 3 to 5 times by taking advantage of above-mentioned business opportunity?
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Action Plan Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse border border-gray-300">
+                        <thead>
+                          <tr>
+                            <th className="bg-yellow-100 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                              Time-line
+                            </th>
+                            <th className="bg-yellow-100 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {/* Row 1: upto 1st year end */}
+                          <tr>
+                            <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top w-1/4">
+                              <span className="text-sm font-medium text-gray-800">upto 1st year end</span>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {actionPlanItems.upto_1st_year_end.map((item, index) => (
+                                  <div key={item.id} className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-gray-700 flex-shrink-0 pt-1">
+                                      {getActionNumber('upto_1st_year_end', index)}.
+                                    </span>
+                                    <div className="flex-1">
+                                      <Input
+                                        value={item.action_text}
+                                        onChange={(e) => updateActionPlanItem('upto_1st_year_end', index, e.target.value)}
+                                        className="w-full"
+                                      />
+                                    </div>
+                                    {index > 0 && (
+                                      <Button
+                                        type="button"
+                                        variant="danger"
+                                        size="sm"
+                                        onClick={() => removeActionPlanItem('upto_1st_year_end', index)}
+                                        className="flex-shrink-0"
+                                      >
+                                        Remove
+                                      </Button>
+                                    )}
+                                  </div>
+                                ))}
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => appendTimelineItem({ timeline: '', purpose: '', amount: '', support_document: '' })}
+                                  size="sm"
+                                  onClick={() => addActionPlanItem('upto_1st_year_end')}
                       >
-                        Add Timeline Item
+                                  Add Action
                       </Button>
                     </div>
+                            </td>
+                          </tr>
 
-                    <div className="space-y-4">
-                      {timelineItems.map((item, index) => (
-                        <Card key={item.id} className="p-4">
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          {/* Row 2: 2nd and 3rd year */}
+                          <tr>
+                            <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top w-1/4">
+                              <span className="text-sm font-medium text-gray-800">2nd and 3rd year</span>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {actionPlanItems['2nd_and_3rd_year'].map((item, index) => (
+                                  <div key={item.id} className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-gray-700 flex-shrink-0 pt-1">
+                                      {getActionNumber('2nd_and_3rd_year', index)}.
+                                    </span>
+                                    <div className="flex-1">
                             <Input
-                              label="Timeline"
-                              required
-                              {...register(`financial_assistance.timeline.${index}.timeline`, { required: 'Timeline is required' })}
-                              error={errors.financial_assistance?.timeline?.[index]?.timeline?.message}
-                            />
-                            <Input
-                              label="Purpose (end-use)"
-                              required
-                              {...register(`financial_assistance.timeline.${index}.purpose`, { required: 'Purpose is required' })}
-                              error={errors.financial_assistance?.timeline?.[index]?.purpose?.message}
-                            />
-                            <Input
-                              label="Amount required"
-                              required
-                              {...register(`financial_assistance.timeline.${index}.amount`, { required: 'Amount is required' })}
-                              error={errors.financial_assistance?.timeline?.[index]?.amount?.message}
-                            />
-                            <div className="flex items-end space-x-2">
-                              <Input
-                                label="Support Document"
-                                required
-                                {...register(`financial_assistance.timeline.${index}.support_document`, { required: 'Support document is required' })}
-                                error={errors.financial_assistance?.timeline?.[index]?.support_document?.message}
-                              />
+                                        value={item.action_text}
+                                        onChange={(e) => updateActionPlanItem('2nd_and_3rd_year', index, e.target.value)}
+                                        className="w-full"
+                                      />
+                                    </div>
+                                    {index > 0 && (
                               <Button
                                 type="button"
                                 variant="danger"
-                                onClick={() => removeTimelineItem(index)}
+                                        size="sm"
+                                        onClick={() => removeActionPlanItem('2nd_and_3rd_year', index)}
+                                        className="flex-shrink-0"
                               >
                                 Remove
                               </Button>
+                                    )}
                             </div>
+                                ))}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addActionPlanItem('2nd_and_3rd_year')}
+                                >
+                                  Add Action
+                                </Button>
+                    </div>
+                            </td>
+                          </tr>
+
+                          {/* Row 3: 4th and 5th year */}
+                          <tr>
+                            <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top w-1/4">
+                              <span className="text-sm font-medium text-gray-800">4th and 5th year</span>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {actionPlanItems['4th_and_5th_year'].map((item, index) => (
+                                  <div key={item.id} className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-gray-700 flex-shrink-0 pt-1">
+                                      {getActionNumber('4th_and_5th_year', index)}.
+                                    </span>
+                                    <div className="flex-1">
+                    <Input
+                                        value={item.action_text}
+                                        onChange={(e) => updateActionPlanItem('4th_and_5th_year', index, e.target.value)}
+                                        className="w-full"
+                    />
+                  </div>
+                                    {index > 0 && (
+                      <Button
+                        type="button"
+                                        variant="danger"
+                        size="sm"
+                                        onClick={() => removeActionPlanItem('4th_and_5th_year', index)}
+                                        className="flex-shrink-0"
+                      >
+                                        Remove
+                      </Button>
+                                    )}
+                                  </div>
+                                ))}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addActionPlanItem('4th_and_5th_year')}
+                                >
+                                  Add Action
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    </div>
+                    
+                  {/* 4.2 Financial and non-financial assistance required */}
+                  <div className="mt-6">
+                    <h4 className="text-md font-medium text-gray-900 mb-4">4.2 Financial and non-financial assistance required</h4>
+                    
+                    {/* Instructional Text */}
+                    <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
+                      <div className="text-sm text-gray-800">
+                        <p className="mb-2">
+                          <strong>What financials assistance may be needed to implement the upliftment plan?</strong> Applicant may require investment in machinery, stock, raw material, furniture, shop (rent), packaging, promotion and marketing, business registration, etc.
+                        </p>
+                        <p>
+                          Wherever applicable, provide support documents for financial assistance such as quotation, photographs, descriptions etc. in attachments.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Timeline Assistance Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse border border-gray-300">
+                        <thead>
+                          <tr>
+                            <th className="bg-yellow-100 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                              Time line (Tentative)
+                            </th>
+                            <th className="bg-yellow-100 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                              Purpose (end-use) & Cost
+                            </th>
+                            <th className="bg-yellow-100 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                              Enayat
+                            </th>
+                            <th className="bg-yellow-100 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                              Qardan & Months**
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {/* Row 1: Immediate */}
+                          <tr>
+                            <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top w-1/5">
+                              <span className="text-sm font-medium text-gray-800">Immediate</span>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems.immediate.map((item, index) => (
+                                  <div key={item.id} className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-gray-700 flex-shrink-0 pt-1">
+                                      {getTimelineAssistanceNumber('immediate', index)}.
+                                    </span>
+                                    <div className="flex-1">
+                            <Input
+                                        value={item.purpose_cost}
+                                        onChange={(e) => updateTimelineAssistanceItem('immediate', index, 'purpose_cost', e.target.value)}
+                                        className="w-full"
+                                      />
+                                    </div>
+                                    {index > 0 && (
+                              <Button
+                                type="button"
+                                variant="danger"
+                                size="sm"
+                                        onClick={() => removeTimelineAssistanceItem('immediate', index)}
+                                        className="flex-shrink-0"
+                              >
+                                Remove
+                              </Button>
+                            )}
                           </div>
-                        </Card>
+                                ))}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addTimelineAssistanceItem('immediate')}
+                                >
+                                  Add Action
+                                </Button>
+                              </div>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems.immediate.map((item, index) => (
+                                  <div key={item.id}>
+                              <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={item.enayat}
+                                      onChange={(e) => updateTimelineAssistanceItem('immediate', index, 'enayat', e.target.value)}
+                                      onKeyPress={handleDecimalInput}
+                                      className="w-full"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems.immediate.map((item, index) => (
+                                  <div key={item.id} className="flex gap-2">
+                              <Input
+                                type="number"
+                                      step="0.01"
+                                      value={item.qardan}
+                                      onChange={(e) => updateTimelineAssistanceItem('immediate', index, 'qardan', e.target.value)}
+                                      onKeyPress={handleDecimalInput}
+                                      placeholder="Qardan"
+                                      className="flex-1"
+                                    />
+                                    <Input
+                                      type="number"
+                                      value={item.months}
+                                      onChange={(e) => updateTimelineAssistanceItem('immediate', index, 'months', e.target.value)}
+                                      onKeyPress={handleIntegerInput}
+                                placeholder="Months"
+                                      className="w-24"
+                              />
+                            </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+
+                          {/* Row 2: after 1st year */}
+                          <tr>
+                            <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top w-1/5">
+                              <span className="text-sm font-medium text-gray-800">after 1st year</span>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems.after_1st_yr.map((item, index) => (
+                                  <div key={item.id} className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-gray-700 flex-shrink-0 pt-1">
+                                      {getTimelineAssistanceNumber('after_1st_yr', index)}.
+                                    </span>
+                                    <div className="flex-1">
+                              <Input
+                                        value={item.purpose_cost}
+                                        onChange={(e) => updateTimelineAssistanceItem('after_1st_yr', index, 'purpose_cost', e.target.value)}
+                                        className="w-full"
+                                      />
+                                    </div>
+                                    {index > 0 && (
+                              <Button
+                                type="button"
+                                variant="danger"
+                                        size="sm"
+                                        onClick={() => removeTimelineAssistanceItem('after_1st_yr', index)}
+                                        className="flex-shrink-0"
+                              >
+                                Remove
+                              </Button>
+                                    )}
+                            </div>
+                                ))}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addTimelineAssistanceItem('after_1st_yr')}
+                                >
+                                  Add Action
+                                </Button>
+                          </div>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems.after_1st_yr.map((item, index) => (
+                                  <div key={item.id}>
+                              <Input
+                                type="number"
+                                      step="0.01"
+                                      value={item.enayat}
+                                      onChange={(e) => updateTimelineAssistanceItem('after_1st_yr', index, 'enayat', e.target.value)}
+                                      onKeyPress={handleDecimalInput}
+                                      className="w-full"
+                              />
+                            </div>
                       ))}
                     </div>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems.after_1st_yr.map((item, index) => (
+                                  <div key={item.id} className="flex gap-2">
+                              <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={item.qardan}
+                                      onChange={(e) => updateTimelineAssistanceItem('after_1st_yr', index, 'qardan', e.target.value)}
+                                      onKeyPress={handleDecimalInput}
+                                      placeholder="Qardan"
+                                      className="flex-1"
+                              />
+                              <Input
+                                type="number"
+                                      value={item.months}
+                                      onChange={(e) => updateTimelineAssistanceItem('after_1st_yr', index, 'months', e.target.value)}
+                                      onKeyPress={handleIntegerInput}
+                                placeholder="Months"
+                                      className="w-24"
+                              />
+                            </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+
+                          {/* Row 3: after 2nd year */}
+                          <tr>
+                            <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top w-1/5">
+                              <span className="text-sm font-medium text-gray-800">after 2nd year</span>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems.after_2nd_yr.map((item, index) => (
+                                  <div key={item.id} className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-gray-700 flex-shrink-0 pt-1">
+                                      {getTimelineAssistanceNumber('after_2nd_yr', index)}.
+                                    </span>
+                                    <div className="flex-1">
+                              <Input
+                                        value={item.purpose_cost}
+                                        onChange={(e) => updateTimelineAssistanceItem('after_2nd_yr', index, 'purpose_cost', e.target.value)}
+                                        className="w-full"
+                                      />
+                                    </div>
+                                    {index > 0 && (
+                                      <Button
+                                        type="button"
+                                        variant="danger"
+                                        size="sm"
+                                        onClick={() => removeTimelineAssistanceItem('after_2nd_yr', index)}
+                                        className="flex-shrink-0"
+                                      >
+                                        Remove
+                                      </Button>
+                                    )}
+                                  </div>
+                                ))}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addTimelineAssistanceItem('after_2nd_yr')}
+                                >
+                                  Add Action
+                                </Button>
+                              </div>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems.after_2nd_yr.map((item, index) => (
+                                  <div key={item.id}>
+                              <Input
+                                type="number"
+                                      step="0.01"
+                                      value={item.enayat}
+                                      onChange={(e) => updateTimelineAssistanceItem('after_2nd_yr', index, 'enayat', e.target.value)}
+                                      onKeyPress={handleDecimalInput}
+                                      className="w-full"
+                              />
+                            </div>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems.after_2nd_yr.map((item, index) => (
+                                  <div key={item.id} className="flex gap-2">
+                              <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={item.qardan}
+                                      onChange={(e) => updateTimelineAssistanceItem('after_2nd_yr', index, 'qardan', e.target.value)}
+                                      onKeyPress={handleDecimalInput}
+                                      placeholder="Qardan"
+                                      className="flex-1"
+                              />
+                              <Input
+                                type="number"
+                                      value={item.months}
+                                      onChange={(e) => updateTimelineAssistanceItem('after_2nd_yr', index, 'months', e.target.value)}
+                                      onKeyPress={handleIntegerInput}
+                                placeholder="Months"
+                                      className="w-24"
+                              />
+                            </div>
+                                ))}
+                          </div>
+                            </td>
+                          </tr>
+
+                          {/* Row 4: after 3rd year */}
+                          <tr>
+                            <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top w-1/5">
+                              <span className="text-sm font-medium text-gray-800"># after 3rd year</span>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems.after_3rd_yr.map((item, index) => (
+                                  <div key={item.id} className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-gray-700 flex-shrink-0 pt-1">
+                                      {getTimelineAssistanceNumber('after_3rd_yr', index)}.
+                                    </span>
+                                    <div className="flex-1">
+                                      <Input
+                                        value={item.purpose_cost}
+                                        onChange={(e) => updateTimelineAssistanceItem('after_3rd_yr', index, 'purpose_cost', e.target.value)}
+                                        className="w-full"
+                                      />
+                                    </div>
+                                    {index > 0 && (
+                                      <Button
+                                        type="button"
+                                        variant="danger"
+                                        size="sm"
+                                        onClick={() => removeTimelineAssistanceItem('after_3rd_yr', index)}
+                                        className="flex-shrink-0"
+                                      >
+                                        Remove
+                                      </Button>
+                                    )}
+                        </div>
+                      ))}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addTimelineAssistanceItem('after_3rd_yr')}
+                                >
+                                  Add Action
+                                </Button>
+                    </div>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems.after_3rd_yr.map((item, index) => (
+                                  <div key={item.id}>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={item.enayat}
+                                      onChange={(e) => updateTimelineAssistanceItem('after_3rd_yr', index, 'enayat', e.target.value)}
+                                      onKeyPress={handleDecimalInput}
+                                      className="w-full"
+                                    />
+                  </div>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems.after_3rd_yr.map((item, index) => (
+                                  <div key={item.id} className="flex gap-2">
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={item.qardan}
+                                      onChange={(e) => updateTimelineAssistanceItem('after_3rd_yr', index, 'qardan', e.target.value)}
+                                      onKeyPress={handleDecimalInput}
+                                      placeholder="Qardan"
+                                      className="flex-1"
+                                    />
+                                    <Input
+                                      type="number"
+                                      value={item.months}
+                                      onChange={(e) => updateTimelineAssistanceItem('after_3rd_yr', index, 'months', e.target.value)}
+                                      onKeyPress={handleIntegerInput}
+                                      placeholder="Months"
+                                      className="w-24"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+
+                          {/* Row 5: after 4th year */}
+                          <tr>
+                            <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top w-1/5">
+                              <span className="text-sm font-medium text-gray-800">after 4th year</span>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems.after_4th_yr.map((item, index) => (
+                                  <div key={item.id} className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-gray-700 flex-shrink-0 pt-1">
+                                      {getTimelineAssistanceNumber('after_4th_yr', index)}.
+                                    </span>
+                                    <div className="flex-1">
+                                      <Input
+                                        value={item.purpose_cost}
+                                        onChange={(e) => updateTimelineAssistanceItem('after_4th_yr', index, 'purpose_cost', e.target.value)}
+                                        className="w-full"
+                                      />
+                                    </div>
+                                    {index > 0 && (
+                      <Button
+                        type="button"
+                                        variant="danger"
+                        size="sm"
+                                        onClick={() => removeTimelineAssistanceItem('after_4th_yr', index)}
+                                        className="flex-shrink-0"
+                      >
+                                        Remove
+                      </Button>
+                                    )}
+                    </div>
+                                ))}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addTimelineAssistanceItem('after_4th_yr')}
+                                >
+                                  Add Action
+                                </Button>
+                              </div>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems.after_4th_yr.map((item, index) => (
+                                  <div key={item.id}>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={item.enayat}
+                                      onChange={(e) => updateTimelineAssistanceItem('after_4th_yr', index, 'enayat', e.target.value)}
+                                      onKeyPress={handleDecimalInput}
+                                      className="w-full"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems.after_4th_yr.map((item, index) => (
+                                  <div key={item.id} className="flex gap-2">
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={item.qardan}
+                                      onChange={(e) => updateTimelineAssistanceItem('after_4th_yr', index, 'qardan', e.target.value)}
+                                      onKeyPress={handleDecimalInput}
+                                      placeholder="Qardan"
+                                      className="flex-1"
+                                    />
+                                    <Input
+                                      type="number"
+                                      value={item.months}
+                                      onChange={(e) => updateTimelineAssistanceItem('after_4th_yr', index, 'months', e.target.value)}
+                                      onKeyPress={handleIntegerInput}
+                                      placeholder="Months"
+                                      className="w-24"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+
+                          {/* Row 6: 5th year */}
+                          <tr>
+                            <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top w-1/5">
+                              <span className="text-sm font-medium text-gray-800">5th year</span>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems['5th_yr'].map((item, index) => (
+                                  <div key={item.id} className="flex items-start gap-2">
+                                    <span className="text-sm font-medium text-gray-700 flex-shrink-0 pt-1">
+                                      {getTimelineAssistanceNumber('5th_yr', index)}.
+                                    </span>
+                                    <div className="flex-1">
+                                      <Input
+                                        value={item.purpose_cost}
+                                        onChange={(e) => updateTimelineAssistanceItem('5th_yr', index, 'purpose_cost', e.target.value)}
+                                        className="w-full"
+                                      />
+                                    </div>
+                                    {index > 0 && (
+                              <Button
+                                type="button"
+                                variant="danger"
+                                size="sm"
+                                        onClick={() => removeTimelineAssistanceItem('5th_yr', index)}
+                                        className="flex-shrink-0"
+                              >
+                                Remove
+                              </Button>
+                            )}
+                          </div>
+                                ))}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addTimelineAssistanceItem('5th_yr')}
+                                >
+                                  Add Action
+                                </Button>
+                              </div>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems['5th_yr'].map((item, index) => (
+                                  <div key={item.id}>
+                            <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={item.enayat}
+                                      onChange={(e) => updateTimelineAssistanceItem('5th_yr', index, 'enayat', e.target.value)}
+                                      onKeyPress={handleDecimalInput}
+                                      className="w-full"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                              <div className="space-y-2">
+                                {timelineAssistanceItems['5th_yr'].map((item, index) => (
+                                  <div key={item.id} className="flex gap-2">
+                            <Input
+                                      type="number"
+                                      step="0.01"
+                                      value={item.qardan}
+                                      onChange={(e) => updateTimelineAssistanceItem('5th_yr', index, 'qardan', e.target.value)}
+                                      onKeyPress={handleDecimalInput}
+                                      placeholder="Qardan"
+                                      className="flex-1"
+                            />
+                            <Input
+                                      type="number"
+                                      value={item.months}
+                                      onChange={(e) => updateTimelineAssistanceItem('5th_yr', index, 'months', e.target.value)}
+                                      onKeyPress={handleIntegerInput}
+                                      placeholder="Months"
+                                      className="w-24"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+
+                          {/* Total Row */}
+                          <tr className="bg-gray-50">
+                            <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top w-1/5">
+                              <span className="text-sm font-semibold text-gray-900">TOTAL</span>
+                            </td>
+                            <td className="bg-gray-50 border border-gray-300 px-4 py-4 align-top">
+                              {/* Empty for Purpose column */}
+                            </td>
+                            <td className="bg-gray-50 border border-gray-300 px-4 py-4 align-top">
+                            <Input
+                                value={calculateTotalEnayat().toFixed(2)}
+                                disabled
+                                className="w-full bg-gray-100"
+                              />
+                            </td>
+                            <td className="bg-gray-50 border border-gray-300 px-4 py-4 align-top">
+                            <Input
+                                value={calculateTotalQardan().toFixed(2)}
+                                disabled
+                                className="w-full bg-gray-100"
+                              />
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                          </div>
+                    
+                    {/* Notes below table */}
+                    <div className="mt-4 space-y-2 text-sm text-gray-700">
+                      <p>
+                        # After 3rd year or before local Qardan can be extended to support business needs or avoid capital reduction due to ongoing Qardan repayment
+                      </p>
+                      <p>
+                        ** Repayment can be staggered. Need NOT be equal amount during all years.
+                      </p>
+                        </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3366,281 +4479,534 @@ const CounselingForm = () => {
 
                   {/* Repayment Schedule */}
                   <div>
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="mb-4">
                       <h5 className="text-sm font-medium text-gray-700">Yearly Repayment Schedule from the date of disbursement</h5>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={addQhGroup}
-                      >
-                        Add QH
-                      </Button>
                     </div>
                     
-                    {/* QH Groups */}
-                    <div className="space-y-6">
-                      {qhGroups.map((group, groupIndex) => (
-                        <div key={group.id} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-4">
-                            <h6 className="text-sm font-medium text-gray-600">{group.name}</h6>
-                            {qhGroups.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="danger"
-                                size="sm"
-                                onClick={() => removeQhGroup(group.id)}
-                              >
-                                Remove
-                              </Button>
-                            )}
-                          </div>
-                          <div className="space-y-4">
-                            {/* Year 1 and Months */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <Input
-                                label="Year 1"
-                                value={group.year1}
-                                onChange={(e) => updateQhGroupField(group.id, 'year1', e.target.value)}
-                              />
-                              <Input
-                                label="Months"
-                                type="number"
-                                min="1"
-                                maxLength="2"
-                                value={group.month1}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  // Allow only up to 2 digits, positive number
-                                  if (value === '' || (value.length <= 2 && /^\d+$/.test(value) && parseInt(value) > 0)) {
-                                    updateQhGroupField(group.id, 'month1', value);
-                                  }
-                                }}
-                                placeholder="Months"
-                              />
-                            </div>
-                            {/* Year 2 and Months */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <Input
-                                label="Year 2"
-                                value={group.year2}
-                                onChange={(e) => updateQhGroupField(group.id, 'year2', e.target.value)}
-                              />
-                              <Input
-                                label="Months"
-                                type="number"
-                                min="1"
-                                maxLength="2"
-                                value={group.month2}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  // Allow only up to 2 digits, positive number
-                                  if (value === '' || (value.length <= 2 && /^\d+$/.test(value) && parseInt(value) > 0)) {
-                                    updateQhGroupField(group.id, 'month2', value);
-                                  }
-                                }}
-                                placeholder="Months"
-                              />
-                            </div>
-                            {/* Year 3 and Months */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <Input
-                                label="Year 3"
-                                value={group.year3}
-                                onChange={(e) => updateQhGroupField(group.id, 'year3', e.target.value)}
-                              />
-                              <Input
-                                label="Months"
-                                type="number"
-                                min="1"
-                                maxLength="2"
-                                value={group.month3}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  // Allow only up to 2 digits, positive number
-                                  if (value === '' || (value.length <= 2 && /^\d+$/.test(value) && parseInt(value) > 0)) {
-                                    updateQhGroupField(group.id, 'month3', value);
-                                  }
-                                }}
-                                placeholder="Months"
-                              />
-                            </div>
-                            {/* Year 4 and Months */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <Input
-                                label="Year 4"
-                                value={group.year4}
-                                onChange={(e) => updateQhGroupField(group.id, 'year4', e.target.value)}
-                              />
-                              <Input
-                                label="Months"
-                                type="number"
-                                min="1"
-                                maxLength="2"
-                                value={group.month4}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  // Allow only up to 2 digits, positive number
-                                  if (value === '' || (value.length <= 2 && /^\d+$/.test(value) && parseInt(value) > 0)) {
-                                    updateQhGroupField(group.id, 'month4', value);
-                                  }
-                                }}
-                                placeholder="Months"
-                              />
-                            </div>
-                            {/* Year 5 and Months */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <Input
-                                label="Year 5"
-                                value={group.year5}
-                                onChange={(e) => updateQhGroupField(group.id, 'year5', e.target.value)}
-                              />
-                              <Input
-                                label="Months"
-                                type="number"
-                                min="1"
-                                maxLength="2"
-                                value={group.month5}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  // Allow only up to 2 digits, positive number
-                                  if (value === '' || (value.length <= 2 && /^\d+$/.test(value) && parseInt(value) > 0)) {
-                                    updateQhGroupField(group.id, 'month5', value);
-                                  }
-                                }}
-                                placeholder="Months"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                    {/* QH Repayment Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse border border-gray-300">
+                        <thead>
+                          <tr>
+                            <th className="bg-yellow-100 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                              Repayment
+                            </th>
+                            <th className="bg-yellow-100 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                              Year 1
+                            </th>
+                            <th className="bg-yellow-100 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                              Year 2
+                            </th>
+                            <th className="bg-yellow-100 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                              Year 3
+                            </th>
+                            <th className="bg-yellow-100 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                              Year 4
+                            </th>
+                            <th className="bg-yellow-100 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-900">
+                              Year 5
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {/* QH 1 Row - Always visible */}
+                          {(() => {
+                            const qh1 = qhGroups.find(g => g.name === 'QH1' || g.name === 'QH 1') || qhGroups[0];
+                            return (
+                              <tr>
+                                <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top">
+                                  <span className="text-sm font-medium text-gray-800">QH 1</span>
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={qh1?.year1 || ''}
+                                    onChange={(e) => updateQhGroupField(qh1.id, 'year1', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={qh1?.year2 || ''}
+                                    onChange={(e) => updateQhGroupField(qh1.id, 'year2', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={qh1?.year3 || ''}
+                                    onChange={(e) => updateQhGroupField(qh1.id, 'year3', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={qh1?.year4 || ''}
+                                    onChange={(e) => updateQhGroupField(qh1.id, 'year4', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={qh1?.year5 || ''}
+                                    onChange={(e) => updateQhGroupField(qh1.id, 'year5', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                              </tr>
+                            );
+                          })()}
+                          
+                          {/* QH 2 Row - Always visible */}
+                          {(() => {
+                            const qh2 = qhGroups.find(g => g.name === 'QH2' || g.name === 'QH 2') || qhGroups[1];
+                            return (
+                              <tr>
+                                <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top">
+                                  <span className="text-sm font-medium text-gray-800">QH 2</span>
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={qh2?.year1 || ''}
+                                    onChange={(e) => updateQhGroupField(qh2.id, 'year1', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={qh2?.year2 || ''}
+                                    onChange={(e) => updateQhGroupField(qh2.id, 'year2', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={qh2?.year3 || ''}
+                                    onChange={(e) => updateQhGroupField(qh2.id, 'year3', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={qh2?.year4 || ''}
+                                    onChange={(e) => updateQhGroupField(qh2.id, 'year4', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={qh2?.year5 || ''}
+                                    onChange={(e) => updateQhGroupField(qh2.id, 'year5', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                              </tr>
+                            );
+                          })()}
+                          
+                          {/* QH 3 Row - Always visible */}
+                          {(() => {
+                            const qh3 = qhGroups.find(g => g.name === 'QH3' || g.name === 'QH 3') || qhGroups[2];
+                            return (
+                              <tr>
+                                <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top">
+                                  <span className="text-sm font-medium text-gray-800">QH 3</span>
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={qh3?.year1 || ''}
+                                    onChange={(e) => updateQhGroupField(qh3.id, 'year1', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={qh3?.year2 || ''}
+                                    onChange={(e) => updateQhGroupField(qh3.id, 'year2', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={qh3?.year3 || ''}
+                                    onChange={(e) => updateQhGroupField(qh3.id, 'year3', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={qh3?.year4 || ''}
+                                    onChange={(e) => updateQhGroupField(qh3.id, 'year4', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={qh3?.year5 || ''}
+                                    onChange={(e) => updateQhGroupField(qh3.id, 'year5', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                              </tr>
+                            );
+                          })()}
+                          
+                          {/* Local QH Row - Always visible */}
+                          {(() => {
+                            const localQh = qhGroups.find(g => g.name.toLowerCase().includes('local') || g.name === 'Local QH') || qhGroups[3];
+                            return (
+                              <tr>
+                                <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top">
+                                  <span className="text-sm font-medium text-gray-800">Local QH</span>
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={localQh?.year1 || ''}
+                                    onChange={(e) => updateQhGroupField(localQh.id, 'year1', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={localQh?.year2 || ''}
+                                    onChange={(e) => updateQhGroupField(localQh.id, 'year2', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={localQh?.year3 || ''}
+                                    onChange={(e) => updateQhGroupField(localQh.id, 'year3', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={localQh?.year4 || ''}
+                                    onChange={(e) => updateQhGroupField(localQh.id, 'year4', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                                <td className="bg-white border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={localQh?.year5 || ''}
+                                    onChange={(e) => updateQhGroupField(localQh.id, 'year5', e.target.value)}
+                                    className="w-full"
+                                  />
+                                </td>
+                              </tr>
+                            );
+                          })()}
+                          
+                          {/* TOTAL Row */}
+                          <tr className="bg-gray-50">
+                            <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top">
+                              <span className="text-sm font-semibold text-gray-900">TOTAL</span>
+                            </td>
+                            {[1, 2, 3, 4, 5].map(yearNum => {
+                              const total = qhGroups.reduce((sum, group) => {
+                                const yearValue = parseFloat(group[`year${yearNum}`]) || 0;
+                                return sum + yearValue;
+                              }, 0);
+                              return (
+                                <td key={yearNum} className="bg-gray-50 border border-gray-300 px-4 py-4 align-top">
+                                  <Input
+                                    value={total.toFixed(2)}
+                                    disabled
+                                    className="w-full bg-gray-100"
+                                  />
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
 
-                  {/* Enayat Repayment Schedule */}
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h5 className="text-sm font-medium text-gray-700">Enayat Repayment Schedule</h5>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={addEnayatGroup}
-                      >
-                        Add Enayat
-                      </Button>
-                    </div>
+                  {/* Support needed in below mentioned areas */}
+                  <div className="space-y-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Support needed in below mentioned areas
+                    </label>
                     
-                    {/* Enayat Groups */}
-                    <div className="space-y-6">
-                      {enayatGroups.map((group, groupIndex) => (
-                        <div key={group.id} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-4">
-                            <h6 className="text-sm font-medium text-gray-600">{group.name}</h6>
-                            {enayatGroups.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="danger"
-                                size="sm"
-                                onClick={() => removeEnayatGroup(group.id)}
-                              >
-                                Remove
-                              </Button>
-                            )}
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                            <Input
-                              label="Year 1"
-                              value={group.year1}
-                              onChange={(e) => updateEnayatGroupField(group.id, 'year1', e.target.value)}
-                            />
-                            <Input
-                              label="Year 2"
-                              value={group.year2}
-                              onChange={(e) => updateEnayatGroupField(group.id, 'year2', e.target.value)}
-                            />
-                            <Input
-                              label="Year 3"
-                              value={group.year3}
-                              onChange={(e) => updateEnayatGroupField(group.id, 'year3', e.target.value)}
-                            />
-                            <Input
-                              label="Year 4"
-                              value={group.year4}
-                              onChange={(e) => updateEnayatGroupField(group.id, 'year4', e.target.value)}
-                            />
-                            <Input
-                              label="Year 5"
-                              value={group.year5}
-                              onChange={(e) => updateEnayatGroupField(group.id, 'year5', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Non-Financial Help */}
-                  <div>
-                    <h5 className="text-sm font-medium text-gray-700 mb-4">What non-financial help may be needed for economic upliftment?</h5>
+                    {/* Support Area Checkboxes with Conditional Textareas */}
                     <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Mentoring
+                      {/* Industry/Product Knowledge */}
+                      <div className="border border-gray-200 rounded-md p-3">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            value="Industry/Product Knowledge"
+                            {...register('financial_assistance.support_needed')}
+                            className="mr-2"
+                          />
+                          <span className="text-sm font-medium">Industry/Product Knowledge</span>
                         </label>
-                        <textarea
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          rows={3}
-                          {...register('financial_assistance.non_financial_mentoring')}
-                          placeholder="Enter mentoring requirements..."
-                        />
+                        {watch('financial_assistance.support_needed')?.includes('Industry/Product Knowledge') && (
+                          <textarea
+                            className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            rows={2}
+                            placeholder="What Industry/Product Knowledge support is needed?"
+                            {...register('financial_assistance.support_industry_knowledge_desc')}
+                          />
+                        )}
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Skill Development
+
+                      {/* Sourcing Support */}
+                      <div className="border border-gray-200 rounded-md p-3">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            value="Sourcing Support"
+                            {...register('financial_assistance.support_needed')}
+                            className="mr-2"
+                          />
+                          <span className="text-sm font-medium">Sourcing Support</span>
                         </label>
-                        <textarea
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          rows={3}
-                          {...register('financial_assistance.non_financial_skill_development')}
-                          placeholder="Enter skill development requirements..."
-                        />
+                        {watch('financial_assistance.support_needed')?.includes('Sourcing Support') && (
+                          <textarea
+                            className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            rows={2}
+                            placeholder="What Sourcing Support is needed?"
+                            {...register('financial_assistance.support_sourcing_desc')}
+                          />
+                        )}
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Sourcing Support
+
+                      {/* Sales/Market Access */}
+                      <div className="border border-gray-200 rounded-md p-3">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            value="Sales/Market Access"
+                            {...register('financial_assistance.support_needed')}
+                            className="mr-2"
+                          />
+                          <span className="text-sm font-medium">Sales/Market Access</span>
                         </label>
-                        <textarea
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          rows={3}
-                          {...register('financial_assistance.non_financial_sourcing_support')}
-                          placeholder="Enter sourcing support requirements..."
-                        />
+                        {watch('financial_assistance.support_needed')?.includes('Sales/Market Access') && (
+                          <textarea
+                            className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            rows={2}
+                            placeholder="What Sales/Market Access support is needed?"
+                            {...register('financial_assistance.support_sales_market_desc')}
+                          />
+                        )}
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Sales/Market Access
+
+                      {/* Internship/Skill Development */}
+                      <div className="border border-gray-200 rounded-md p-3">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            value="Internship/Skill Development"
+                            {...register('financial_assistance.support_needed')}
+                            className="mr-2"
+                          />
+                          <span className="text-sm font-medium">Internship/Skill Development</span>
                         </label>
-                        <textarea
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          rows={3}
-                          {...register('financial_assistance.non_financial_sales_market_access')}
-                          placeholder="Enter sales/market access requirements..."
-                        />
+                        {watch('financial_assistance.support_needed')?.includes('Internship/Skill Development') && (
+                          <textarea
+                            className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            rows={2}
+                            placeholder="What Internship/Skill Development support is needed?"
+                            {...register('financial_assistance.support_internship_desc')}
+                          />
+                        )}
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Other / Solar
+
+                      {/* Mentoring & Handholding */}
+                      <div className="border border-gray-200 rounded-md p-3">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            value="Mentoring & Handholding"
+                            {...register('financial_assistance.support_needed')}
+                            className="mr-2"
+                          />
+                          <span className="text-sm font-medium">Mentoring & Handholding</span>
                         </label>
-                        <textarea
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          rows={3}
-                          {...register('financial_assistance.non_financial_other_solar')}
-                          placeholder="Enter other requirements or solar-related needs..."
-                        />
+                        {watch('financial_assistance.support_needed')?.includes('Mentoring & Handholding') && (
+                          <textarea
+                            className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            rows={2}
+                            placeholder="What Mentoring & Handholding support is needed?"
+                            {...register('financial_assistance.support_mentoring_handholding_desc')}
+                          />
+                        )}
+                      </div>
+
+                      {/* Book keeping */}
+                      <div className="border border-gray-200 rounded-md p-3">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            value="Book keeping"
+                            {...register('financial_assistance.support_needed')}
+                            className="mr-2"
+                          />
+                          <span className="text-sm font-medium">Book keeping</span>
+                        </label>
+                        {watch('financial_assistance.support_needed')?.includes('Book keeping') && (
+                          <textarea
+                            className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            rows={2}
+                            placeholder="What Book keeping support is needed?"
+                            {...register('financial_assistance.support_bookkeeping_desc')}
+                          />
+                        )}
                       </div>
                     </div>
+
+                    {/* Mentor Section - appears when any checkbox is selected */}
+                    {watch('financial_assistance.support_needed')?.length > 0 && (
+                      <div className="mt-6 border-t pt-4">
+                        <h5 className="text-sm font-medium text-gray-700 mb-4">Add Mentor</h5>
+                        
+                        {/* Mentor ITS Input */}
+                        <div className="flex gap-2 mb-4">
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={mentorItsInput}
+                              onChange={(e) => {
+                                setMentorItsInput(e.target.value.replace(/\D/g, '').slice(0, 8));
+                                setMentorError('');
+                              }}
+                              onKeyPress={async (e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (mentorItsInput.length !== 8) {
+                                    setMentorError('ITS number must be 8 digits');
+                                    return;
+                                  }
+                                  setMentorLoading(true);
+                                  setMentorError('');
+                                  try {
+                                    const response = await axios.get(`/api/applicants/lookup/${mentorItsInput}`);
+                                    if (response.data.success) {
+                                      const mentorData = response.data.data;
+                                      const currentMentors = watch('financial_assistance.support_mentors') || [];
+                                      // Check if mentor already added
+                                      if (currentMentors.some(m => m.its_number === mentorData.its_number)) {
+                                        setMentorError('This mentor is already added');
+                                      } else {
+                                        setValue('financial_assistance.support_mentors', [...currentMentors, mentorData]);
+                                        setMentorItsInput('');
+                                      }
+                                    }
+                                  } catch (error) {
+                                    setMentorError(error.response?.data?.error || 'Failed to find ITS number');
+                                  }
+                                  setMentorLoading(false);
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              placeholder="Enter ITS Number (8 digits) and press Enter"
+                              maxLength={8}
+                            />
+                            {mentorError && <p className="text-red-500 text-xs mt-1">{mentorError}</p>}
+                          </div>
+                          {mentorLoading && (
+                            <div className="flex items-center">
+                              <span className="text-gray-500 text-sm">Loading...</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Display Added Mentors */}
+                        <div className="space-y-4">
+                          {(watch('financial_assistance.support_mentors') || []).map((mentor, index) => (
+                            <div key={index} className="border border-gray-200 rounded-md p-4 bg-gray-50">
+                              <div className="flex gap-4">
+                                {/* Photo */}
+                                <div className="flex-shrink-0">
+                                  {mentor.photo ? (
+                                    <img 
+                                      src={mentor.photo} 
+                                      alt={mentor.name} 
+                                      className="w-20 h-20 rounded-md object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-20 h-20 rounded-md bg-gray-200 flex items-center justify-center">
+                                      <span className="text-gray-400 text-xs">No Photo</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Mentor Details */}
+                                <div className="flex-1 grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-xs text-gray-500">ITS Number</label>
+                                    <input
+                                      type="text"
+                                      value={mentor.its_number || ''}
+                                      readOnly
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded bg-gray-100"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs text-gray-500">Name</label>
+                                    <input
+                                      type="text"
+                                      value={mentor.name || ''}
+                                      onChange={(e) => {
+                                        const mentors = [...(watch('financial_assistance.support_mentors') || [])];
+                                        mentors[index].name = e.target.value;
+                                        setValue('financial_assistance.support_mentors', mentors);
+                                      }}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs text-gray-500">Contact Number</label>
+                                    <input
+                                      type="text"
+                                      value={mentor.contact_number || ''}
+                                      onChange={(e) => {
+                                        const mentors = [...(watch('financial_assistance.support_mentors') || [])];
+                                        mentors[index].contact_number = e.target.value;
+                                        setValue('financial_assistance.support_mentors', mentors);
+                                      }}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs text-gray-500">Email</label>
+                                    <input
+                                      type="email"
+                                      value={mentor.email || ''}
+                                      onChange={(e) => {
+                                        const mentors = [...(watch('financial_assistance.support_mentors') || [])];
+                                        mentors[index].email = e.target.value;
+                                        setValue('financial_assistance.support_mentors', mentors);
+                                      }}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                    />
+                                  </div>
+                                </div>
+                                
+                                {/* Remove Button */}
+                                <div className="flex-shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const mentors = (watch('financial_assistance.support_mentors') || []).filter((_, i) => i !== index);
+                                      setValue('financial_assistance.support_mentors', mentors);
+                                    }}
+                                    className="text-red-500 hover:text-red-700 text-sm"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
+
                 </div>
               </div>
 
@@ -3651,8 +5017,9 @@ const CounselingForm = () => {
                   onClick={() => {
                     const financialData = watch('financial_assistance');
                     financialData.qh_fields = qhGroups;
-                    financialData.enayat_fields = enayatGroups;
                     financialData.timeline = timelineItems;
+                    financialData.action_plan = actionPlanItems;
+                    financialData.timeline_assistance = timelineAssistanceItems;
                     handleSectionSaveAsDraft('financial_assistance', financialData);
                   }}
                   disabled={saveSectionMutation.isLoading || !canUpdateSection('financial')}
@@ -3665,8 +5032,9 @@ const CounselingForm = () => {
                   onClick={() => {
                     const financialData = watch('financial_assistance');
                     financialData.qh_fields = qhGroups;
-                    financialData.enayat_fields = enayatGroups;
                     financialData.timeline = timelineItems;
+                    financialData.action_plan = actionPlanItems;
+                    financialData.timeline_assistance = timelineAssistanceItems;
                     handleSectionSave('financial_assistance', financialData);
                   }}
                   disabled={saveSectionMutation.isLoading || !canUpdateSection('financial')}
@@ -3835,7 +5203,7 @@ const CounselingForm = () => {
                   <tr className="bg-white">
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">a) Raw material / stock <span className="text-red-500">*</span></div>
+                        <div className="text-sm font-medium text-gray-900">a) Total Cost of goods sold (COGS) <span className="text-red-500">*</span></div>
                         <div className="text-sm text-gray-500">Cost of raw materials and inventory</div>
                       </div>
                     </td>
@@ -4448,6 +5816,70 @@ const CounselingForm = () => {
                     </td>
                   </tr>
 
+                  {/* Other Income */}
+                  <tr className="bg-white">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">(-) Other Income</div>
+                        <div className="text-sm text-gray-500">Family Income and others</div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full text-center"
+                        {...register('economic_growth.profit_other_income_last_year', { valueAsNumber: true })}
+                      />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full text-center"
+                        {...register('economic_growth.profit_other_income_year1', { valueAsNumber: true })}
+                      />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full text-center"
+                        {...register('economic_growth.profit_other_income_year2', { valueAsNumber: true })}
+                      />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full text-center"
+                        {...register('economic_growth.profit_other_income_year3', { valueAsNumber: true })}
+                      />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full text-center"
+                        {...register('economic_growth.profit_other_income_year4', { valueAsNumber: true })}
+                      />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full text-center"
+                        {...register('economic_growth.profit_other_income_year5', { valueAsNumber: true })}
+                      />
+                    </td>
+                  </tr>
+
                   {/* House hold expense */}
                   <tr className="bg-white">
                     <td className="px-4 py-4 whitespace-nowrap">
@@ -4562,7 +5994,8 @@ const CounselingForm = () => {
                       <Input
                         type="number"
                         step="0.01"
-                        className="w-full text-center font-semibold"
+                        disabled={true}
+                        className="w-full text-center font-semibold bg-gray-100"
                         {...register('economic_growth.cash_surplus_last_year', { valueAsNumber: true })}
                       />
                     </td>
@@ -4570,7 +6003,8 @@ const CounselingForm = () => {
                       <Input
                         type="number"
                         step="0.01"
-                        className="w-full text-center font-semibold"
+                        disabled={true}
+                        className="w-full text-center font-semibold bg-gray-100"
                         {...register('economic_growth.cash_surplus_year1', { valueAsNumber: true })}
                       />
                     </td>
@@ -4578,7 +6012,8 @@ const CounselingForm = () => {
                       <Input
                         type="number"
                         step="0.01"
-                        className="w-full text-center font-semibold"
+                        disabled={true}
+                        className="w-full text-center font-semibold bg-gray-100"
                         {...register('economic_growth.cash_surplus_year2', { valueAsNumber: true })}
                       />
                     </td>
@@ -4586,7 +6021,8 @@ const CounselingForm = () => {
                       <Input
                         type="number"
                         step="0.01"
-                        className="w-full text-center font-semibold"
+                        disabled={true}
+                        className="w-full text-center font-semibold bg-gray-100"
                         {...register('economic_growth.cash_surplus_year3', { valueAsNumber: true })}
                       />
                     </td>
@@ -4594,7 +6030,8 @@ const CounselingForm = () => {
                       <Input
                         type="number"
                         step="0.01"
-                        className="w-full text-center font-semibold"
+                        disabled={true}
+                        className="w-full text-center font-semibold bg-gray-100"
                         {...register('economic_growth.cash_surplus_year4', { valueAsNumber: true })}
                       />
                     </td>
@@ -4602,18 +6039,81 @@ const CounselingForm = () => {
                       <Input
                         type="number"
                         step="0.01"
-                        className="w-full text-center font-semibold"
+                        disabled={true}
+                        className="w-full text-center font-semibold bg-gray-100"
                         {...register('economic_growth.cash_surplus_year5', { valueAsNumber: true })}
                       />
                     </td>
                   </tr>
 
-                  {/* Additional Qardan at the end of 1st year */}
+                  {/* Additional Enayat */}
+                  <tr className="bg-gray-50">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">(+) Additional Enayat</div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full text-center"
+                        {...register('economic_growth.cash_surplus_additional_enayat_last_year', { valueAsNumber: true })}
+                      />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full text-center"
+                        {...register('economic_growth.cash_surplus_additional_enayat_year1', { valueAsNumber: true })}
+                      />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full text-center"
+                        {...register('economic_growth.cash_surplus_additional_enayat_year2', { valueAsNumber: true })}
+                      />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full text-center"
+                        {...register('economic_growth.cash_surplus_additional_enayat_year3', { valueAsNumber: true })}
+                      />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full text-center"
+                        {...register('economic_growth.cash_surplus_additional_enayat_year4', { valueAsNumber: true })}
+                      />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full text-center"
+                        {...register('economic_growth.cash_surplus_additional_enayat_year5', { valueAsNumber: true })}
+                      />
+                    </td>
+                  </tr>
+
+                  {/* Additional Qardan */}
                   <tr className="bg-white">
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">(+) Additional Qardan at the end of 1st year</div>
-                        <div className="text-sm text-gray-500">Additional Qardan specifically at the end of the first year</div>
+                        <div className="text-sm font-medium text-gray-900">(+) Additional Qardan</div>
                       </div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
@@ -4674,6 +6174,9 @@ const CounselingForm = () => {
                 </tbody>
               </table>
             </div>
+            <p className="text-sm text-gray-600 mt-4">
+              ** In the years if there is deficit in initial years, provision for additional Qardan may be kept at the end of the year to fill the deficit. Also, the applicant will be eligible to take additional local qardan if his business grows and exiting qardan is insufficient for available growth opportunity.
+            </p>
           </div>
 
           <div className="mb-4">
@@ -5268,6 +6771,12 @@ const CounselingForm = () => {
                 </div>
               </div>
 
+              <div className="mb-4 mt-4">
+                <p className="text-sm text-gray-600">
+                  ** The applicant is encouraged to do Sale and Purchase both on CASH and NOT on Credit
+                </p>
+              </div>
+
               <div className="flex justify-end space-x-3">
                 <Button
                   type="button"
@@ -5311,9 +6820,10 @@ const CounselingForm = () => {
                   </h4>
                   <div className="bg-gray-50 p-4 rounded-md border">
                     <div className="text-sm text-gray-800 space-y-2">
-                      <p>1. The information about self, family, house hold budget, present business and proposed business is correct and free of any error.</p>
-                      <p>2. Any amount granted against this application will be in the form of refundable Qardan and will be utilized only for business purpose as mentioned in this application.</p>
-                      <p>3. The required documents such as KYC documents, Business registration, Financial Statements etc. will be provided to complete necessary formality as and when required.</p>
+                      <p>1. The information provided about his personal, family and present business are correct and free of any error</p>
+                      <p>2. He/she has understood the details filled in this form and purpose and content of Economic Upliftment Plan.</p>
+                      <p>3. By signing this form, he is applying for Enayat and Qardan amount as mentioned in 4.2 above</p>
+                      <p>4. Any amount granted against this application will be utilized only for economic upliftment purpose as mentioned in this application.</p>
                     </div>
                   </div>
                 </div>
@@ -5331,6 +6841,20 @@ const CounselingForm = () => {
                   </h4>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Applicant ITS Number - Auto-filled from personal details */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        ITS Number
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                        value={watch('declaration.applicant_its') || 'Loading...'}
+                        readOnly
+                        {...register('declaration.applicant_its')}
+                      />
+                    </div>
+
                     {/* Applicant Name - Auto-filled from personal details */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -5441,9 +6965,9 @@ const CounselingForm = () => {
                   </h4>
                   <div className="bg-gray-50 p-4 rounded-md border">
                     <div className="text-sm text-gray-800 space-y-2">
-                      <p>1. The applicant's potential and proposed business plan has been assessed keeping in mind larger objective of the SHND program, community development and business growth potential.</p>
-                      <p>2. The proposed business plan is realistic and feasible in local mauze context.</p>
-                      <p>3. The proposed business activity will help the applicant to grow income/saving 3 times over next three to five year in sustainable manner.</p>
+                      <p>1. The applicant's potential has been assessed and proposed action plan has been explained to the applicant along with the larger objective of the upliftment program.</p>
+                      <p>2. The proposed business/economic activity has potential in the suggested location and will increase income of the applicant over next three to five year in sustainable manner.</p>
+                      <p>3. The recommended economic upliftment plan is realistic and feasible in local mauze context.</p>
                     </div>
                   </div>
                 </div>
@@ -5461,6 +6985,20 @@ const CounselingForm = () => {
                   </h4>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Counselor ITS Number - Auto-filled from assigned counselor */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        ITS Number
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                        value={watch('declaration.counselor_its') || 'Loading...'}
+                        readOnly
+                        {...register('declaration.counselor_its')}
+                      />
+                    </div>
+
                     {/* Counselor Name - Auto-filled from assigned counselor */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -5572,6 +7110,64 @@ const CounselingForm = () => {
                   </h4>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* TR Committee Member ITS Number */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        ITS Number
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={trCommitteeItsInput || watch('declaration.tr_committee_its') || ''}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '').slice(0, 8);
+                            setTrCommitteeItsInput(value);
+                            setTrCommitteeError('');
+                          }}
+                          onKeyPress={async (e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const itsValue = trCommitteeItsInput || watch('declaration.tr_committee_its') || '';
+                              if (!itsValue || itsValue.length !== 8) {
+                                setTrCommitteeError('ITS number must be 8 digits');
+                                return;
+                              }
+                              setTrCommitteeLoading(true);
+                              setTrCommitteeError('');
+                              try {
+                                const response = await axios.get(`/api/applicants/lookup/${itsValue}`);
+                                if (response.data.success) {
+                                  const memberData = response.data.data;
+                                  setValue('declaration.tr_committee_its', memberData.its_number);
+                                  setValue('declaration.tr_committee_name', memberData.name);
+                                  setValue('declaration.tr_committee_contact', memberData.contact_number);
+                                  setTrCommitteeItsInput('');
+                                }
+                              } catch (error) {
+                                setTrCommitteeError(error.response?.data?.error || 'Failed to find ITS number');
+                              }
+                              setTrCommitteeLoading(false);
+                            }
+                          }}
+                          onBlur={() => {
+                            // Update form value when input loses focus
+                            if (trCommitteeItsInput) {
+                              setValue('declaration.tr_committee_its', trCommitteeItsInput);
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          placeholder="Enter ITS Number (8 digits) and press Enter"
+                          maxLength={8}
+                        />
+                        {trCommitteeLoading && (
+                          <div className="flex items-center">
+                            <span className="text-gray-500 text-sm">Loading...</span>
+                          </div>
+                        )}
+                      </div>
+                      {trCommitteeError && <p className="text-red-500 text-xs mt-1">{trCommitteeError}</p>}
+                    </div>
+
                     {/* TR Committee Member Name */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -5579,9 +7175,13 @@ const CounselingForm = () => {
                       </label>
                       <input
                         type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                          watch('declaration.tr_committee_name') ? 'bg-gray-50 text-gray-600' : ''
+                        }`}
+                        value={watch('declaration.tr_committee_name') || ''}
+                        readOnly={!!watch('declaration.tr_committee_name')}
                         {...register('declaration.tr_committee_name')}
-                        placeholder="Enter TR committee member name"
+                        placeholder="Enter TR committee member name or lookup by ITS"
                       />
                     </div>
 
@@ -5592,9 +7192,13 @@ const CounselingForm = () => {
                       </label>
                       <input
                         type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                          watch('declaration.tr_committee_contact') ? 'bg-gray-50 text-gray-600' : ''
+                        }`}
+                        value={watch('declaration.tr_committee_contact') || ''}
+                        readOnly={!!watch('declaration.tr_committee_contact')}
                         {...register('declaration.tr_committee_contact')}
-                        placeholder="Enter contact number"
+                        placeholder="Enter contact number or lookup by ITS"
                       />
                     </div>
                   </div>
@@ -6283,6 +7887,258 @@ const CounselingForm = () => {
                               }
                               
                               setValue('attachments.financial_statements_file', file);
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Cancelled Cheque - Single file */}
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <label className="flex items-center mb-3">
+                        <input
+                          type="checkbox"
+                          {...register('attachments.cancelled_cheque')}
+                          className="mr-3"
+                        />
+                        <span className="font-medium">Cancelled Cheque</span>
+                      </label>
+                      <div className="ml-6">
+                        {watch('attachments.cancelled_cheque_file') && (
+                          <div className="flex items-center justify-between bg-gray-50 p-2 rounded mb-2">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-700">{watch('attachments.cancelled_cheque_file').name}</span>
+                              {watch('attachments.cancelled_cheque_file').id && (
+                                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                  Uploaded
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {watch('attachments.cancelled_cheque_file').id && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    try {
+                                      const fileId = watch('attachments.cancelled_cheque_file').id;
+                                      const response = await axios.get(`/api/attachments/download/${fileId}`, {
+                                        responseType: 'blob'
+                                      });
+                                      
+                                      // Get the content type from the response headers
+                                      const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                      
+                                      // Create blob with the correct MIME type
+                                      const blob = new Blob([response.data], { type: contentType });
+                                      const url = window.URL.createObjectURL(blob);
+                                      window.open(url, '_blank');
+                                      
+                                      // Clean up the URL object after a delay
+                                      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                    } catch (error) {
+                                      console.error('Error downloading file:', error);
+                                      setError('Failed to download file');
+                                    }
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800 text-sm"
+                                >
+                                  View
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setValue('attachments.cancelled_cheque_file', null)}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                          className="text-sm"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              // Validate file size
+                              const error = validateFileSize(file);
+                              if (error) {
+                                setError(error);
+                                e.target.value = '';
+                                return;
+                              }
+                              
+                              setValue('attachments.cancelled_cheque_file', file);
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* PAN Card - Single file */}
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <label className="flex items-center mb-3">
+                        <input
+                          type="checkbox"
+                          {...register('attachments.pan_card')}
+                          className="mr-3"
+                        />
+                        <span className="font-medium">PAN Card</span>
+                      </label>
+                      <div className="ml-6">
+                        {watch('attachments.pan_card_file') && (
+                          <div className="flex items-center justify-between bg-gray-50 p-2 rounded mb-2">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-700">{watch('attachments.pan_card_file').name}</span>
+                              {watch('attachments.pan_card_file').id && (
+                                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                  Uploaded
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {watch('attachments.pan_card_file').id && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    try {
+                                      const fileId = watch('attachments.pan_card_file').id;
+                                      const response = await axios.get(`/api/attachments/download/${fileId}`, {
+                                        responseType: 'blob'
+                                      });
+                                      
+                                      // Get the content type from the response headers
+                                      const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                      
+                                      // Create blob with the correct MIME type
+                                      const blob = new Blob([response.data], { type: contentType });
+                                      const url = window.URL.createObjectURL(blob);
+                                      window.open(url, '_blank');
+                                      
+                                      // Clean up the URL object after a delay
+                                      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                    } catch (error) {
+                                      console.error('Error downloading file:', error);
+                                      setError('Failed to download file');
+                                    }
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800 text-sm"
+                                >
+                                  View
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setValue('attachments.pan_card_file', null)}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                          className="text-sm"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              // Validate file size
+                              const error = validateFileSize(file);
+                              if (error) {
+                                setError(error);
+                                e.target.value = '';
+                                return;
+                              }
+                              
+                              setValue('attachments.pan_card_file', file);
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Aadhar Card - Single file */}
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <label className="flex items-center mb-3">
+                        <input
+                          type="checkbox"
+                          {...register('attachments.aadhar_card')}
+                          className="mr-3"
+                        />
+                        <span className="font-medium">Aadhar Card</span>
+                      </label>
+                      <div className="ml-6">
+                        {watch('attachments.aadhar_card_file') && (
+                          <div className="flex items-center justify-between bg-gray-50 p-2 rounded mb-2">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-700">{watch('attachments.aadhar_card_file').name}</span>
+                              {watch('attachments.aadhar_card_file').id && (
+                                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                  Uploaded
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {watch('attachments.aadhar_card_file').id && (
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    try {
+                                      const fileId = watch('attachments.aadhar_card_file').id;
+                                      const response = await axios.get(`/api/attachments/download/${fileId}`, {
+                                        responseType: 'blob'
+                                      });
+                                      
+                                      // Get the content type from the response headers
+                                      const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                      
+                                      // Create blob with the correct MIME type
+                                      const blob = new Blob([response.data], { type: contentType });
+                                      const url = window.URL.createObjectURL(blob);
+                                      window.open(url, '_blank');
+                                      
+                                      // Clean up the URL object after a delay
+                                      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                    } catch (error) {
+                                      console.error('Error downloading file:', error);
+                                      setError('Failed to download file');
+                                    }
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800 text-sm"
+                                >
+                                  View
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setValue('attachments.aadhar_card_file', null)}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                          className="text-sm"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              // Validate file size
+                              const error = validateFileSize(file);
+                              if (error) {
+                                setError(error);
+                                e.target.value = '';
+                                return;
+                              }
+                              
+                              setValue('attachments.aadhar_card_file', file);
                             }
                           }}
                         />

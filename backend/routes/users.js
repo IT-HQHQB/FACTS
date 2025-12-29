@@ -3,8 +3,105 @@ const bcrypt = require('bcrypt');
 const { pool } = require('../config/database');
 const { authenticateToken, authorizeRoles, authorizePermission } = require('../middleware/auth');
 const { hasPermission } = require('../utils/permissionUtils');
+const multer = require('multer');
+const xlsx = require('xlsx');
+const axios = require('axios');
+const https = require('https');
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        file.mimetype === 'application/vnd.ms-excel') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only Excel files are allowed!'), false);
+    }
+  }
+});
+
+// Helper function to fetch user data from external API
+async function fetchUserDataFromAPI(itsNumber) {
+  try {
+    // Call external API for user data
+    const externalApiUrl = `https://counseling.dbohra.com/test/its-user/${itsNumber}`;
+    
+    const response = await axios.get(externalApiUrl, {
+      timeout: 10000, // 10 second timeout
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Baaseteen-CMS/1.0'
+      },
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: false // Handle SSL certificate issues
+      })
+    });
+
+    const apiData = response.data;
+    
+    // Check if we have valid data structure
+    if (!apiData || !apiData.data) {
+      throw new Error('No data found for this ITS number');
+    }
+
+    const userData = apiData.data;
+    
+    // Fetch photo from image API
+    let photoBase64 = null;
+    try {
+      const photoApiUrl = `http://13.127.158.101:3000/test/its-user-image/${itsNumber}`;
+      
+      const photoResponse = await axios.get(photoApiUrl, {
+        timeout: 10000,
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Baaseteen-CMS/1.0'
+        }
+      });
+      
+      // API response format: { "data": { "image": "path", "image_data": "base64string" } }
+      if (photoResponse.data && photoResponse.data.data && photoResponse.data.data.image_data) {
+        photoBase64 = photoResponse.data.data.image_data;
+        
+        // Ensure it has the data:image prefix if it's just base64
+        if (photoBase64 && !photoBase64.startsWith('data:')) {
+          photoBase64 = `data:image/jpeg;base64,${photoBase64}`;
+        }
+      }
+    } catch (photoError) {
+      console.log(`❌ Photo fetch failed for ITS ${itsNumber}: ${photoError.message}`);
+      // Continue without photo if photo API fails
+    }
+    
+    // Return only the fields we need for users
+    return {
+      success: true,
+      data: {
+        full_name: userData.Fullname || '',
+        phone: userData.Mobile || '',
+        photo: photoBase64
+      }
+    };
+  } catch (error) {
+    console.error(`Error fetching data for ITS ${itsNumber}:`, error.message);
+    return { 
+      success: false, 
+      error: error.response?.status === 404 ? 'ITS number not found' : error.message,
+      data: {
+        full_name: '',
+        phone: '',
+        photo: null
+      }
+    };
+  }
+}
 
 // Get all roles
 // Allow access if user has assign_case permission OR is one of the authorized roles
@@ -719,6 +816,275 @@ router.delete('/:userId', authenticateToken, authorizePermission('users', 'delet
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Delete user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Export sample Excel template for user import
+router.get('/export/template', authenticateToken, authorizePermission('users', 'read'), async (req, res) => {
+  try {
+    // Create sample data
+    const sampleData = [
+      { 
+        'ITS Number': '30335640',
+        'Email': 'user1@example.com',
+        'Username': 'user1.example',
+        'Role': 'Counselor'
+      },
+      { 
+        'ITS Number': '30335641',
+        'Email': 'user2@example.com',
+        'Username': 'user2.example',
+        'Role': 'Finance'
+      },
+      { 
+        'ITS Number': '30335642',
+        'Email': 'user3@example.com',
+        'Username': 'user3.example',
+        'Role': 'Operations Lead'
+      }
+    ];
+
+    // Create workbook and worksheet
+    const wb = xlsx.utils.book_new();
+    const ws = xlsx.utils.json_to_sheet(sampleData);
+
+    // Add worksheet to workbook
+    xlsx.utils.book_append_sheet(wb, ws, 'Users_Import_Template');
+
+    // Generate buffer
+    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    // Set response headers
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=users_import_template.xlsx');
+
+    // Send buffer
+    res.send(buffer);
+  } catch (error) {
+    console.error('Export template error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Import users from Excel
+router.post('/import-excel', authenticateToken, authorizePermission('users', 'create'), upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // Parse Excel file
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const data = xlsx.utils.sheet_to_json(worksheet);
+
+    if (data.length === 0) {
+      return res.status(400).json({ error: 'No data found in Excel file' });
+    }
+
+    // Validate required columns
+    const requiredColumns = ['ITS Number', 'Email', 'Username', 'Role'];
+    const firstRow = data[0];
+    const missingColumns = requiredColumns.filter(col => !(col in firstRow));
+    
+    if (missingColumns.length > 0) {
+      return res.status(400).json({ 
+        error: `Missing required columns: ${missingColumns.join(', ')}. Please ensure your Excel file has columns: ${requiredColumns.join(', ')}` 
+      });
+    }
+
+    // Get all active roles
+    const [roles] = await pool.execute('SELECT id, name FROM roles WHERE is_active = 1');
+    const validRoles = roles.map(r => r.name);
+    const roleMap = {};
+    roles.forEach(r => {
+      roleMap[r.name] = r.id;
+    });
+
+    // Get all active Jamiat IDs
+    const [allJamiat] = await pool.execute('SELECT id FROM jamiat WHERE is_active = 1');
+    const allJamiatIds = allJamiat.map(j => j.id.toString());
+    const jamiatIdsString = allJamiatIds.length > 0 ? allJamiatIds.join(',') : null;
+
+    // Get all active Jamaat IDs
+    const [allJamaat] = await pool.execute('SELECT id FROM jamaat WHERE is_active = 1');
+    const allJamaatIds = allJamaat.map(j => j.id.toString());
+    const jamaatIdsString = allJamaatIds.length > 0 ? allJamaatIds.join(',') : null;
+
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+    const errors = [];
+
+    try {
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        const rowNum = i + 2; // +2 because Excel rows start at 1 and we have a header
+
+        try {
+          const itsNumber = String(row['ITS Number'] || '').trim();
+          const email = String(row['Email'] || '').trim();
+          const username = String(row['Username'] || '').trim();
+          const role = String(row['Role'] || '').trim();
+
+          // Validate required fields
+          if (!itsNumber || !email || !username || !role) {
+            errors.push(`Row ${rowNum}: Missing required fields (ITS Number, Email, Username, or Role)`);
+            skipped++;
+            continue;
+          }
+
+          // Validate role
+          if (!validRoles.includes(role)) {
+            errors.push(`Row ${rowNum}: Invalid role "${role}". Valid roles: ${validRoles.join(', ')}`);
+            skipped++;
+            continue;
+          }
+
+          // Validate username format
+          const usernameRegex = /^[a-zA-Z0-9_.]{3,30}$/;
+          if (!usernameRegex.test(username)) {
+            errors.push(`Row ${rowNum}: Invalid username format. Username must be 3-30 characters and contain only letters, numbers, underscores, and dots`);
+            skipped++;
+            continue;
+          }
+
+          // Validate email format
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email)) {
+            errors.push(`Row ${rowNum}: Invalid email format`);
+            skipped++;
+            continue;
+          }
+
+          // Fetch user data from API
+          let fullName = '';
+          let phone = '';
+          let photo = null;
+          
+          const apiResult = await fetchUserDataFromAPI(itsNumber);
+          if (apiResult.success && apiResult.data) {
+            fullName = apiResult.data.full_name || '';
+            phone = apiResult.data.phone || '';
+            photo = apiResult.data.photo || null;
+          }
+
+          // Generate password: first 4 characters of username + ITS number
+          const passwordPrefix = username.substring(0, 4).toLowerCase();
+          const generatedPassword = `${passwordPrefix}${itsNumber}`;
+          const saltRounds = 10;
+          const password_hash = await bcrypt.hash(generatedPassword, saltRounds);
+
+          // Check if user exists (by email or username)
+          const [existingUsers] = await connection.execute(
+            'SELECT id FROM users WHERE email = ? OR username = ?',
+            [email, username]
+          );
+
+          const roleId = roleMap[role];
+
+          if (existingUsers.length > 0) {
+            // Update existing user
+            const userId = existingUsers[0].id;
+
+            // Update user fields
+            await connection.execute(
+              `UPDATE users SET 
+                email = ?, 
+                username = ?, 
+                full_name = ?, 
+                phone = ?, 
+                its_number = ?, 
+                role = ?, 
+                password_hash = ?,
+                photo = ?,
+                is_active = 1,
+                jamiat_ids = ?,
+                jamaat_ids = ?
+              WHERE id = ?`,
+              [email, username, fullName || null, phone || null, itsNumber, role, password_hash, photo, jamiatIdsString, jamaatIdsString, userId]
+            );
+
+            // Update role assignment
+            await connection.execute(
+              'UPDATE user_roles SET is_active = 0 WHERE user_id = ? AND is_active = 1',
+              [userId]
+            );
+
+            // Check if role assignment exists
+            const [existingRole] = await connection.execute(
+              'SELECT id FROM user_roles WHERE user_id = ? AND role_id = ?',
+              [userId, roleId]
+            );
+
+            if (existingRole.length > 0) {
+              await connection.execute(
+                'UPDATE user_roles SET is_active = 1, assigned_by = ?, assigned_at = NOW() WHERE user_id = ? AND role_id = ?',
+                [req.user.id, userId, roleId]
+              );
+            } else {
+              await connection.execute(
+                'INSERT INTO user_roles (user_id, role_id, assigned_by, expires_at) VALUES (?, ?, ?, NULL)',
+                [userId, roleId, req.user.id]
+              );
+            }
+
+            updated++;
+          } else {
+            // Create new user
+            const [result] = await connection.execute(
+              `INSERT INTO users (
+                username, email, password_hash, full_name, phone, its_number, 
+                role, is_active, photo, jamiat_ids, jamaat_ids
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+              [username, email, password_hash, fullName || null, phone || null, itsNumber, role, photo, jamiatIdsString, jamaatIdsString]
+            );
+
+            const userId = result.insertId;
+
+            // Create role assignment
+            if (roleId) {
+              await connection.execute(
+                'INSERT INTO user_roles (user_id, role_id, assigned_by, expires_at) VALUES (?, ?, ?, NULL)',
+                [userId, roleId, req.user.id]
+              );
+            }
+
+            inserted++;
+          }
+        } catch (rowError) {
+          console.error(`Error processing row ${rowNum}:`, rowError);
+          errors.push(`Row ${rowNum}: ${rowError.message || 'Unknown error'}`);
+          skipped++;
+        }
+      }
+
+      await connection.commit();
+      connection.release();
+
+      res.json({
+        success: true,
+        inserted,
+        updated,
+        skipped,
+        total: data.length,
+        errors: errors.length > 0 ? errors : undefined
+      });
+    } catch (transactionError) {
+      await connection.rollback();
+      connection.release();
+      throw transactionError;
+    }
+  } catch (error) {
+    console.error('Import Excel error:', error);
+    if (error.message === 'Only Excel files are allowed!') {
+      return res.status(400).json({ error: error.message });
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 });

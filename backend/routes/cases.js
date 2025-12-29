@@ -393,7 +393,7 @@ router.get('/', authenticateToken, async (req, res) => {
       LEFT JOIN workflow_stages ws ON c.current_workflow_stage_id = ws.id
       LEFT JOIN executive_levels el ON c.current_executive_level = el.level_number AND el.is_active = TRUE
       ${whereClause}
-      ORDER BY c.created_at DESC
+      ORDER BY CAST(REPLACE(c.case_number, 'BS-', '') AS UNSIGNED) DESC
       LIMIT ? OFFSET ?
     `;
 

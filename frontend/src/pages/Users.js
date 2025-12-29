@@ -69,6 +69,12 @@ const Users = () => {
   const [editApiError, setEditApiError] = useState('');
   const [isFullNameFromApi, setIsFullNameFromApi] = useState(false);
   const [isEditFullNameFromApi, setIsEditFullNameFromApi] = useState(false);
+  
+  // Excel import states
+  const [excelFile, setExcelFile] = useState(null);
+  const [excelImportLoading, setExcelImportLoading] = useState(false);
+  const [excelImportResult, setExcelImportResult] = useState(null);
+  const [excelImportError, setExcelImportError] = useState('');
 
   // Filtered jamaat based on selected jamiat
   const getFilteredJamaat = () => {
@@ -322,6 +328,136 @@ const Users = () => {
       setDeleteError(err.message);
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  // Download sample Excel template
+  const downloadTemplate = async () => {
+    try {
+      const response = await axios.get('/api/users/export/template', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        responseType: 'blob'
+      });
+
+      // Check if response is actually an error (sometimes errors come as blobs)
+      if (response.data instanceof Blob && response.data.type === 'application/json') {
+        const text = await response.data.text();
+        const jsonError = JSON.parse(text);
+        throw new Error(jsonError.error || 'Failed to download template');
+      }
+
+      // Create download link
+      const url = window.URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'users_import_template.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      
+      let errorMessage = 'Failed to download template';
+      
+      if (error.response) {
+        if (error.response.data instanceof Blob) {
+          try {
+            const text = await error.response.data.text();
+            const jsonError = JSON.parse(text);
+            errorMessage = jsonError.error || errorMessage;
+          } catch (parseError) {
+            if (error.response.status === 401) {
+              errorMessage = 'Authentication required. Please log in again.';
+            } else if (error.response.status === 403) {
+              errorMessage = 'You do not have permission to download the template.';
+            } else if (error.response.status >= 500) {
+              errorMessage = 'Server error. Please try again later.';
+            }
+          }
+        } else if (error.response.data?.error) {
+          errorMessage = error.response.data.error;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setExcelImportError(errorMessage);
+      setTimeout(() => setExcelImportError(''), 5000);
+    }
+  };
+
+  // Handle file selection
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const contentType = file.type;
+      if (!contentType.includes('spreadsheet') && !contentType.includes('excel') && !contentType.includes('application/vnd.openxmlformats')) {
+        setExcelImportError('Please select a valid Excel file (.xlsx or .xls)');
+        setExcelFile(null);
+        return;
+      }
+      setExcelFile(file);
+      setExcelImportError('');
+      setExcelImportResult(null);
+    }
+  };
+
+  // Handle Excel import
+  const handleExcelImport = async () => {
+    if (!excelFile) {
+      setExcelImportError('Please select an Excel file');
+      return;
+    }
+
+    try {
+      setExcelImportLoading(true);
+      setExcelImportError('');
+      setExcelImportResult(null);
+
+      const formData = new FormData();
+      formData.append('file', excelFile);
+
+      const response = await axios.post('/api/users/import-excel', formData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      setExcelImportResult(response.data);
+      setExcelFile(null);
+      
+      // Reset file input
+      const fileInput = document.getElementById('excel-file-input');
+      if (fileInput) {
+        fileInput.value = '';
+      }
+
+      // Refresh users list
+      fetchUsers();
+      fetchStats();
+
+      // Auto-dismiss success message after 5 seconds
+      setTimeout(() => {
+        setExcelImportResult(null);
+      }, 5000);
+    } catch (error) {
+      console.error('Error importing Excel:', error);
+      
+      let errorMessage = 'Failed to import Excel file';
+      
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setExcelImportError(errorMessage);
+    } finally {
+      setExcelImportLoading(false);
     }
   };
 
@@ -848,6 +984,59 @@ const Users = () => {
                 {users.length} user{users.length !== 1 ? 's' : ''} found
               </div>
               <Button
+                variant="outline"
+                onClick={downloadTemplate}
+                className="flex items-center space-x-2"
+                disabled={excelImportLoading}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Download Sample Excel</span>
+              </Button>
+              <div className="flex items-center space-x-2">
+                <input
+                  id="excel-file-input"
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  disabled={excelImportLoading}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => document.getElementById('excel-file-input')?.click()}
+                  disabled={excelImportLoading}
+                  className="flex items-center space-x-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <span>Select File</span>
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleExcelImport}
+                  disabled={excelImportLoading || !excelFile}
+                  loading={excelImportLoading}
+                  className="flex items-center space-x-2"
+                >
+                  {excelImportLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Importing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      <span>Import from Excel</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+              <Button
                 variant="primary"
                 onClick={openCreateModal}
                 className="flex items-center space-x-2"
@@ -859,6 +1048,42 @@ const Users = () => {
               </Button>
             </div>
           </div>
+
+          {/* Excel Import Results */}
+          {excelImportError && (
+            <Alert severity="error" onClose={() => setExcelImportError('')} className="mb-4">
+              {excelImportError}
+            </Alert>
+          )}
+          {excelImportResult && (
+            <Alert 
+              severity="success" 
+              onClose={() => setExcelImportResult(null)} 
+              className="mb-4"
+            >
+              <div>
+                <strong>Import Complete:</strong> {excelImportResult.inserted} inserted, {excelImportResult.updated} updated, {excelImportResult.skipped} skipped
+                {excelImportResult.errors && excelImportResult.errors.length > 0 && (
+                  <div className="mt-2">
+                    <strong>{excelImportResult.errors.length} error(s) occurred:</strong>
+                    <ul className="list-disc list-inside mt-1 text-sm">
+                      {excelImportResult.errors.slice(0, 10).map((error, idx) => (
+                        <li key={idx}>{error}</li>
+                      ))}
+                      {excelImportResult.errors.length > 10 && (
+                        <li>... and {excelImportResult.errors.length - 10} more errors</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </Alert>
+          )}
+          {excelFile && (
+            <Alert severity="info" className="mb-4">
+              Selected file: {excelFile.name}
+            </Alert>
+          )}
 
           {loading ? (
             <div className="flex items-center justify-center py-12">

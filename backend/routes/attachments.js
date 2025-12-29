@@ -44,7 +44,7 @@ const formatFileSize = (bytes) => {
 const updateAttachmentCount = async (caseId, stage) => {
   try {
     // Get counts for all stages
-    const stages = ['work_place_photo', 'quotation', 'product_brochure', 'income_tax_return', 'financial_statements', 'other_documents'];
+    const stages = ['work_place_photo', 'quotation', 'product_brochure', 'income_tax_return', 'financial_statements', 'other_documents', 'cancelled_cheque', 'pan_card', 'aadhar_card'];
     const counts = {};
     
     for (const stageName of stages) {
@@ -59,8 +59,9 @@ const updateAttachmentCount = async (caseId, stage) => {
     // This will insert if the record doesn't exist, or update if it does
     await pool.execute(`
       INSERT INTO attachments (case_id, work_place_photo, quotation, product_brochure, 
-                              income_tax_return, financial_statements, other_documents)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+                              income_tax_return, financial_statements, other_documents,
+                              cancelled_cheque, pan_card, aadhar_card)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         work_place_photo = VALUES(work_place_photo),
         quotation = VALUES(quotation),
@@ -68,6 +69,9 @@ const updateAttachmentCount = async (caseId, stage) => {
         income_tax_return = VALUES(income_tax_return),
         financial_statements = VALUES(financial_statements),
         other_documents = VALUES(other_documents),
+        cancelled_cheque = VALUES(cancelled_cheque),
+        pan_card = VALUES(pan_card),
+        aadhar_card = VALUES(aadhar_card),
         updated_at = CURRENT_TIMESTAMP
     `, [
       caseId,
@@ -76,7 +80,10 @@ const updateAttachmentCount = async (caseId, stage) => {
       counts.product_brochure,
       counts.income_tax_return,
       counts.financial_statements,
-      counts.other_documents
+      counts.other_documents,
+      counts.cancelled_cheque,
+      counts.pan_card,
+      counts.aadhar_card
     ]);
   } catch (error) {
     console.error('Error updating attachment count:', error);
@@ -93,7 +100,10 @@ const getStageFieldName = (stage) => {
     'product_brochure': 'product_brochure',
     'income_tax_return': 'income_tax_return',
     'financial_statements': 'financial_statements',
-    'other_documents': 'other_documents'
+    'other_documents': 'other_documents',
+    'cancelled_cheque': 'cancelled_cheque',
+    'pan_card': 'pan_card',
+    'aadhar_card': 'aadhar_card'
   };
   return stageMapping[stage] || null;
 };

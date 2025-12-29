@@ -11,14 +11,16 @@ import {
   Badge,
   Input,
   Modal,
-  Select
+  Select,
+  Pagination
 } from '../components/ui';
 
 const Applicants = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredApplicants, setFilteredApplicants] = useState([]);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createError, setCreateError] = useState('');
   const [createSuccess, setCreateSuccess] = useState('');
@@ -40,6 +42,8 @@ const Applicants = () => {
   const [editPendingJamaatId, setEditPendingJamaatId] = useState(null);
   const [editApiJamiatId, setEditApiJamiatId] = useState(null);
   const [editApiJamaatId, setEditApiJamaatId] = useState(null);
+  const [editApiFetchedData, setEditApiFetchedData] = useState(null); // Store API-fetched data for update
+  const [editDataRefreshedFromApi, setEditDataRefreshedFromApi] = useState(false); // Flag to track if data was refreshed
   
   // Photo preview state (from API)
   const [createPhotoPreview, setCreatePhotoPreview] = useState(null);
@@ -50,8 +54,26 @@ const Applicants = () => {
   const [applicantToDelete, setApplicantToDelete] = useState(null);
   const [deleteError, setDeleteError] = useState('');
 
+  // Bulk import state
+  const [bulkImportText, setBulkImportText] = useState('');
+  const [bulkImportLoading, setBulkImportLoading] = useState(false);
+  const [bulkImportResult, setBulkImportResult] = useState(null);
+  const [bulkImportError, setBulkImportError] = useState('');
+  
+  // Bulk fetch state
+  const [bulkFetchLoading, setBulkFetchLoading] = useState(false);
+  const [bulkFetchResult, setBulkFetchResult] = useState(null);
+  const [bulkFetchError, setBulkFetchError] = useState('');
+  const [pendingCount, setPendingCount] = useState(0);
+  
+  // Excel import state
+  const [excelFile, setExcelFile] = useState(null);
+  const [excelImportLoading, setExcelImportLoading] = useState(false);
+  const [excelImportResult, setExcelImportResult] = useState(null);
+  const [excelImportError, setExcelImportError] = useState('');
+
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue, trigger } = useForm();
-  const { register: registerEdit, handleSubmit: handleEditSubmit, formState: { errors: editErrors }, reset: resetEdit, watch: watchEdit, setValue: setEditValue } = useForm();
+  const { register: registerEdit, handleSubmit: handleEditSubmit, formState: { errors: editErrors }, reset: resetEdit, watch: watchEdit, setValue: setEditValue, getValues: getEditValues } = useForm();
   
   // Watch for ITS number changes in create modal
   const watchedCreateItsNumber = watch('its_number');
@@ -115,12 +137,18 @@ const Applicants = () => {
     }
   };
 
-  // Fetch applicants
+  // Fetch applicants with pagination
   const { data: applicantsData, isLoading, error, refetch } = useQuery(
-    'applicants',
-    () => axios.get('/api/applicants').then(res => res.data),
+    ['applicants', page, searchTerm, limit],
+    () => axios.get('/api/applicants', {
+      params: {
+        page,
+        limit,
+        ...(searchTerm && { search: searchTerm }),
+      },
+    }).then(res => res.data),
     {
-      select: (data) => data.applicants || [],
+      keepPreviousData: true,
     }
   );
 
@@ -288,17 +316,10 @@ const Applicants = () => {
     }
   );
 
-  // Filter applicants based on search term
+  // Reset page to 1 when search term or limit changes
   useEffect(() => {
-    if (applicantsData) {
-      const filtered = applicantsData.filter(applicant => 
-        applicant.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        applicant.its_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        applicant.email?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredApplicants(filtered);
-    }
-  }, [applicantsData, searchTerm]);
+    setPage(1);
+  }, [searchTerm, limit]);
 
   const handleCreateApplicant = () => {
     setCreateModalOpen(true);
@@ -480,15 +501,75 @@ const Applicants = () => {
         setEditApiJamaatId(apiData.jamaat_id);
       }
 
+      // Store the fetched API data for use during update
+      setEditApiFetchedData(apiData);
+      setEditDataRefreshedFromApi(true);
+
       setEditSuccess('Data fetched successfully from external API!');
       setEditError('');
       
     } catch (error) {
       console.error('❌ EDIT - API fetch error:', error);
       setEditApiError(error.response?.data?.error || 'Failed to fetch data from external API');
+      setEditApiFetchedData(null);
+      setEditDataRefreshedFromApi(false);
     } finally {
       setIsEditFetchingFromApi(false);
     }
+  };
+
+  // Handle refresh details button click
+  const handleRefreshDetails = async () => {
+    if (!editingApplicant) {
+      setEditApiError('No applicant selected');
+      return;
+    }
+
+    // Get current ITS number from form
+    const currentItsNumber = watchEdit('its_number');
+    
+    if (!currentItsNumber || currentItsNumber.trim().length < 3) {
+      setEditApiError('Please enter a valid ITS number (minimum 3 characters)');
+      return;
+    }
+
+    // Check if fields are missing or changed compared to original applicant data
+    const currentFormData = {
+      full_name: watchEdit('full_name'),
+      age: watchEdit('age'),
+      gender: watchEdit('gender'),
+      phone: watchEdit('phone'),
+      email: watchEdit('email'),
+      address: watchEdit('address'),
+      jamiat_name: watchEdit('jamiat_name'),
+      jamaat_name: watchEdit('jamaat_name')
+    };
+
+    const originalData = {
+      full_name: editingApplicant.full_name,
+      age: editingApplicant.age,
+      gender: editingApplicant.gender,
+      phone: editingApplicant.phone || '',
+      email: editingApplicant.email || '',
+      address: editingApplicant.address || '',
+      jamiat_name: editingApplicant.jamiat_name || '',
+      jamaat_name: editingApplicant.jamaat_name || ''
+    };
+
+    // Check if any field is missing or changed
+    const hasMissingFields = !currentFormData.full_name || !currentFormData.phone || !currentFormData.email;
+    const hasChangedFields = 
+      currentFormData.full_name !== originalData.full_name ||
+      currentFormData.age !== originalData.age ||
+      currentFormData.gender !== originalData.gender ||
+      currentFormData.phone !== originalData.phone ||
+      currentFormData.email !== originalData.email ||
+      currentFormData.address !== originalData.address ||
+      currentFormData.jamiat_name !== originalData.jamiat_name ||
+      currentFormData.jamaat_name !== originalData.jamaat_name;
+
+    // Always fetch from API when refresh button is clicked (user explicitly requested refresh)
+    await fetchFromApiForEdit(currentItsNumber.trim());
   };
 
   const onSubmit = async (data) => {
@@ -587,6 +668,11 @@ const Applicants = () => {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
       
+      // Explicitly get jamaat_name and jamiat_name from form state to ensure read-only field is captured
+      // Try getValues first (for read-only fields), then form data, then API fetched data as fallback
+      const jamaatName = getEditValues('jamaat_name') || data.jamaat_name || editApiFetchedData?.jamaat_name || '';
+      const jamiatName = getEditValues('jamiat_name') || data.jamiat_name || editApiFetchedData?.jamiat_name || '';
+      
       const applicantData = {
         its_number: data.its_number,
         first_name: firstName,
@@ -597,20 +683,27 @@ const Applicants = () => {
         email: data.email,
         photo: data.photo || null,
         address: data.address,
-        jamiat_name: data.jamiat_name,
-        jamaat_name: data.jamaat_name,
+        jamiat_name: jamiatName,
+        jamaat_name: jamaatName,
         jamiat_id: editApiJamiatId,
-        jamaat_id: editApiJamaatId
+        jamaat_id: editApiJamaatId,
+        refresh_from_api: editDataRefreshedFromApi // Flag to indicate data was refreshed from API
       };
       
       // Update applicant
       await axios.put(`/api/applicants/${editingApplicant.id}`, applicantData);
+      
+      // Reset refresh flag after update
+      setEditDataRefreshedFromApi(false);
+      setEditApiFetchedData(null);
       
       setEditSuccess('Applicant updated successfully!');
       resetEdit();
       setEditPhotoPreview(null);
       setEditModalOpen(false);
       setEditingApplicant(null);
+      setEditDataRefreshedFromApi(false);
+      setEditApiFetchedData(null);
       refetch(); // Refresh the applicants list
     } catch (error) {
       setEditError(error.response?.data?.error || 'Failed to update applicant');
@@ -635,8 +728,225 @@ const Applicants = () => {
     setEditSelectedJamiatId('');
     setEditingApplicant(null);
     setEditPhotoPreview(null);
+    setEditDataRefreshedFromApi(false);
+    setEditApiFetchedData(null);
     resetEdit();
   };
+
+  // Bulk import function
+  const handleBulkImport = async () => {
+    if (!bulkImportText.trim()) {
+      setBulkImportError('Please enter ITS numbers');
+      return;
+    }
+
+    setBulkImportLoading(true);
+    setBulkImportError('');
+    setBulkImportResult(null);
+
+    try {
+      // Parse ITS numbers from text (split by newline, comma, or space)
+      const itsNumbers = bulkImportText
+        .split(/[\n,\s]+/)
+        .map(num => num.trim())
+        .filter(num => num.length > 0);
+
+      if (itsNumbers.length === 0) {
+        setBulkImportError('No valid ITS numbers found');
+        setBulkImportLoading(false);
+        return;
+      }
+
+      const response = await axios.post('/api/applicants/bulk-import', {
+        its_numbers: itsNumbers
+      });
+
+      setBulkImportResult(response.data.summary);
+      setBulkImportText('');
+      refetch();
+      
+      // Refresh pending count
+      fetchPendingCount();
+    } catch (error) {
+      setBulkImportError(error.response?.data?.error || 'Failed to import ITS numbers');
+    } finally {
+      setBulkImportLoading(false);
+    }
+  };
+
+  // Bulk fetch function
+  const handleBulkFetch = async () => {
+    setBulkFetchLoading(true);
+    setBulkFetchError('');
+    setBulkFetchResult(null);
+
+    try {
+      const response = await axios.post('/api/applicants/bulk-fetch');
+      setBulkFetchResult(response.data.summary);
+      refetch();
+      
+      // Refresh pending count
+      fetchPendingCount();
+    } catch (error) {
+      setBulkFetchError(error.response?.data?.error || 'Failed to fetch details from API');
+    } finally {
+      setBulkFetchLoading(false);
+    }
+  };
+
+  // Fetch pending count
+  const fetchPendingCount = async () => {
+    try {
+      const response = await axios.get('/api/applicants/meta/pending-count');
+      setPendingCount(response.data.pendingCount);
+    } catch (error) {
+      console.error('Error fetching pending count:', error);
+    }
+  };
+
+  // Excel import function
+  const handleExcelImport = async () => {
+    if (!excelFile) {
+      setExcelImportError('Please select an Excel file');
+      return;
+    }
+
+    setExcelImportLoading(true);
+    setExcelImportError('');
+    setExcelImportResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', excelFile);
+
+      const response = await axios.post('/api/applicants/import-excel', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      setExcelImportResult(response.data.summary);
+      setExcelFile(null);
+      refetch();
+      
+      // Refresh pending count
+      fetchPendingCount();
+    } catch (error) {
+      setExcelImportError(error.response?.data?.error || 'Failed to import Excel file');
+    } finally {
+      setExcelImportLoading(false);
+    }
+  };
+
+  // Download sample Excel template
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await axios.get('/api/applicants/export-template', {
+        responseType: 'blob',
+        validateStatus: (status) => status < 500 // Don't throw for 4xx, we'll handle it
+      });
+
+      // Check if response status indicates an error (4xx or 5xx)
+      if (response.status >= 400) {
+        // Error response - try to parse as JSON
+        let errorText = '';
+        try {
+          errorText = await response.data.text();
+          const jsonError = JSON.parse(errorText);
+          throw new Error(jsonError.error || 'Failed to download template');
+        } catch (parseError) {
+          // If parsing fails, use status-based message
+          let errorMessage = 'Failed to download template';
+          if (response.status === 401) {
+            errorMessage = 'Authentication required. Please log in again.';
+          } else if (response.status === 403) {
+            errorMessage = 'You do not have permission to download the template.';
+          } else if (response.status === 404) {
+            errorMessage = 'Template not found.';
+          } else if (response.status >= 500) {
+            errorMessage = 'Server error. Please try again later.';
+          }
+          throw new Error(errorMessage);
+        }
+      }
+
+      // Check content type to ensure it's an Excel file
+      const contentType = response.headers['content-type'] || '';
+      if (!contentType.includes('spreadsheet') && !contentType.includes('excel') && !contentType.includes('application/vnd.openxmlformats')) {
+        // Might be a JSON error response disguised as blob
+        try {
+          const text = await response.data.text();
+          const jsonError = JSON.parse(text);
+          throw new Error(jsonError.error || 'Invalid file format received');
+        } catch (parseError) {
+          // If parsing fails, it might still be a valid blob, proceed with download
+        }
+      }
+
+      // Create download link
+      const url = window.URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'its_numbers_template.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      
+      let errorMessage = 'Failed to download template';
+      
+      if (error.response) {
+        // Handle error response - axios converts error responses to blobs when responseType is 'blob'
+        if (error.response.data instanceof Blob) {
+          try {
+            const text = await error.response.data.text();
+            const jsonError = JSON.parse(text);
+            errorMessage = jsonError.error || errorMessage;
+          } catch (parseError) {
+            // If it's not JSON, check status code
+            if (error.response.status === 401) {
+              errorMessage = 'Authentication required. Please log in again.';
+            } else if (error.response.status === 403) {
+              errorMessage = 'You do not have permission to download the template.';
+            } else if (error.response.status >= 500) {
+              errorMessage = 'Server error. Please try again later.';
+            }
+          }
+        } else if (error.response.data?.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response.status === 401) {
+          errorMessage = 'Authentication required. Please log in again.';
+        } else if (error.response.status === 403) {
+          errorMessage = 'You do not have permission to download the template.';
+        } else if (error.response.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
+    }
+  };
+
+  // Fetch pending count on mount and after refetch
+  useEffect(() => {
+    fetchPendingCount();
+  }, []);
+
+  // Update pending count when applicants data changes (as fallback)
+  // Note: This is a fallback calculation on current page only, server count is preferred
+  useEffect(() => {
+    if (applicantsData?.applicants) {
+      const pending = applicantsData.applicants.filter(
+        applicant => !applicant.full_name || !applicant.phone || !applicant.email
+      ).length;
+      // Update as fallback (server count is preferred)
+      setPendingCount(pending);
+    }
+  }, [applicantsData]);
 
 
 
@@ -761,6 +1071,153 @@ const Applicants = () => {
         </div>
       </div>
 
+      {/* Bulk Import Section */}
+      <Card className="mb-6">
+        <div className="p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Bulk Import & API Fetch</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Bulk Import from Text */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Import ITS Numbers (one per line or comma-separated)
+                </label>
+                <textarea
+                  value={bulkImportText}
+                  onChange={(e) => setBulkImportText(e.target.value)}
+                  placeholder="Enter ITS numbers, one per line or separated by commas..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={6}
+                  disabled={bulkImportLoading}
+                />
+              </div>
+              <Button
+                onClick={handleBulkImport}
+                disabled={bulkImportLoading || !bulkImportText.trim()}
+                loading={bulkImportLoading}
+                className="w-full"
+              >
+                {bulkImportLoading ? 'Importing...' : 'Bulk Import'}
+              </Button>
+              {bulkImportError && (
+                <Alert variant="error" onClose={() => setBulkImportError('')}>
+                  {bulkImportError}
+                </Alert>
+              )}
+              {bulkImportResult && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                  <p className="text-sm text-green-800">
+                    <strong>Import Complete:</strong> {bulkImportResult.inserted} inserted, {bulkImportResult.skipped} skipped
+                    {bulkImportResult.errors && bulkImportResult.errors.length > 0 && (
+                      <span className="block mt-1 text-red-600">
+                        {bulkImportResult.errors.length} error(s) occurred
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Excel Import */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Import from Excel File
+                </label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={(e) => setExcelFile(e.target.files[0])}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    disabled={excelImportLoading}
+                  />
+                  <Button
+                    variant="secondary"
+                    onClick={handleDownloadTemplate}
+                    disabled={excelImportLoading}
+                  >
+                    Download Sample
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Download sample Excel template to see the required format
+                </p>
+              </div>
+              <Button
+                onClick={handleExcelImport}
+                disabled={excelImportLoading || !excelFile}
+                loading={excelImportLoading}
+                className="w-full"
+              >
+                {excelImportLoading ? 'Importing...' : 'Import from Excel'}
+              </Button>
+              {excelImportError && (
+                <Alert variant="error" onClose={() => setExcelImportError('')}>
+                  {excelImportError}
+                </Alert>
+              )}
+              {excelImportResult && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                  <p className="text-sm text-green-800">
+                    <strong>Import Complete:</strong> {excelImportResult.inserted} inserted, {excelImportResult.skipped} skipped
+                    {excelImportResult.errors && excelImportResult.errors.length > 0 && (
+                      <span className="block mt-1 text-red-600">
+                        {excelImportResult.errors.length} error(s) occurred
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Bulk Fetch Section */}
+          <div className="border-t border-gray-200 pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">Fetch Details from API</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Fetches remaining details (photo, name, contact, etc.) for up to 30 pending applicants.
+                  Rate limit: 20 requests per 3 minutes.
+                </p>
+                {pendingCount > 0 && (
+                  <p className="text-sm text-blue-600 mt-1">
+                    {pendingCount} applicant(s) pending data fetch
+                  </p>
+                )}
+              </div>
+              <Button
+                onClick={handleBulkFetch}
+                disabled={bulkFetchLoading || pendingCount === 0}
+                loading={bulkFetchLoading}
+                variant="primary"
+              >
+                {bulkFetchLoading ? 'Fetching...' : 'Fetch Details from API'}
+              </Button>
+            </div>
+            {bulkFetchError && (
+              <Alert variant="error" onClose={() => setBulkFetchError('')}>
+                {bulkFetchError}
+              </Alert>
+            )}
+            {bulkFetchResult && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-800">
+                  <strong>Fetch Complete:</strong> {bulkFetchResult.fetched} fetched, {bulkFetchResult.failed} failed
+                  {bulkFetchResult.errors && bulkFetchResult.errors.length > 0 && (
+                    <span className="block mt-1 text-red-600">
+                      {bulkFetchResult.errors.length} error(s) occurred
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
+
       {/* Search and Stats */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -778,16 +1235,36 @@ const Applicants = () => {
                 </svg>
               </div>
             </div>
+            <div className="flex items-center space-x-2">
+              <label className="text-sm text-gray-700 whitespace-nowrap">Rows per page:</label>
+              <Select
+                value={limit.toString()}
+                onChange={(e) => setLimit(Number(e.target.value))}
+                className="w-32"
+              >
+                <Select.Option value="20">20</Select.Option>
+                <Select.Option value="50">50</Select.Option>
+                <Select.Option value="100">100</Select.Option>
+                <Select.Option value="500">500</Select.Option>
+                <Select.Option value="1500">1500</Select.Option>
+                <Select.Option value="2000">2000</Select.Option>
+                <Select.Option value="2500">2500</Select.Option>
+              </Select>
+            </div>
           </div>
           <div className="text-sm text-gray-600">
-            {filteredApplicants.length} of {applicantsData?.length || 0} applicants
+            {applicantsData?.pagination ? (
+              <>Showing {((applicantsData.pagination.page - 1) * applicantsData.pagination.limit) + 1} to {Math.min(applicantsData.pagination.page * applicantsData.pagination.limit, applicantsData.pagination.total)} of {applicantsData.pagination.total} applicants</>
+            ) : (
+              <>0 applicants</>
+            )}
           </div>
         </div>
       </div>
 
       {/* Applicants Table */}
       <Card>
-        {filteredApplicants.length === 0 ? (
+        {(!applicantsData?.applicants || applicantsData.applicants.length === 0) ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -810,11 +1287,23 @@ const Applicants = () => {
             )}
           </div>
         ) : (
-          <Table
-            data={filteredApplicants}
-            columns={columns}
-            keyField="id"
-          />
+          <>
+            <Table
+              data={applicantsData.applicants}
+              columns={columns}
+              keyField="id"
+            />
+            {/* Pagination */}
+            {applicantsData?.pagination?.pages > 1 && (
+              <div className="mt-6">
+                <Pagination
+                  currentPage={page}
+                  totalPages={applicantsData.pagination.pages}
+                  onPageChange={setPage}
+                />
+              </div>
+            )}
+          </>
         )}
       </Card>
 
@@ -1187,6 +1676,17 @@ const Applicants = () => {
                     Fetching data from API...
                   </div>
                 )}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleRefreshDetails}
+                  disabled={isEditFetchingFromApi || !watchEdit('its_number') || watchEdit('its_number').trim().length < 3}
+                  loading={isEditFetchingFromApi}
+                  className="mt-2"
+                >
+                  {isEditFetchingFromApi ? 'Refreshing...' : 'Refresh Details'}
+                </Button>
               </div>
               
               <Input

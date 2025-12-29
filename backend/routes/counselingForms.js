@@ -233,7 +233,8 @@ router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, 
           a.jamiat_name,
           a.jamaat_name,
           counselor.full_name as counselor_full_name,
-          counselor.phone as counselor_phone
+          counselor.phone as counselor_phone,
+          counselor.its_number as counselor_its_number
         FROM cases c
         JOIN applicants a ON c.applicant_id = a.id
         LEFT JOIN users counselor ON c.assigned_counselor_id = counselor.id
@@ -249,13 +250,15 @@ router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, 
       // Create personal details record
       const [personalDetailsResult] = await pool.execute(`
         INSERT INTO personal_details (
-          case_id, its_number, age, jamiat, jamaat, contact_number, 
+          case_id, its_number, name, age, education, jamiat, jamaat, contact_number, 
           email, residential_address, present_occupation, occupation_address, other_info
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         caseId,
         applicant.its_number || '',
+        applicant.full_name || '',
         applicant.age || null,
+        '', // education
         applicant.jamiat_name || '',
         applicant.jamaat_name || '',
         applicant.phone || '',
@@ -275,6 +278,7 @@ router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, 
       // Return the form data in the format expected by frontend
       const personalDetailsData = {
           its_number: applicant.its_number || '',
+          name: applicant.full_name || '',
           age: applicant.age ? applicant.age.toString() : '',
           jamiat: applicant.jamiat_name || '',
           jamaat: applicant.jamaat_name || '',
@@ -293,7 +297,8 @@ router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, 
       // Get counselor info if assigned
       const counselorInfo = (caseData[0].assigned_counselor_id && applicant.counselor_full_name) ? {
         name: applicant.counselor_full_name || '',
-        contact: applicant.counselor_phone || ''
+        contact: applicant.counselor_phone || '',
+        its_number: applicant.counselor_its_number || ''
       } : null;
 
       res.json({
@@ -356,22 +361,12 @@ router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, 
 
       // Get assessment
       let assessment = null;
-      let productsServices = [];
       if (form.assessment_id) {
         const [assessmentData] = await pool.execute(
           'SELECT * FROM assessment WHERE id = ?',
           [form.assessment_id]
         );
         assessment = assessmentData[0] || null;
-
-        // Get products/services for this assessment
-        if (assessment) {
-          const [productsData] = await pool.execute(
-            'SELECT * FROM assessment_products_services WHERE assessment_id = ? ORDER BY id',
-            [form.assessment_id]
-          );
-          productsServices = productsData || [];
-        }
       }
 
       // Get financial assistance
@@ -392,22 +387,116 @@ router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, 
           financialAssistance.qh_fields = qhSchedule;
         }
 
-        // Get Enayat repayment schedule if financial assistance exists
-        if (financialAssistance) {
-          const [enayatSchedule] = await pool.execute(
-            'SELECT * FROM financial_assistance_enayat_repayment_schedule WHERE financial_assistance_id = ? ORDER BY enayat_name',
-            [form.financial_assistance_id]
-          );
-          financialAssistance.enayat_fields = enayatSchedule;
-        }
-
         // Get timeline if financial assistance exists
         if (financialAssistance) {
           const [timeline] = await pool.execute(
-            'SELECT * FROM financial_assistance_timeline WHERE financial_assistance_id = ?',
+            'SELECT id, financial_assistance_id, purpose, enayat, qardan, months, created_at, updated_at FROM financial_assistance_timeline WHERE financial_assistance_id = ?',
             [form.financial_assistance_id]
           );
-          financialAssistance.timeline = timeline;
+          // Map new column names to old field names for backward compatibility
+          financialAssistance.timeline = timeline.map(item => ({
+            id: item.id,
+            financial_assistance_id: item.financial_assistance_id,
+            timeline: item.purpose, // purpose column maps to timeline field
+            purpose: item.enayat || '',   // enayat column maps to purpose field
+            amount: item.qardan,    // qardan column maps to amount field
+            support_document: item.months, // months column maps to support_document field
+            created_at: item.created_at,
+            updated_at: item.updated_at
+          }));
+        }
+
+        // Get action plan if financial assistance exists
+        if (financialAssistance) {
+          const [actionPlan] = await pool.execute(
+            'SELECT * FROM financial_assistance_action_plan WHERE financial_assistance_id = ? ORDER BY timeline_period, action_number',
+            [form.financial_assistance_id]
+          );
+          financialAssistance.action_plan = actionPlan;
+        }
+
+        // Get timeline assistance from financial_assistance_timeline_assistance table
+        if (financialAssistance) {
+          const [timelineAssistance] = await pool.execute(
+            'SELECT id, timeline_period, action_number, purpose_cost, enayat, qardan, months FROM financial_assistance_timeline_assistance WHERE financial_assistance_id = ? ORDER BY timeline_period, action_number',
+            [form.financial_assistance_id]
+          );
+          
+          // Group timeline assistance by timeline_period to match frontend format
+          const groupedTimelineAssistance = {
+            immediate: [],
+            after_1st_yr: [],
+            after_2nd_yr: [],
+            after_3rd_yr: [],
+            after_4th_yr: [],
+            '5th_yr': []
+          };
+          
+          timelineAssistance.forEach(item => {
+            if (item.timeline_period && groupedTimelineAssistance[item.timeline_period]) {
+              groupedTimelineAssistance[item.timeline_period].push({
+                id: item.id,
+                purpose_cost: item.purpose_cost || '',
+                enayat: item.enayat || '',
+                qardan: item.qardan || '',
+                months: item.months || ''
+              });
+            }
+          });
+          
+          financialAssistance.timeline_assistance = groupedTimelineAssistance;
+          
+          // If no timeline assistance found in table, check if timeline_assistance JSON column still exists (backward compatibility)
+          if (timelineAssistance.length === 0) {
+            try {
+              const jsonTimelineAssistance = financialAssistance.timeline_assistance;
+              if (jsonTimelineAssistance && typeof jsonTimelineAssistance === 'string') {
+                const parsed = JSON.parse(jsonTimelineAssistance);
+                if (parsed && typeof parsed === 'object') {
+                  financialAssistance.timeline_assistance = parsed;
+                } else {
+                  financialAssistance.timeline_assistance = groupedTimelineAssistance;
+                }
+              } else if (!jsonTimelineAssistance || (typeof jsonTimelineAssistance === 'object' && Object.keys(jsonTimelineAssistance).length === 0)) {
+                financialAssistance.timeline_assistance = groupedTimelineAssistance;
+              }
+            } catch (e) {
+              financialAssistance.timeline_assistance = groupedTimelineAssistance;
+            }
+          }
+        }
+
+        // Get mentors from financial_assistance_mentors table
+        if (financialAssistance) {
+          const [mentors] = await pool.execute(
+            'SELECT its_number, name, contact_number, email, photo FROM financial_assistance_mentors WHERE financial_assistance_id = ? ORDER BY created_at',
+            [form.financial_assistance_id]
+          );
+          
+          // Format mentors for frontend (same structure as before)
+          financialAssistance.support_mentors = mentors.map(mentor => ({
+            its_number: mentor.its_number || '',
+            name: mentor.name || '',
+            contact_number: mentor.contact_number || '',
+            email: mentor.email || '',
+            photo: mentor.photo || null
+          }));
+          
+          // If no mentors found in table, check if support_mentors JSON column still exists (backward compatibility)
+          if (mentors.length === 0 && financialAssistance.support_mentors) {
+            try {
+              const jsonMentors = typeof financialAssistance.support_mentors === 'string' 
+                ? JSON.parse(financialAssistance.support_mentors) 
+                : financialAssistance.support_mentors;
+              if (Array.isArray(jsonMentors)) {
+                financialAssistance.support_mentors = jsonMentors;
+              } else {
+                financialAssistance.support_mentors = [];
+              }
+            } catch (e) {
+              financialAssistance.support_mentors = [];
+            }
+          }
         }
       }
 
@@ -443,7 +532,7 @@ router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, 
       // Get assigned counselor information from the case
       let counselorInfo = null;
       const [caseDataForCounselor] = await pool.execute(
-        `SELECT c.assigned_counselor_id, u.full_name, u.phone
+        `SELECT c.assigned_counselor_id, u.full_name, u.phone, u.its_number
          FROM cases c
          LEFT JOIN users u ON c.assigned_counselor_id = u.id
          WHERE c.id = ?`,
@@ -453,7 +542,8 @@ router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, 
       if (caseDataForCounselor.length > 0 && caseDataForCounselor[0].assigned_counselor_id) {
         counselorInfo = {
           name: caseDataForCounselor[0].full_name || '',
-          contact: caseDataForCounselor[0].phone || ''
+          contact: caseDataForCounselor[0].phone || '',
+          its_number: caseDataForCounselor[0].its_number || ''
         };
         
         // Auto-populate counselor info in declaration if not already set
@@ -482,7 +572,9 @@ router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, 
       if (personalDetails) {
         personalDetailsForForm = {
           its_number: personalDetails.its_number || '',
+          name: personalDetails.name || '',
           age: personalDetails.age ? personalDetails.age.toString() : '',
+          education: personalDetails.education || '',
           jamiat: personalDetails.jamiat || '',
           jamaat: personalDetails.jamaat || '',
           contact_number: personalDetails.contact_number || '',
@@ -498,14 +590,13 @@ router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, 
       let familyDetailsForForm = null;
       if (familyDetails) {
         familyDetailsForForm = {
-          family_structure: familyDetails.family_structure || '',
           other_details: familyDetails.other_details || '',
           wellbeing: {
+            food: familyDetails.wellbeing_food || '',
             housing: familyDetails.wellbeing_housing || '',
             education: familyDetails.wellbeing_education || '',
             health: familyDetails.wellbeing_health || '',
-            deeni: familyDetails.wellbeing_deeni || '',
-            ziyarat_travel_recreation: familyDetails.wellbeing_ziyarat_travel_recreation || ''
+            deeni: familyDetails.wellbeing_deeni || ''
           },
           income_expense: {
             income: {
@@ -583,19 +674,17 @@ router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, 
             counselor_assessment: assessment.background_counselor_assessment || ''
           },
           proposed_business: {
-            products_services: productsServices.map(ps => ({
-              product_service: ps.product_service || '',
-              unit: ps.unit || '',
-              cost: ps.cost || 0,
-              price: ps.price || 0
-            })),
+            present_business_condition: assessment.proposed_present_business_condition || '',
             trade_mark: assessment.trade_mark || '',
             online_presence: assessment.online_presence || '',
             digital_marketing: assessment.digital_marketing || '',
             store_location: assessment.store_location || '',
             sourcing: assessment.proposed_sourcing || '',
             selling: assessment.proposed_selling || '',
-            major_expenses: assessment.proposed_major_expenses || ''
+            major_expenses: assessment.proposed_major_expenses || '',
+            goods_purchase: assessment.proposed_goods_purchase || '',
+            revenue: assessment.proposed_revenue || '',
+            profit_margin: assessment.proposed_profit_margin || ''
           },
           counselor_assessment: {
             demand_supply: assessment.counselor_demand_supply || '',
@@ -646,7 +735,8 @@ router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, 
           },
           counselor_info: counselorInfo ? {
             name: counselorInfo.name || '',
-            contact: counselorInfo.contact || ''
+            contact: counselorInfo.contact || '',
+            its_number: counselorInfo.its_number || ''
           } : null,
           family_details: familyDetailsForForm, // Frontend expects this format
           assessment: assessmentForForm, // Frontend expects this format
@@ -724,16 +814,28 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
 
     switch (section) {
       case 'personal_details':
+        // Fetch name from applicants table using its_number
+        let applicantName = '';
+        if (data.its_number) {
+          const [applicantData] = await pool.execute(
+            'SELECT full_name FROM applicants WHERE its_number = ? LIMIT 1',
+            [data.its_number]
+          );
+          if (applicantData.length > 0 && applicantData[0].full_name) {
+            applicantName = applicantData[0].full_name;
+          }
+        }
+        
         if (form.personal_details_id) {
           // Update existing personal details
           await pool.execute(`
             UPDATE personal_details SET
-              its_number = ?, age = ?, jamiat = ?, jamaat = ?, contact_number = ?,
+              its_number = ?, name = ?, age = ?, education = ?, jamiat = ?, jamaat = ?, contact_number = ?,
               email = ?, residential_address = ?, present_occupation = ?, 
               occupation_address = ?, other_info = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
           `, [
-            data.its_number, data.age, data.jamiat, data.jamaat, data.contact_number,
+            data.its_number, applicantName, data.age, data.education || '', data.jamiat, data.jamaat, data.contact_number,
             data.email, data.residential_address, data.present_occupation,
             data.occupation_address, data.other_info, form.personal_details_id
           ]);
@@ -741,11 +843,11 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
           // Create new personal details
           const [result] = await pool.execute(`
             INSERT INTO personal_details (
-              case_id, its_number, age, jamiat, jamaat, contact_number,
+              case_id, its_number, name, age, education, jamiat, jamaat, contact_number,
               email, residential_address, present_occupation, occupation_address, other_info
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `, [
-            form.case_id, data.its_number, data.age, data.jamiat, data.jamaat, data.contact_number,
+            form.case_id, data.its_number, applicantName, data.age, data.education || '', data.jamiat, data.jamaat, data.contact_number,
             data.email, data.residential_address, data.present_occupation,
             data.occupation_address, data.other_info
           ]);
@@ -763,8 +865,8 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
           // Update existing family details
           await pool.execute(`
             UPDATE family_details SET
-              family_structure = ?, other_details = ?, wellbeing_housing = ?, wellbeing_education = ?,
-              wellbeing_health = ?, wellbeing_deeni = ?, wellbeing_ziyarat_travel_recreation = ?,
+              other_details = ?, wellbeing_food = ?, wellbeing_housing = ?, wellbeing_education = ?,
+              wellbeing_health = ?, wellbeing_deeni = ?,
               income_business_monthly = ?, income_business_yearly = ?, income_salary_monthly = ?,
               income_salary_yearly = ?, income_home_industry_monthly = ?, income_home_industry_yearly = ?,
               income_others_monthly = ?, income_others_yearly = ?, income_total_monthly = ?,
@@ -783,8 +885,8 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
               liabilities_total = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
           `, [
-            data.family_structure, data.other_details, data.wellbeing?.housing, data.wellbeing?.education,
-            data.wellbeing?.health, data.wellbeing?.deeni, data.wellbeing?.ziyarat_travel_recreation,
+            data.other_details, data.wellbeing?.food, data.wellbeing?.housing, data.wellbeing?.education,
+            data.wellbeing?.health, data.wellbeing?.deeni,
             data.income_expense?.income?.business_monthly, data.income_expense?.income?.business_yearly,
             data.income_expense?.income?.salary_monthly, data.income_expense?.income?.salary_yearly,
             data.income_expense?.income?.home_industry_monthly, data.income_expense?.income?.home_industry_yearly,
@@ -814,7 +916,7 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
 
           // Handle family members
           if (data.family_members && Array.isArray(data.family_members)) {
-            // Delete existing family members for this family_details record
+            // Delete existing family members
             await pool.execute(
               'DELETE FROM family_members WHERE family_details_id = ?',
               [form.family_details_id]
@@ -823,30 +925,13 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
             // Insert new family members
             for (const member of data.family_members) {
               if (member.name || member.age || member.relation_id) {
-                // Convert empty strings to NULL for foreign keys
-                const relationId = member.relation_id && member.relation_id !== '' ? parseInt(member.relation_id) : null;
-                const educationLevelId = member.education_id && member.education_id !== '' ? parseInt(member.education_id) : null;
-                const occupationId = member.occupation_id && member.occupation_id !== '' ? parseInt(member.occupation_id) : null;
-                
-                // Parse age as integer, convert empty strings to null
-                const age = member.age && member.age !== '' ? parseInt(member.age) : null;
-                
-                // Validate and parse annual_income
-                let annualIncome = null;
-                if (member.annual_income) {
-                  const annualIncomeNum = parseFloat(String(member.annual_income).replace(/[^0-9.-]/g, ''));
-                  if (!isNaN(annualIncomeNum) && annualIncomeNum >= 0) {
-                    annualIncome = annualIncomeNum;
-                  }
-                }
-
                 await pool.execute(`
                   INSERT INTO family_members (
                     family_details_id, name, age, relation_id, education_id, occupation_id, annual_income
                   ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 `, [
-                  form.family_details_id, member.name || null, age, relationId,
-                  educationLevelId, occupationId, annualIncome
+                  form.family_details_id, member.name, member.age, member.relation_id,
+                  member.education_id, member.occupation_id, member.annual_income
                 ]);
               }
             }
@@ -855,8 +940,8 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
           // Create new family details
           const [result] = await pool.execute(`
             INSERT INTO family_details (
-              case_id, family_structure, other_details, wellbeing_housing, wellbeing_education,
-              wellbeing_health, wellbeing_deeni, wellbeing_ziyarat_travel_recreation,
+              case_id, other_details, wellbeing_food, wellbeing_housing, wellbeing_education,
+              wellbeing_health, wellbeing_deeni,
               income_business_monthly, income_business_yearly, income_salary_monthly,
               income_salary_yearly, income_home_industry_monthly, income_home_industry_yearly,
               income_others_monthly, income_others_yearly, income_total_monthly,
@@ -873,10 +958,10 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
               assets_stock_raw_material, assets_goods_sold_credit, assets_others,
               liabilities_borrowing_qardan, liabilities_goods_credit, liabilities_others,
               liabilities_total
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `, [
-            form.case_id, data.family_structure, data.other_details, data.wellbeing?.housing, data.wellbeing?.education,
-            data.wellbeing?.health, data.wellbeing?.deeni, data.wellbeing?.ziyarat_travel_recreation,
+            form.case_id, data.other_details, data.wellbeing?.food, data.wellbeing?.housing, data.wellbeing?.education,
+            data.wellbeing?.health, data.wellbeing?.deeni,
             data.income_expense?.income?.business_monthly, data.income_expense?.income?.business_yearly,
             data.income_expense?.income?.salary_monthly, data.income_expense?.income?.salary_yearly,
             data.income_expense?.income?.home_industry_monthly, data.income_expense?.income?.home_industry_yearly,
@@ -913,30 +998,13 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
           if (data.family_members && Array.isArray(data.family_members)) {
             for (const member of data.family_members) {
               if (member.name || member.age || member.relation_id) {
-                // Convert empty strings to NULL for foreign keys
-                const relationId = member.relation_id && member.relation_id !== '' ? parseInt(member.relation_id) : null;
-                const educationLevelId = member.education_id && member.education_id !== '' ? parseInt(member.education_id) : null;
-                const occupationId = member.occupation_id && member.occupation_id !== '' ? parseInt(member.occupation_id) : null;
-                
-                // Parse age as integer, convert empty strings to null
-                const age = member.age && member.age !== '' ? parseInt(member.age) : null;
-                
-                // Validate and parse annual_income
-                let annualIncome = null;
-                if (member.annual_income) {
-                  const annualIncomeNum = parseFloat(String(member.annual_income).replace(/[^0-9.-]/g, ''));
-                  if (!isNaN(annualIncomeNum) && annualIncomeNum >= 0) {
-                    annualIncome = annualIncomeNum;
-                  }
-                }
-
                 await pool.execute(`
                   INSERT INTO family_members (
                     family_details_id, name, age, relation_id, education_id, occupation_id, annual_income
                   ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 `, [
-                  result.insertId, member.name || null, age, relationId,
-                  educationLevelId, occupationId, annualIncome
+                  result.insertId, member.name, member.age, member.relation_id,
+                  member.education_id, member.occupation_id, member.annual_income
                 ]);
               }
             }
@@ -954,7 +1022,8 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
               background_education = ?, background_work_experience = ?, background_family_business = ?,
               background_skills_knowledge = ?, background_counselor_assessment = ?,
               trade_mark = ?, online_presence = ?, digital_marketing = ?, store_location = ?,
-              proposed_sourcing = ?, proposed_selling = ?, proposed_major_expenses = ?, 
+              proposed_present_business_condition = ?, proposed_sourcing = ?, proposed_selling = ?, proposed_major_expenses = ?,
+              proposed_goods_purchase = ?, proposed_revenue = ?, proposed_profit_margin = ?,
               counselor_demand_supply = ?, counselor_growth_potential = ?,
               counselor_competition_strategy = ?, counselor_support_needed = ?,
               updated_at = CURRENT_TIMESTAMP
@@ -964,7 +1033,8 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
             data.background?.skills_knowledge, data.background?.counselor_assessment,
             data.proposed_business?.trade_mark, data.proposed_business?.online_presence, 
             data.proposed_business?.digital_marketing, data.proposed_business?.store_location,
-            data.proposed_business?.sourcing, data.proposed_business?.selling, data.proposed_business?.major_expenses,
+            data.proposed_business?.present_business_condition, data.proposed_business?.sourcing, data.proposed_business?.selling, data.proposed_business?.major_expenses,
+            data.proposed_business?.goods_purchase, data.proposed_business?.revenue, data.proposed_business?.profit_margin,
             data.counselor_assessment?.demand_supply, data.counselor_assessment?.growth_potential,
             data.counselor_assessment?.competition_strategy, JSON.stringify(data.counselor_assessment?.support_needed || []),
             assessmentId
@@ -977,16 +1047,18 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
               case_id, background_education, background_work_experience, background_family_business,
               background_skills_knowledge, background_counselor_assessment,
               trade_mark, online_presence, digital_marketing, store_location,
-              proposed_sourcing, proposed_selling, proposed_major_expenses, 
+              proposed_present_business_condition, proposed_sourcing, proposed_selling, proposed_major_expenses,
+              proposed_goods_purchase, proposed_revenue, proposed_profit_margin,
               counselor_demand_supply, counselor_growth_potential,
               counselor_competition_strategy, counselor_support_needed
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `, [
             form.case_id, data.background?.education, data.background?.work_experience, data.background?.family_business,
             data.background?.skills_knowledge, data.background?.counselor_assessment,
             data.proposed_business?.trade_mark, data.proposed_business?.online_presence, 
             data.proposed_business?.digital_marketing, data.proposed_business?.store_location,
-            data.proposed_business?.sourcing, data.proposed_business?.selling, data.proposed_business?.major_expenses,
+            data.proposed_business?.present_business_condition, data.proposed_business?.sourcing, data.proposed_business?.selling, data.proposed_business?.major_expenses,
+            data.proposed_business?.goods_purchase, data.proposed_business?.revenue, data.proposed_business?.profit_margin,
             data.counselor_assessment?.demand_supply, data.counselor_assessment?.growth_potential,
             data.counselor_assessment?.competition_strategy, JSON.stringify(data.counselor_assessment?.support_needed || [])
           ]);
@@ -1000,27 +1072,6 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
           );
         }
 
-        // Handle products/services as individual rows in assessment_products_services table
-        if (assessmentId && data.proposed_business?.products_services) {
-          // Delete existing products/services for this assessment
-          await pool.execute('DELETE FROM assessment_products_services WHERE assessment_id = ?', [assessmentId]);
-          
-          // Insert new products/services
-          for (const product of data.proposed_business.products_services) {
-            if (product.product_service && product.product_service.trim()) {
-              await pool.execute(`
-                INSERT INTO assessment_products_services (assessment_id, product_service, unit, cost, price)
-                VALUES (?, ?, ?, ?, ?)
-              `, [
-                assessmentId,
-                product.product_service,
-                product.unit || '',
-                product.cost || 0,
-                product.price || 0
-              ]);
-            }
-          }
-        }
         break;
 
       case 'financial_assistance':
@@ -1035,29 +1086,56 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
           const repayment_year3 = data.repayment_schedule?.year3 === undefined || data.repayment_schedule?.year3 === '' ? null : data.repayment_schedule?.year3;
           const repayment_year4 = data.repayment_schedule?.year4 === undefined || data.repayment_schedule?.year4 === '' ? null : data.repayment_schedule?.year4;
           const repayment_year5 = data.repayment_schedule?.year5 === undefined || data.repayment_schedule?.year5 === '' ? null : data.repayment_schedule?.year5;
-          const non_financial_mentoring = data.non_financial_mentoring === undefined || data.non_financial_mentoring === '' ? null : data.non_financial_mentoring;
-          const non_financial_skill_development = data.non_financial_skill_development === undefined || data.non_financial_skill_development === '' ? null : data.non_financial_skill_development;
-          const non_financial_sourcing_support = data.non_financial_sourcing_support === undefined || data.non_financial_sourcing_support === '' ? null : data.non_financial_sourcing_support;
-          const non_financial_sales_market_access = data.non_financial_sales_market_access === undefined || data.non_financial_sales_market_access === '' ? null : data.non_financial_sales_market_access;
-          const non_financial_other_solar = data.non_financial_other_solar === undefined || data.non_financial_other_solar === '' ? null : data.non_financial_other_solar;
           
           await pool.execute(`
             UPDATE financial_assistance SET
               assistance_required = ?, self_funding = ?, rahen_available = ?,
               repayment_year1 = ?, repayment_year2 = ?, repayment_year3 = ?,
-              repayment_year4 = ?, repayment_year5 = ?,
-              non_financial_mentoring = ?, non_financial_skill_development = ?,
-              non_financial_sourcing_support = ?, non_financial_sales_market_access = ?,
-              non_financial_other_solar = ?, updated_at = CURRENT_TIMESTAMP
+              repayment_year4 = ?, repayment_year5 = ?, support_needed = ?,
+              support_industry_knowledge_desc = ?, support_sourcing_desc = ?,
+              support_sales_market_desc = ?, support_internship_desc = ?,
+              support_mentoring_handholding_desc = ?, support_bookkeeping_desc = ?,
+              updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
           `, [
             assistance_required, self_funding, rahen_available,
             repayment_year1, repayment_year2, repayment_year3, repayment_year4, repayment_year5,
-            non_financial_mentoring, non_financial_skill_development,
-            non_financial_sourcing_support, non_financial_sales_market_access,
-            non_financial_other_solar,
+            JSON.stringify(data.support_needed || []),
+            data.support_industry_knowledge_desc || null,
+            data.support_sourcing_desc || null,
+            data.support_sales_market_desc || null,
+            data.support_internship_desc || null,
+            data.support_mentoring_handholding_desc || null,
+            data.support_bookkeeping_desc || null,
             form.financial_assistance_id
           ]);
+
+          // Handle mentors - save to financial_assistance_mentors table
+          if (data.support_mentors && Array.isArray(data.support_mentors)) {
+            // Delete existing mentors for this financial_assistance
+            await pool.execute(
+              'DELETE FROM financial_assistance_mentors WHERE financial_assistance_id = ?',
+              [form.financial_assistance_id]
+            );
+
+            // Insert new mentors
+            for (const mentor of data.support_mentors) {
+              if (mentor.its_number) {
+                await pool.execute(`
+                  INSERT INTO financial_assistance_mentors 
+                  (financial_assistance_id, its_number, name, contact_number, email, photo)
+                  VALUES (?, ?, ?, ?, ?, ?)
+                `, [
+                  form.financial_assistance_id,
+                  mentor.its_number || '',
+                  mentor.name || null,
+                  mentor.contact_number || null,
+                  mentor.email || null,
+                  mentor.photo || null
+                ]);
+              }
+            }
+          }
 
           // Handle QH fields
           if (data.qh_fields && Array.isArray(data.qh_fields)) {
@@ -1076,47 +1154,13 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
                 const year3 = qhField.year3 === undefined || qhField.year3 === '' ? null : qhField.year3;
                 const year4 = qhField.year4 === undefined || qhField.year4 === '' ? null : qhField.year4;
                 const year5 = qhField.year5 === undefined || qhField.year5 === '' ? null : qhField.year5;
-                const month1 = qhField.month1 === undefined || qhField.month1 === '' ? null : (qhField.month1 ? parseInt(qhField.month1) : null);
-                const month2 = qhField.month2 === undefined || qhField.month2 === '' ? null : (qhField.month2 ? parseInt(qhField.month2) : null);
-                const month3 = qhField.month3 === undefined || qhField.month3 === '' ? null : (qhField.month3 ? parseInt(qhField.month3) : null);
-                const month4 = qhField.month4 === undefined || qhField.month4 === '' ? null : (qhField.month4 ? parseInt(qhField.month4) : null);
-                const month5 = qhField.month5 === undefined || qhField.month5 === '' ? null : (qhField.month5 ? parseInt(qhField.month5) : null);
                 
                 await pool.execute(`
                   INSERT INTO financial_assistance_qh_repayment_schedule (
-                    financial_assistance_id, qh_name, year1, year2, year3, year4, year5, month1, month2, month3, month4, month5
-                  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, [
-                  form.financial_assistance_id, qhField.name, year1, year2, year3, year4, year5, month1, month2, month3, month4, month5
-                ]);
-              }
-            }
-          }
-
-          // Handle Enayat fields
-          if (data.enayat_fields && Array.isArray(data.enayat_fields)) {
-            // Delete existing Enayat records
-            await pool.execute(
-              'DELETE FROM financial_assistance_enayat_repayment_schedule WHERE financial_assistance_id = ?',
-              [form.financial_assistance_id]
-            );
-
-            // Insert new Enayat records
-            for (const enayatField of data.enayat_fields) {
-              if (enayatField.name) {
-                // Convert undefined values to null for database
-                const year1 = enayatField.year1 === undefined || enayatField.year1 === '' ? null : enayatField.year1;
-                const year2 = enayatField.year2 === undefined || enayatField.year2 === '' ? null : enayatField.year2;
-                const year3 = enayatField.year3 === undefined || enayatField.year3 === '' ? null : enayatField.year3;
-                const year4 = enayatField.year4 === undefined || enayatField.year4 === '' ? null : enayatField.year4;
-                const year5 = enayatField.year5 === undefined || enayatField.year5 === '' ? null : enayatField.year5;
-                
-                await pool.execute(`
-                  INSERT INTO financial_assistance_enayat_repayment_schedule (
-                    financial_assistance_id, enayat_name, year1, year2, year3, year4, year5
+                    financial_assistance_id, qh_name, year1, year2, year3, year4, year5
                   ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 `, [
-                  form.financial_assistance_id, enayatField.name, year1, year2, year3, year4, year5
+                  form.financial_assistance_id, qhField.name, year1, year2, year3, year4, year5
                 ]);
               }
             }
@@ -1134,18 +1178,95 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
             for (const item of data.timeline) {
               if (item.timeline || item.purpose || item.amount) {
                 // Convert undefined values to null for database
-                const timeline = item.timeline === undefined || item.timeline === '' ? null : item.timeline;
-                const purpose = item.purpose === undefined || item.purpose === '' ? null : item.purpose;
-                const amount = item.amount === undefined || item.amount === '' ? null : item.amount;
-                const support_document = item.support_document === undefined || item.support_document === '' ? null : item.support_document;
+                // Map old field names to new column names:
+                // item.timeline → purpose column
+                // item.purpose → enayat column
+                // item.amount → qardan column
+                // item.support_document → months column
+                const purpose = item.timeline === undefined || item.timeline === '' ? null : item.timeline;
+                const enayat = item.purpose === undefined || item.purpose === '' ? null : (item.purpose ? parseFloat(item.purpose) : null);
+                const qardan = item.amount === undefined || item.amount === '' ? null : (item.amount ? parseFloat(item.amount) : null);
+                const months = item.support_document === undefined || item.support_document === '' ? null : (item.support_document ? parseInt(item.support_document) : null);
                 
                 await pool.execute(`
                   INSERT INTO financial_assistance_timeline (
-                    financial_assistance_id, timeline, purpose, amount, support_document
+                    financial_assistance_id, purpose, enayat, qardan, months
                   ) VALUES (?, ?, ?, ?, ?)
                 `, [
-                  form.financial_assistance_id, timeline, purpose, amount, support_document
+                  form.financial_assistance_id, purpose, enayat, qardan, months
                 ]);
+              }
+            }
+          }
+
+          // Handle action plan
+          if (data.action_plan && typeof data.action_plan === 'object') {
+            // Delete existing action plan
+            await pool.execute(
+              'DELETE FROM financial_assistance_action_plan WHERE financial_assistance_id = ?',
+              [form.financial_assistance_id]
+            );
+
+            // Define period order for sequential numbering
+            const periods = ['upto_1st_year_end', '2nd_and_3rd_year', '4th_and_5th_year'];
+            let actionNumber = 1;
+
+            // Insert action plan items in order, maintaining sequential numbering
+            for (const period of periods) {
+              if (data.action_plan[period] && Array.isArray(data.action_plan[period])) {
+                for (const item of data.action_plan[period]) {
+                  if (item.action_text && item.action_text.trim() !== '') {
+                    const actionText = item.action_text.trim();
+                    
+                    await pool.execute(`
+                      INSERT INTO financial_assistance_action_plan (
+                        financial_assistance_id, timeline_period, action_number, action_text
+                      ) VALUES (?, ?, ?, ?)
+                    `, [
+                      form.financial_assistance_id, period, actionNumber, actionText
+                    ]);
+                    
+                    actionNumber++;
+                  }
+                }
+              }
+            }
+          }
+
+          // Handle timeline assistance - save to financial_assistance_timeline_assistance table
+          if (data.timeline_assistance && typeof data.timeline_assistance === 'object') {
+            // Delete existing timeline assistance for this financial_assistance
+            await pool.execute(
+              'DELETE FROM financial_assistance_timeline_assistance WHERE financial_assistance_id = ?',
+              [form.financial_assistance_id]
+            );
+
+            // Define period order for sequential numbering
+            const periods = ['immediate', 'after_1st_yr', 'after_2nd_yr', 'after_3rd_yr', 'after_4th_yr', '5th_yr'];
+            let actionNumber = 1;
+
+            // Insert timeline assistance items in order, maintaining sequential numbering
+            for (const period of periods) {
+              if (data.timeline_assistance[period] && Array.isArray(data.timeline_assistance[period])) {
+                for (const item of data.timeline_assistance[period]) {
+                  // Only insert if at least one field has a value
+                  if (item.purpose_cost || item.enayat || item.qardan || item.months) {
+                    const purposeCost = item.purpose_cost || null;
+                    const enayat = item.enayat && item.enayat !== '' ? parseFloat(item.enayat) : null;
+                    const qardan = item.qardan && item.qardan !== '' ? parseFloat(item.qardan) : null;
+                    const months = item.months && item.months !== '' ? parseInt(item.months) : null;
+                    
+                    await pool.execute(`
+                      INSERT INTO financial_assistance_timeline_assistance (
+                        financial_assistance_id, timeline_period, action_number, purpose_cost, enayat, qardan, months
+                      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    `, [
+                      form.financial_assistance_id, period, actionNumber, purposeCost, enayat, qardan, months
+                    ]);
+                    
+                    actionNumber++;
+                  }
+                }
               }
             }
           }
@@ -1160,26 +1281,25 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
           const repayment_year3 = data.repayment_schedule?.year3 === undefined || data.repayment_schedule?.year3 === '' ? null : data.repayment_schedule?.year3;
           const repayment_year4 = data.repayment_schedule?.year4 === undefined || data.repayment_schedule?.year4 === '' ? null : data.repayment_schedule?.year4;
           const repayment_year5 = data.repayment_schedule?.year5 === undefined || data.repayment_schedule?.year5 === '' ? null : data.repayment_schedule?.year5;
-          const non_financial_mentoring = data.non_financial_mentoring === undefined || data.non_financial_mentoring === '' ? null : data.non_financial_mentoring;
-          const non_financial_skill_development = data.non_financial_skill_development === undefined || data.non_financial_skill_development === '' ? null : data.non_financial_skill_development;
-          const non_financial_sourcing_support = data.non_financial_sourcing_support === undefined || data.non_financial_sourcing_support === '' ? null : data.non_financial_sourcing_support;
-          const non_financial_sales_market_access = data.non_financial_sales_market_access === undefined || data.non_financial_sales_market_access === '' ? null : data.non_financial_sales_market_access;
-          const non_financial_other_solar = data.non_financial_other_solar === undefined || data.non_financial_other_solar === '' ? null : data.non_financial_other_solar;
           
           const [result] = await pool.execute(`
             INSERT INTO financial_assistance (
               case_id, assistance_required, self_funding, rahen_available,
               repayment_year1, repayment_year2, repayment_year3, repayment_year4, repayment_year5,
-              non_financial_mentoring, non_financial_skill_development,
-              non_financial_sourcing_support, non_financial_sales_market_access,
-              non_financial_other_solar
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              support_needed, support_industry_knowledge_desc, support_sourcing_desc,
+              support_sales_market_desc, support_internship_desc,
+              support_mentoring_handholding_desc, support_bookkeeping_desc
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `, [
             form.case_id, assistance_required, self_funding, rahen_available,
             repayment_year1, repayment_year2, repayment_year3, repayment_year4, repayment_year5,
-            non_financial_mentoring, non_financial_skill_development,
-            non_financial_sourcing_support, non_financial_sales_market_access,
-            non_financial_other_solar
+            JSON.stringify(data.support_needed || []),
+            data.support_industry_knowledge_desc || null,
+            data.support_sourcing_desc || null,
+            data.support_sales_market_desc || null,
+            data.support_internship_desc || null,
+            data.support_mentoring_handholding_desc || null,
+            data.support_bookkeeping_desc || null
           ]);
 
           // Handle QH fields for new financial assistance
@@ -1192,40 +1312,13 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
                 const year3 = qhField.year3 === undefined || qhField.year3 === '' ? null : qhField.year3;
                 const year4 = qhField.year4 === undefined || qhField.year4 === '' ? null : qhField.year4;
                 const year5 = qhField.year5 === undefined || qhField.year5 === '' ? null : qhField.year5;
-                const month1 = qhField.month1 === undefined || qhField.month1 === '' ? null : (qhField.month1 ? parseInt(qhField.month1) : null);
-                const month2 = qhField.month2 === undefined || qhField.month2 === '' ? null : (qhField.month2 ? parseInt(qhField.month2) : null);
-                const month3 = qhField.month3 === undefined || qhField.month3 === '' ? null : (qhField.month3 ? parseInt(qhField.month3) : null);
-                const month4 = qhField.month4 === undefined || qhField.month4 === '' ? null : (qhField.month4 ? parseInt(qhField.month4) : null);
-                const month5 = qhField.month5 === undefined || qhField.month5 === '' ? null : (qhField.month5 ? parseInt(qhField.month5) : null);
                 
                 await pool.execute(`
                   INSERT INTO financial_assistance_qh_repayment_schedule (
-                    financial_assistance_id, qh_name, year1, year2, year3, year4, year5, month1, month2, month3, month4, month5
-                  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, [
-                  result.insertId, qhField.name, year1, year2, year3, year4, year5, month1, month2, month3, month4, month5
-                ]);
-              }
-            }
-          }
-
-          // Handle Enayat fields for new financial assistance
-          if (data.enayat_fields && Array.isArray(data.enayat_fields)) {
-            for (const enayatField of data.enayat_fields) {
-              if (enayatField.name) {
-                // Convert undefined values to null for database
-                const year1 = enayatField.year1 === undefined || enayatField.year1 === '' ? null : enayatField.year1;
-                const year2 = enayatField.year2 === undefined || enayatField.year2 === '' ? null : enayatField.year2;
-                const year3 = enayatField.year3 === undefined || enayatField.year3 === '' ? null : enayatField.year3;
-                const year4 = enayatField.year4 === undefined || enayatField.year4 === '' ? null : enayatField.year4;
-                const year5 = enayatField.year5 === undefined || enayatField.year5 === '' ? null : enayatField.year5;
-                
-                await pool.execute(`
-                  INSERT INTO financial_assistance_enayat_repayment_schedule (
-                    financial_assistance_id, enayat_name, year1, year2, year3, year4, year5
+                    financial_assistance_id, qh_name, year1, year2, year3, year4, year5
                   ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 `, [
-                  result.insertId, enayatField.name, year1, year2, year3, year4, year5
+                  result.insertId, qhField.name, year1, year2, year3, year4, year5
                 ]);
               }
             }
@@ -1242,17 +1335,103 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
             for (const item of data.timeline) {
               if (item.timeline || item.purpose || item.amount) {
                 // Convert undefined values to null for database
-                const timeline = item.timeline === undefined || item.timeline === '' ? null : item.timeline;
-                const purpose = item.purpose === undefined || item.purpose === '' ? null : item.purpose;
-                const amount = item.amount === undefined || item.amount === '' ? null : item.amount;
-                const support_document = item.support_document === undefined || item.support_document === '' ? null : item.support_document;
+                // Map old field names to new column names:
+                // item.timeline → purpose column
+                // item.purpose → enayat column
+                // item.amount → qardan column
+                // item.support_document → months column
+                const purpose = item.timeline === undefined || item.timeline === '' ? null : item.timeline;
+                const enayat = item.purpose === undefined || item.purpose === '' ? null : (item.purpose ? parseFloat(item.purpose) : null);
+                const qardan = item.amount === undefined || item.amount === '' ? null : (item.amount ? parseFloat(item.amount) : null);
+                const months = item.support_document === undefined || item.support_document === '' ? null : (item.support_document ? parseInt(item.support_document) : null);
                 
                 await pool.execute(`
                   INSERT INTO financial_assistance_timeline (
-                    financial_assistance_id, timeline, purpose, amount, support_document
+                    financial_assistance_id, purpose, enayat, qardan, months
                   ) VALUES (?, ?, ?, ?, ?)
                 `, [
-                  result.insertId, timeline, purpose, amount, support_document
+                  result.insertId, purpose, enayat, qardan, months
+                ]);
+              }
+            }
+          }
+
+          // Handle action plan for new financial assistance
+          if (data.action_plan && typeof data.action_plan === 'object') {
+            // Define period order for sequential numbering
+            const periods = ['upto_1st_year_end', '2nd_and_3rd_year', '4th_and_5th_year'];
+            let actionNumber = 1;
+
+            // Insert action plan items in order, maintaining sequential numbering
+            for (const period of periods) {
+              if (data.action_plan[period] && Array.isArray(data.action_plan[period])) {
+                for (const item of data.action_plan[period]) {
+                  if (item.action_text && item.action_text.trim() !== '') {
+                    const actionText = item.action_text.trim();
+                    
+                    await pool.execute(`
+                      INSERT INTO financial_assistance_action_plan (
+                        financial_assistance_id, timeline_period, action_number, action_text
+                      ) VALUES (?, ?, ?, ?)
+                    `, [
+                      result.insertId, period, actionNumber, actionText
+                    ]);
+                    
+                    actionNumber++;
+                  }
+                }
+              }
+            }
+          }
+
+          // Handle timeline assistance for new financial assistance - save to financial_assistance_timeline_assistance table
+          if (data.timeline_assistance && typeof data.timeline_assistance === 'object') {
+            // Define period order for sequential numbering
+            const periods = ['immediate', 'after_1st_yr', 'after_2nd_yr', 'after_3rd_yr', 'after_4th_yr', '5th_yr'];
+            let actionNumber = 1;
+
+            // Insert timeline assistance items in order, maintaining sequential numbering
+            for (const period of periods) {
+              if (data.timeline_assistance[period] && Array.isArray(data.timeline_assistance[period])) {
+                for (const item of data.timeline_assistance[period]) {
+                  // Only insert if at least one field has a value
+                  if (item.purpose_cost || item.enayat || item.qardan || item.months) {
+                    const purposeCost = item.purpose_cost || null;
+                    const enayat = item.enayat && item.enayat !== '' ? parseFloat(item.enayat) : null;
+                    const qardan = item.qardan && item.qardan !== '' ? parseFloat(item.qardan) : null;
+                    const months = item.months && item.months !== '' ? parseInt(item.months) : null;
+                    
+                    await pool.execute(`
+                      INSERT INTO financial_assistance_timeline_assistance (
+                        financial_assistance_id, timeline_period, action_number, purpose_cost, enayat, qardan, months
+                      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    `, [
+                      result.insertId, period, actionNumber, purposeCost, enayat, qardan, months
+                    ]);
+                    
+                    actionNumber++;
+                  }
+                }
+              }
+            }
+          }
+
+          // Handle mentors - save to financial_assistance_mentors table
+          if (data.support_mentors && Array.isArray(data.support_mentors)) {
+            // Insert mentors for this new financial_assistance
+            for (const mentor of data.support_mentors) {
+              if (mentor.its_number) {
+                await pool.execute(`
+                  INSERT INTO financial_assistance_mentors 
+                  (financial_assistance_id, its_number, name, contact_number, email, photo)
+                  VALUES (?, ?, ?, ?, ?, ?)
+                `, [
+                  result.insertId,
+                  mentor.its_number || '',
+                  mentor.name || null,
+                  mentor.contact_number || null,
+                  mentor.email || null,
+                  mentor.photo || null
                 ]);
               }
             }
@@ -1290,10 +1469,12 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
             'profit_last_year', 'profit_year1', 'profit_year2', 'profit_year3', 'profit_year4', 'profit_year5',
             'profit_fund_blocked_last_year', 'profit_fund_blocked_year1', 'profit_fund_blocked_year2', 'profit_fund_blocked_year3', 'profit_fund_blocked_year4', 'profit_fund_blocked_year5',
             'profit_qardan_repayment_last_year', 'profit_qardan_repayment_year1', 'profit_qardan_repayment_year2', 'profit_qardan_repayment_year3', 'profit_qardan_repayment_year4', 'profit_qardan_repayment_year5',
+            'profit_other_income_last_year', 'profit_other_income_year1', 'profit_other_income_year2', 'profit_other_income_year3', 'profit_other_income_year4', 'profit_other_income_year5',
             'profit_household_expense_last_year', 'profit_household_expense_year1', 'profit_household_expense_year2', 'profit_household_expense_year3', 'profit_household_expense_year4', 'profit_household_expense_year5',
             
             // Cash Surplus fields
             'cash_surplus_last_year', 'cash_surplus_year1', 'cash_surplus_year2', 'cash_surplus_year3', 'cash_surplus_year4', 'cash_surplus_year5',
+            'cash_surplus_additional_enayat_last_year', 'cash_surplus_additional_enayat_year1', 'cash_surplus_additional_enayat_year2', 'cash_surplus_additional_enayat_year3', 'cash_surplus_additional_enayat_year4', 'cash_surplus_additional_enayat_year5',
             'cash_surplus_additional_qardan_last_year', 'cash_surplus_additional_qardan_year1', 'cash_surplus_additional_qardan_year2', 'cash_surplus_additional_qardan_year3', 'cash_surplus_additional_qardan_year4', 'cash_surplus_additional_qardan_year5'
           ];
 
@@ -1368,10 +1549,12 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
             'profit_last_year', 'profit_year1', 'profit_year2', 'profit_year3', 'profit_year4', 'profit_year5',
             'profit_fund_blocked_last_year', 'profit_fund_blocked_year1', 'profit_fund_blocked_year2', 'profit_fund_blocked_year3', 'profit_fund_blocked_year4', 'profit_fund_blocked_year5',
             'profit_qardan_repayment_last_year', 'profit_qardan_repayment_year1', 'profit_qardan_repayment_year2', 'profit_qardan_repayment_year3', 'profit_qardan_repayment_year4', 'profit_qardan_repayment_year5',
+            'profit_other_income_last_year', 'profit_other_income_year1', 'profit_other_income_year2', 'profit_other_income_year3', 'profit_other_income_year4', 'profit_other_income_year5',
             'profit_household_expense_last_year', 'profit_household_expense_year1', 'profit_household_expense_year2', 'profit_household_expense_year3', 'profit_household_expense_year4', 'profit_household_expense_year5',
             
             // Cash Surplus fields
             'cash_surplus_last_year', 'cash_surplus_year1', 'cash_surplus_year2', 'cash_surplus_year3', 'cash_surplus_year4', 'cash_surplus_year5',
+            'cash_surplus_additional_enayat_last_year', 'cash_surplus_additional_enayat_year1', 'cash_surplus_additional_enayat_year2', 'cash_surplus_additional_enayat_year3', 'cash_surplus_additional_enayat_year4', 'cash_surplus_additional_enayat_year5',
             'cash_surplus_additional_qardan_last_year', 'cash_surplus_additional_qardan_year1', 'cash_surplus_additional_qardan_year2', 'cash_surplus_additional_qardan_year3', 'cash_surplus_additional_qardan_year4', 'cash_surplus_additional_qardan_year5'
           ];
 
@@ -1420,28 +1603,53 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
         // Helper function to convert undefined to null
         const toNull = (value) => value === undefined ? null : value;
         
+        // Auto-populate applicant_its from personal_details if not provided
+        if (!data.applicant_its && form.personal_details_id) {
+          const [personalDetailsData] = await pool.execute(
+            'SELECT its_number FROM personal_details WHERE id = ?',
+            [form.personal_details_id]
+          );
+          if (personalDetailsData.length > 0 && personalDetailsData[0].its_number) {
+            data.applicant_its = personalDetailsData[0].its_number;
+          }
+        }
+        
+        // Auto-populate counselor_its from assigned counselor if not provided
+        if (!data.counselor_its && form.case_id) {
+          const [caseData] = await pool.execute(
+            `SELECT c.assigned_counselor_id, u.its_number
+             FROM cases c
+             LEFT JOIN users u ON c.assigned_counselor_id = u.id
+             WHERE c.id = ?`,
+            [form.case_id]
+          );
+          if (caseData.length > 0 && caseData[0].its_number) {
+            data.counselor_its = caseData[0].its_number;
+          }
+        }
+        
         if (form.declaration_id) {
           // Update existing declaration
           await pool.execute(`
             UPDATE declaration SET
-              applicant_confirmation = ?, applicant_name = ?, applicant_contact = ?, declaration_date = ?,
+              applicant_confirmation = ?, applicant_its = ?, applicant_name = ?, applicant_contact = ?, declaration_date = ?,
               signature_type = ?, signature_file_path = ?, signature_drawing_data = ?,
               other_comments = ?, applicant_signature = ?,
-              counselor_confirmation = ?, counselor_name = ?, counselor_contact = ?, counselor_date = ?,
-              counselor_signature_type = ?, counselor_signature_file_path = ?, counselor_signature_drawing_data = ?,
-              counselor_comments = ?, counselor_signature = ?,
-              tr_committee_name = ?, tr_committee_contact = ?, tr_committee_date = ?,
+              counselor_confirmation = ?, counselor_its = ?, counselor_name = ?, counselor_contact = ?, counselor_date = ?,
+              counselor_signature_type = ?, counselor_comments = ?, counselor_signature = ?,
+              counselor_signature_file_path = ?, counselor_signature_drawing_data = ?,
+              tr_committee_its = ?, tr_committee_name = ?, tr_committee_contact = ?, tr_committee_date = ?,
               tr_committee_signature_type = ?, tr_committee_signature_file_path = ?, tr_committee_signature_drawing_data = ?,
               tr_committee_signature = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
           `, [
-            toNull(data.applicant_confirmation), toNull(data.applicant_name), toNull(data.applicant_contact), toNull(data.declaration_date),
+            toNull(data.applicant_confirmation), toNull(data.applicant_its), toNull(data.applicant_name), toNull(data.applicant_contact), toNull(data.declaration_date),
             toNull(data.signature_type), toNull(data.signature_file_path), toNull(data.signature_drawing_data),
             toNull(data.other_comments), toNull(data.applicant_signature),
-            toNull(data.counselor_confirmation), toNull(data.counselor_name), toNull(data.counselor_contact), toNull(data.counselor_date),
-            toNull(data.counselor_signature_type), toNull(data.counselor_signature_file_path), toNull(data.counselor_signature_drawing_data),
-            toNull(data.counselor_comments), toNull(data.counselor_signature),
-            toNull(data.tr_committee_name), toNull(data.tr_committee_contact), toNull(data.tr_committee_date),
+            toNull(data.counselor_confirmation), toNull(data.counselor_its), toNull(data.counselor_name), toNull(data.counselor_contact), toNull(data.counselor_date),
+            toNull(data.counselor_signature_type), toNull(data.counselor_comments), toNull(data.counselor_signature),
+            toNull(data.counselor_signature_file_path), toNull(data.counselor_signature_drawing_data),
+            toNull(data.tr_committee_its), toNull(data.tr_committee_name), toNull(data.tr_committee_contact), toNull(data.tr_committee_date),
             toNull(data.tr_committee_signature_type), toNull(data.tr_committee_signature_file_path), toNull(data.tr_committee_signature_drawing_data),
             toNull(data.tr_committee_signature), form.declaration_id
           ]);
@@ -1449,24 +1657,24 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
           // Create new declaration
           const [result] = await pool.execute(`
             INSERT INTO declaration (
-              case_id, applicant_confirmation, applicant_name, applicant_contact, declaration_date,
+              case_id, applicant_confirmation, applicant_its, applicant_name, applicant_contact, declaration_date,
               signature_type, signature_file_path, signature_drawing_data,
               other_comments, applicant_signature,
-              counselor_confirmation, counselor_name, counselor_contact, counselor_date,
-              counselor_signature_type, counselor_signature_file_path, counselor_signature_drawing_data,
-              counselor_comments, counselor_signature,
-              tr_committee_name, tr_committee_contact, tr_committee_date,
+              counselor_confirmation, counselor_its, counselor_name, counselor_contact, counselor_date,
+              counselor_signature_type, counselor_comments, counselor_signature,
+              counselor_signature_file_path, counselor_signature_drawing_data,
+              tr_committee_its, tr_committee_name, tr_committee_contact, tr_committee_date,
               tr_committee_signature_type, tr_committee_signature_file_path, tr_committee_signature_drawing_data,
               tr_committee_signature
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `, [
-            form.case_id, toNull(data.applicant_confirmation), toNull(data.applicant_name), toNull(data.applicant_contact), toNull(data.declaration_date),
+            form.case_id, toNull(data.applicant_confirmation), toNull(data.applicant_its), toNull(data.applicant_name), toNull(data.applicant_contact), toNull(data.declaration_date),
             toNull(data.signature_type), toNull(data.signature_file_path), toNull(data.signature_drawing_data),
             toNull(data.other_comments), toNull(data.applicant_signature),
-            toNull(data.counselor_confirmation), toNull(data.counselor_name), toNull(data.counselor_contact), toNull(data.counselor_date),
-            toNull(data.counselor_signature_type), toNull(data.counselor_signature_file_path), toNull(data.counselor_signature_drawing_data),
-            toNull(data.counselor_comments), toNull(data.counselor_signature),
-            toNull(data.tr_committee_name), toNull(data.tr_committee_contact), toNull(data.tr_committee_date),
+            toNull(data.counselor_confirmation), toNull(data.counselor_its), toNull(data.counselor_name), toNull(data.counselor_contact), toNull(data.counselor_date),
+            toNull(data.counselor_signature_type), toNull(data.counselor_comments), toNull(data.counselor_signature),
+            toNull(data.counselor_signature_file_path), toNull(data.counselor_signature_drawing_data),
+            toNull(data.tr_committee_its), toNull(data.tr_committee_name), toNull(data.tr_committee_contact), toNull(data.tr_committee_date),
             toNull(data.tr_committee_signature_type), toNull(data.tr_committee_signature_file_path), toNull(data.tr_committee_signature_drawing_data),
             toNull(data.tr_committee_signature)
           ]);
@@ -1486,11 +1694,13 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
             UPDATE attachments SET
               work_place_photo = ?, quotation = ?, product_brochure = ?,
               income_tax_return = ?, financial_statements = ?, other_documents = ?,
+              cancelled_cheque = ?, pan_card = ?, aadhar_card = ?,
               updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
           `, [
             data.work_place_photo ? 1 : 0, data.quotation ? 1 : 0, data.product_brochure ? 1 : 0,
             data.income_tax_return ? 1 : 0, data.financial_statements ? 1 : 0, data.other_documents ? 1 : 0,
+            data.cancelled_cheque ? 1 : 0, data.pan_card ? 1 : 0, data.aadhar_card ? 1 : 0,
             form.attachments_id
           ]);
         } else {
@@ -1499,8 +1709,9 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
           const [result] = await pool.execute(`
             INSERT INTO attachments (
               case_id, work_place_photo, quotation, product_brochure,
-              income_tax_return, financial_statements, other_documents
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+              income_tax_return, financial_statements, other_documents,
+              cancelled_cheque, pan_card, aadhar_card
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
               work_place_photo = VALUES(work_place_photo),
               quotation = VALUES(quotation),
@@ -1508,10 +1719,14 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
               income_tax_return = VALUES(income_tax_return),
               financial_statements = VALUES(financial_statements),
               other_documents = VALUES(other_documents),
+              cancelled_cheque = VALUES(cancelled_cheque),
+              pan_card = VALUES(pan_card),
+              aadhar_card = VALUES(aadhar_card),
               updated_at = CURRENT_TIMESTAMP
           `, [
             form.case_id, data.work_place_photo ? 1 : 0, data.quotation ? 1 : 0, data.product_brochure ? 1 : 0,
-            data.income_tax_return ? 1 : 0, data.financial_statements ? 1 : 0, data.other_documents ? 1 : 0
+            data.income_tax_return ? 1 : 0, data.financial_statements ? 1 : 0, data.other_documents ? 1 : 0,
+            data.cancelled_cheque ? 1 : 0, data.pan_card ? 1 : 0, data.aadhar_card ? 1 : 0
           ]);
 
           // Get the attachments ID (either from insert or existing record)
@@ -1549,28 +1764,9 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Update section error:', error);
     console.error('Error stack:', error.stack);
-    console.error('Request data:', JSON.stringify(req.body, null, 2));
+    console.error('Request data:', req.body);
     console.error('Request params:', req.params);
-    console.error('Section:', req.params.section);
-    console.error('Form ID:', req.params.formId);
-    
-    // Provide more detailed error message
-    let errorMessage = 'Internal server error';
-    if (error.code === 'ER_BAD_FIELD_ERROR') {
-      errorMessage = `Database column error: ${error.message}`;
-    } else if (error.code === 'ER_NO_REFERENCED_ROW_2') {
-      errorMessage = `Foreign key constraint error: Invalid reference in data`;
-    } else if (error.code === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD') {
-      errorMessage = `Data type error: Invalid value for field`;
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
-    
-    res.status(500).json({ 
-      error: errorMessage,
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      section: req.params.section
-    });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 

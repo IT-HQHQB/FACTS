@@ -56,3 +56,10 @@ coverage/
 *.temp
 .cache/
 
+add_executive_level_column.sql
+generate_hash.js
+database/migrations/add_months_to_qh_repayment_schedule.sql
+database/migrations/update_qh_months_to_int.sql
+database/migrations/add_months_to_qh_repayment_schedule.sql
+database/migrations/update_qh_months_to_int.sql
+database/baaseteen_production_database.sql

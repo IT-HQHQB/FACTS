@@ -85,6 +85,11 @@ const authorizePermission = (resource, action) => {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
+      // Super admin has access to everything
+      if (req.user.role === 'super_admin') {
+        return next();
+      }
+
       // Get user's active roles and permissions from user_roles table
       const [userRoles] = await pool.execute(`
         SELECT r.id, r.name, r.permissions
@@ -160,13 +165,11 @@ const authorizePermission = (resource, action) => {
         const errorMessage = `Insufficient permissions. Required: ${resource}:${action}`;
         console.log(`[Permission Check] DENIED - User ${req.user.id} (${req.user.role}) does not have ${resource}:${action}`);
         console.log(`[Permission Check] Available roles:`, rolesToCheck.map(r => r.name));
-        console.log(`[Permission Check] Sending 200 response with error:`, errorMessage);
         
         // Ensure response is sent properly
         if (!res.headersSent) {
-          res.status(200).json({ 
-            error: errorMessage,
-            warning: "You do not have permission to perform this action."
+          res.status(403).json({ 
+            error: errorMessage
           });
         }
         return;
