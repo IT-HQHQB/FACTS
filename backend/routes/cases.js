@@ -177,30 +177,37 @@ router.get('/', authenticateToken, async (req, res) => {
     let whereConditions = [];
     let queryParams = [];
 
-    // Role-based filtering using database permissions
-    const canAccessAll = await canAccessAllCases(userRole);
-    
-    if (!canAccessAll) {
-      // For roles that can't access all cases, filter by assignment or jamiat/jamaat
-      if (userRole === 'ZI' || userRole === 'Zonal Incharge') {
-        // ZI can see cases in their assigned jamiat/jamaat areas
-        whereConditions.push(`
-          (c.roles = ? OR c.assigned_counselor_id = ? OR 
-           EXISTS (
-             SELECT 1 FROM applicants a 
-             WHERE a.id = c.applicant_id 
-             AND EXISTS (
-               SELECT 1 FROM users u 
-               WHERE u.id = ? 
-               AND (FIND_IN_SET(a.jamiat_id, u.jamiat_ids) > 0 OR FIND_IN_SET(a.jamaat_id, u.jamaat_ids) > 0)
-             )
-           ))
-        `);
-        queryParams.push(userId, userId, userId);
-      } else {
-        // Other roles (DCM, counselor) can only see assigned cases
-        whereConditions.push('(c.roles = ? OR c.assigned_counselor_id = ?)');
-        queryParams.push(userId, userId);
+    // Explicit check for Deputy Counseling Manager - they should only see assigned cases
+    // This overrides any cases.read permission they might have
+    if (userRole === 'Deputy Counseling Manager' || userRole === 'dcm') {
+      whereConditions.push('c.roles = ?');
+      queryParams.push(userId);
+    } else {
+      // Role-based filtering using database permissions
+      const canAccessAll = await canAccessAllCases(userRole);
+      
+      if (!canAccessAll) {
+        // For roles that can't access all cases, filter by assignment or jamiat/jamaat
+        if (userRole === 'ZI' || userRole === 'Zonal Incharge') {
+          // ZI can see cases in their assigned jamiat/jamaat areas
+          whereConditions.push(`
+            (c.roles = ? OR c.assigned_counselor_id = ? OR 
+             EXISTS (
+               SELECT 1 FROM applicants a 
+               WHERE a.id = c.applicant_id 
+               AND EXISTS (
+                 SELECT 1 FROM users u 
+                 WHERE u.id = ? 
+                 AND (FIND_IN_SET(a.jamiat_id, u.jamiat_ids) > 0 OR FIND_IN_SET(a.jamaat_id, u.jamaat_ids) > 0)
+               )
+             ))
+          `);
+          queryParams.push(userId, userId, userId);
+        } else {
+          // Other roles (counselor) can only see assigned cases
+          whereConditions.push('(c.roles = ? OR c.assigned_counselor_id = ?)');
+          queryParams.push(userId, userId);
+        }
       }
     }
 
