@@ -280,7 +280,7 @@ const Layout = ({ children }) => {
     }
 
     baseItems.push(
-      { text: 'Notifications', icon: <NotificationsIcon />, path: '/notifications', color: 'text-blue-600' },
+      // { text: 'Notifications', icon: <NotificationsIcon />, path: '/notifications', color: 'text-blue-600' },
       { text: 'Reports', icon: <ReportsIcon />, path: '/reports', color: 'text-green-600' }
     );
 
@@ -422,12 +422,13 @@ const Layout = ({ children }) => {
           </h2>
 
           <div className="flex items-center space-x-4">
-            <button className="relative p-2 text-white hover:bg-primary-700 rounded-md focus:outline-none focus:ring-2 focus:ring-white">
+            {/* Notification button hidden */}
+            {/* <button className="relative p-2 text-white hover:bg-primary-700 rounded-md focus:outline-none focus:ring-2 focus:ring-white">
               <NotificationsIcon />
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                 4
               </span>
-            </button>
+            </button> */}
             
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-primary-600 font-semibold text-sm">

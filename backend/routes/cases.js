@@ -165,7 +165,10 @@ router.get('/', authenticateToken, async (req, res) => {
       case_type, 
       assigned_roles, 
       assigned_counselor_id,
-      search 
+      search,
+      jamiat_id,
+      jamaat_id,
+      current_workflow_stage_id
     } = req.query;
 
     const pageNum = parseInt(page, 10) || 1;
@@ -236,6 +239,21 @@ router.get('/', authenticateToken, async (req, res) => {
       whereConditions.push('(a.full_name LIKE ? OR a.its_number LIKE ? OR c.case_number LIKE ?)');
       const searchTerm = `%${search.trim()}%`;
       queryParams.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    if (jamiat_id && jamiat_id.toString().trim() !== '') {
+      whereConditions.push('c.jamiat_id = ?');
+      queryParams.push(jamiat_id);
+    }
+
+    if (jamaat_id && jamaat_id.toString().trim() !== '') {
+      whereConditions.push('c.jamaat_id = ?');
+      queryParams.push(jamaat_id);
+    }
+
+    if (current_workflow_stage_id && current_workflow_stage_id.toString().trim() !== '') {
+      whereConditions.push('c.current_workflow_stage_id = ?');
+      queryParams.push(current_workflow_stage_id);
     }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';

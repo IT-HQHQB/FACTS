@@ -15,7 +15,8 @@ import {
   Pagination,
   Alert,
   Switch,
-  WorkflowProgress
+  WorkflowProgress,
+  SearchableSelect
 } from '../components/ui';
 import { useCounselingFormAccess, usePermission } from '../utils/permissionUtils';
 import WelfareChecklistForm from '../components/WelfareChecklistForm';
@@ -104,8 +105,15 @@ const Cases = () => {
     status: '',
     case_type: '',
     search: '',
+    jamiat_id: '',
+    jamaat_id: '',
+    assigned_roles: '',
+    assigned_counselor_id: '',
+    current_workflow_stage_id: '',
   });
   const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [filterJamiatId, setFilterJamiatId] = useState('');
+  const [filterJamaatId, setFilterJamaatId] = useState('');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createError, setCreateError] = useState('');
   const [createSuccess, setCreateSuccess] = useState('');
@@ -585,6 +593,43 @@ const Cases = () => {
     }
   );
 
+  // Fetch all counselors for filter (not filtered by case)
+  const { data: allCounselorsData } = useQuery(
+    'all-counselors',
+    () => {
+      return axios.get('/api/users', { params: { role: 'counselor', is_active: 'true' } }).then(res => res.data);
+    },
+    {
+      select: (data) => data.users || [],
+    }
+  );
+
+  // Fetch all users for "Assign to" filter
+  const { data: filterUsersData } = useQuery(
+    'filter-users',
+    () => {
+      return axios.get('/api/users', { params: { is_active: 'true' } }).then(res => res.data);
+    },
+    {
+      select: (data) => data.users || [],
+    }
+  );
+
+  // Fetch workflow stages for filter
+  const { data: workflowStagesData } = useQuery(
+    'workflow-stages',
+    () => {
+      return axios.get('/api/workflow-stages').then(res => res.data);
+    },
+    {
+      select: (data) => data.stages || [],
+      onError: (error) => {
+        // Silently handle permission errors - workflow stages might require admin access
+        console.warn('Could not fetch workflow stages for filter:', error);
+      },
+    }
+  );
+
   // Assign case mutation - same as case creation: assign_roles is user ID, assigned_counselor_id is null
   const assignCaseMutation = useMutation(
     ({ caseId, assigned_roles }) =>
@@ -685,6 +730,22 @@ const Cases = () => {
     }
   }, [selectedJamiatId, setValue]);
 
+  // Reset filter jamaat when filter jamiat changes or is cleared
+  useEffect(() => {
+    if (!filterJamiatId) {
+      setFilterJamaatId('');
+      handleFilterChange('jamaat_id', '');
+    }
+  }, [filterJamiatId]);
+
+  // Sync filter state when modal opens
+  useEffect(() => {
+    if (filterModalOpen) {
+      setFilterJamiatId(filters.jamiat_id || '');
+      setFilterJamaatId(filters.jamaat_id || '');
+    }
+  }, [filterModalOpen]);
+
   // Effect to handle ITS number changes in create modal
   useEffect(() => {
     if (watchedCreateItsNumber && watchedCreateItsNumber !== previousCreateItsNumber && watchedCreateItsNumber.length >= 3) {
@@ -699,7 +760,7 @@ const Cases = () => {
     }
   }, [watchedCreateItsNumber, previousCreateItsNumber]);
 
-  // Fetch jamaat data based on selected jamiat
+  // Fetch jamaat data based on selected jamiat (for create modal)
   const { data: jamaatData, isLoading: jamaatLoading } = useQuery(
     ['jamaat', selectedJamiatId],
     () => {
@@ -719,6 +780,29 @@ const Cases = () => {
         return jamaatList;
       },
       enabled: true, // Always enabled, but filtered by jamiat_id
+    }
+  );
+
+  // Fetch jamaat data for filter modal based on filterJamiatId
+  const { data: filterJamaatData } = useQuery(
+    ['jamaat', filterJamiatId],
+    () => {
+      const params = {};
+      if (filterJamiatId) {
+        params.jamiat_id = filterJamiatId;
+      }
+      return axios.get('/api/jamaat', { params }).then(res => res.data);
+    },
+    {
+      select: (data) => {
+        const jamaatList = data.jamaat || [];
+        // Filter by jamiat_id on frontend as well to ensure correct filtering
+        if (filterJamiatId) {
+          return jamaatList.filter(jamaat => jamaat.jamiat_id == filterJamiatId);
+        }
+        return jamaatList;
+      },
+      enabled: true,
     }
   );
 
@@ -788,7 +872,14 @@ const Cases = () => {
       status: '',
       case_type: '',
       search: '',
+      jamiat_id: '',
+      jamaat_id: '',
+      assigned_roles: '',
+      assigned_counselor_id: '',
+      current_workflow_stage_id: '',
     });
+    setFilterJamiatId('');
+    setFilterJamaatId('');
     setPage(1);
   };
 
@@ -1850,6 +1941,74 @@ const Cases = () => {
               </Select.Option>
             ))}
           </Select>
+
+          {/* Jamiat Filter */}
+          <SearchableSelect
+            label="Jamiat"
+            value={filters.jamiat_id}
+            onChange={(value) => {
+              setFilterJamiatId(value);
+              handleFilterChange('jamiat_id', value);
+            }}
+            placeholder="Select Jamiat..."
+            options={jamiatData?.map(jamiat => ({
+              value: jamiat.id,
+              label: jamiat.name
+            })) || []}
+          />
+
+          {/* Jamaat Filter - Only shown when Jamiat is selected */}
+          {filterJamiatId && (
+            <SearchableSelect
+              label="Jamaat"
+              value={filters.jamaat_id}
+              onChange={(value) => {
+                setFilterJamaatId(value);
+                handleFilterChange('jamaat_id', value);
+              }}
+              placeholder="Select Jamaat..."
+              options={filterJamaatData?.map(jamaat => ({
+                value: jamaat.id,
+                label: jamaat.name
+              })) || []}
+            />
+          )}
+
+          {/* Assign to Filter */}
+          <SearchableSelect
+            label="Assign to"
+            value={filters.assigned_roles}
+            onChange={(value) => handleFilterChange('assigned_roles', value)}
+            placeholder="Select User..."
+            options={filterUsersData?.map(user => ({
+              value: user.id,
+              label: `${user.full_name} - ${user.role}`
+            })) || []}
+          />
+
+          {/* Counselor Filter */}
+          <SearchableSelect
+            label="Counselor"
+            value={filters.assigned_counselor_id}
+            onChange={(value) => handleFilterChange('assigned_counselor_id', value)}
+            placeholder="Select Counselor..."
+            options={allCounselorsData?.map(counselor => ({
+              value: counselor.id,
+              label: counselor.full_name
+            })) || []}
+          />
+
+          {/* Case Stage Filter */}
+          <SearchableSelect
+            label="Case Stage"
+            value={filters.current_workflow_stage_id}
+            onChange={(value) => handleFilterChange('current_workflow_stage_id', value)}
+            placeholder="Select Case Stage..."
+            options={workflowStagesData?.map(stage => ({
+              value: stage.id,
+              label: stage.stage_name
+            })) || []}
+          />
         </div>
 
         <Modal.Footer>
@@ -2775,7 +2934,7 @@ const Cases = () => {
           setAssignSelectedCounselorId('');
         }}
         title="Assign Case"
-        size="md"
+        size="lg"
       >
         <div className="space-y-4">
           <Select
@@ -2795,20 +2954,29 @@ const Cases = () => {
             ))}
           </Select>
 
-          <Select
+          <SearchableSelect
             label="Assign To"
             value={assignSelectedCounselorId}
-            onChange={(e) => setAssignSelectedCounselorId(e.target.value)}
+            onChange={(value) => setAssignSelectedCounselorId(value)}
+            placeholder="Unassigned"
             required
             disabled={!assignSelectedRoleId}
-          >
-            <Select.Option value="">Unassigned</Select.Option>
-            {assignUsersData?.map((user) => (
-              <Select.Option key={user.id} value={user.id}>
-                {user.full_name || user.username}
-              </Select.Option>
-            ))}
-          </Select>
+            options={[
+              { value: '', label: 'Unassigned' },
+              ...(assignUsersData || [])
+                .map((user) => ({
+                  value: user.id,
+                  label: user.its_number 
+                    ? `${user.full_name || user.username} - (${user.its_number})`
+                    : (user.full_name || user.username)
+                }))
+                .sort((a, b) => {
+                  const labelA = (a.label || '').toLowerCase();
+                  const labelB = (b.label || '').toLowerCase();
+                  return labelA.localeCompare(labelB);
+                })
+            ]}
+          />
 
           <Alert severity="info">
             Assigning a user will automatically change the case status to "Assigned" when both role and user are selected.
