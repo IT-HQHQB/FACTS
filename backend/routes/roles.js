@@ -53,7 +53,8 @@ router.get('/', authenticateToken, authorizeRoles('super_admin', 'admin', 'dcm',
               WHEN 'growth' THEN 5
               WHEN 'declaration' THEN 6
               WHEN 'attachments' THEN 7
-              ELSE 8
+              WHEN 'manzoori' THEN 8
+              ELSE 9
             END
         `, [role.id]);
         stagePermissions = stagePerms || [];
@@ -416,9 +417,12 @@ router.get('/permissions/available', authenticateToken, authorizeRoles('super_ad
       { key: 'financial', name: 'Financial Assistance' },
       { key: 'growth', name: 'Economic Growth' },
       { key: 'declaration', name: 'Declaration' },
-      { key: 'attachments', name: 'Attachments' }
+      { key: 'attachments', name: 'Attachments' },
+      { key: 'manzoori', name: 'Manzoori' }
     ];
 
+    // Always ensure default stages are included
+    // Merge with any custom stages from database if they exist
     try {
       const [stagePermissions] = await pool.execute(`
         SELECT DISTINCT stage_key, stage_name 
@@ -432,16 +436,41 @@ router.get('/permissions/available', authenticateToken, authorizeRoles('super_ad
             WHEN 'growth' THEN 5
             WHEN 'declaration' THEN 6
             WHEN 'attachments' THEN 7
-            ELSE 8
+            WHEN 'manzoori' THEN 8
+            ELSE 9
           END
       `);
 
-      if (stagePermissions.length > 0) {
-        counselingFormStages = stagePermissions.map(sp => ({ key: sp.stage_key, name: sp.stage_name }));
+      // Create a map of database stages for quick lookup
+      const dbStagesMap = new Map();
+      if (stagePermissions && stagePermissions.length > 0) {
+        stagePermissions.forEach(sp => {
+          dbStagesMap.set(sp.stage_key, sp.stage_name);
+        });
+      }
+      
+      // Always start with default stages (ensures manzoori and all defaults are included)
+      // Then update names from DB if they exist (in case they were customized)
+      counselingFormStages = counselingFormStages.map(stage => {
+        const dbName = dbStagesMap.get(stage.key);
+        return {
+          key: stage.key,
+          name: dbName || stage.name
+        };
+      });
+      
+      // Add any additional stages from DB that aren't in defaults
+      if (stagePermissions && stagePermissions.length > 0) {
+        stagePermissions.forEach(sp => {
+          if (!counselingFormStages.find(s => s.key === sp.stage_key)) {
+            counselingFormStages.push({ key: sp.stage_key, name: sp.stage_name });
+          }
+        });
       }
     } catch (err) {
-      // Table doesn't exist yet - use default stages
+      // Table doesn't exist yet - use default stages (which includes manzoori)
       console.log('Stage permissions table not available, using defaults:', err.message);
+      // counselingFormStages already has all defaults including manzoori
     }
 
     const permissions = [
@@ -457,6 +486,8 @@ router.get('/permissions/available', authenticateToken, authorizeRoles('super_ad
         actions: ['create', 'read', 'update', 'delete', 'complete', 'comment'],
         stages: counselingFormStages
       },
+      // Payment management permissions
+      { resource: 'payment_management', actions: ['create', 'read', 'update', 'delete'] },
       // Cover letter permissions
       { resource: 'cover_letters', actions: ['create', 'read', 'update', 'delete'] },
       // Cover letter form permissions

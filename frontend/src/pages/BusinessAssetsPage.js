@@ -44,7 +44,7 @@ const BusinessAssetsPage = () => {
       <div className="max-w-4xl mx-auto p-6">
         <Alert type="error" message={error} />
         <div className="mt-4">
-          <Button onClick={() => navigate('/cases')}>
+          <Button onClick={() => navigate(`/cases?search=${encodeURIComponent(caseId || '')}`)}>
             Back to Cases
           </Button>
         </div>
@@ -57,7 +57,7 @@ const BusinessAssetsPage = () => {
       <div className="max-w-4xl mx-auto p-6">
         <Alert type="error" message="Case not found" />
         <div className="mt-4">
-          <Button onClick={() => navigate('/cases')}>
+          <Button onClick={() => navigate(`/cases?search=${encodeURIComponent(caseId || '')}`)}>
             Back to Cases
           </Button>
         </div>

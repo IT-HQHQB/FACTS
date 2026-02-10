@@ -1,9 +1,8 @@
 const express = require('express');
 const { pool } = require('../config/database');
 const { authenticateToken, authorizeCaseAccess } = require('../middleware/auth');
-const { hasPermission } = require('../utils/roleUtils');
 const { requireCounselingFormAccess } = require('../middleware/permissionMiddleware');
-const { getCounselingFormStagePermissions, hasCounselingFormStagePermission } = require('../utils/permissionUtils');
+const { getCounselingFormStagePermissions, hasCounselingFormStagePermission, hasPermission } = require('../utils/permissionUtils');
 const notificationService = require('../services/notificationService');
 
 const router = express.Router();
@@ -863,6 +862,69 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
       case 'family_details':
         if (form.family_details_id) {
           // Update existing family details
+          // Helper function to convert empty strings to null for numeric fields
+          const toNumeric = (val) => {
+            if (val === '' || val === null || val === undefined) return null;
+            if (typeof val === 'string' && val.trim() === '') return null;
+            return val;
+          };
+          const updateValues = [
+            data.other_details || null, 
+            data.wellbeing?.food || null, 
+            data.wellbeing?.housing || null, 
+            data.wellbeing?.education || null,
+            data.wellbeing?.health || null, 
+            data.wellbeing?.deeni || null,
+            toNumeric(data.income_expense?.income?.business_monthly), 
+            toNumeric(data.income_expense?.income?.business_yearly),
+            toNumeric(data.income_expense?.income?.salary_monthly), 
+            toNumeric(data.income_expense?.income?.salary_yearly),
+            toNumeric(data.income_expense?.income?.home_industry_monthly), 
+            toNumeric(data.income_expense?.income?.home_industry_yearly),
+            toNumeric(data.income_expense?.income?.others_monthly), 
+            toNumeric(data.income_expense?.income?.others_yearly),
+            toNumeric(data.income_expense?.income?.total_monthly), 
+            toNumeric(data.income_expense?.income?.total_yearly),
+            toNumeric(data.income_expense?.expenses?.food_monthly), 
+            toNumeric(data.income_expense?.expenses?.food_yearly),
+            toNumeric(data.income_expense?.expenses?.housing_monthly), 
+            toNumeric(data.income_expense?.expenses?.housing_yearly),
+            toNumeric(data.income_expense?.expenses?.health_monthly), 
+            toNumeric(data.income_expense?.expenses?.health_yearly),
+            toNumeric(data.income_expense?.expenses?.transport_monthly), 
+            toNumeric(data.income_expense?.expenses?.transport_yearly),
+            toNumeric(data.income_expense?.expenses?.education_monthly), 
+            toNumeric(data.income_expense?.expenses?.education_yearly),
+            toNumeric(data.income_expense?.expenses?.deeni_monthly), 
+            toNumeric(data.income_expense?.expenses?.deeni_yearly),
+            toNumeric(data.income_expense?.expenses?.essentials_monthly), 
+            toNumeric(data.income_expense?.expenses?.essentials_yearly),
+            toNumeric(data.income_expense?.expenses?.non_essentials_monthly), 
+            toNumeric(data.income_expense?.expenses?.non_essentials_yearly),
+            toNumeric(data.income_expense?.expenses?.others_monthly), 
+            toNumeric(data.income_expense?.expenses?.others_yearly),
+            toNumeric(data.income_expense?.expenses?.total_monthly), 
+            toNumeric(data.income_expense?.expenses?.total_yearly),
+            toNumeric(data.income_expense?.surplus_monthly), 
+            toNumeric(data.income_expense?.surplus_yearly),
+            toNumeric(data.income_expense?.deficit_monthly), 
+            toNumeric(data.income_expense?.deficit_yearly),
+            toNumeric(data.income_expense?.scholarship_monthly), 
+            toNumeric(data.income_expense?.scholarship_yearly),
+            toNumeric(data.income_expense?.borrowing_monthly), 
+            toNumeric(data.income_expense?.borrowing_yearly),
+            data.assets_liabilities?.assets?.residential || null, 
+            data.assets_liabilities?.assets?.shop_godown_land || null,
+            data.assets_liabilities?.assets?.machinery_vehicle || null, 
+            data.assets_liabilities?.assets?.stock_raw_material || null,
+            data.assets_liabilities?.assets?.goods_sold_credit || null, 
+            data.assets_liabilities?.assets?.others || null,
+            toNumeric(data.assets_liabilities?.liabilities?.borrowing_qardan), 
+            toNumeric(data.assets_liabilities?.liabilities?.goods_credit),
+            toNumeric(data.assets_liabilities?.liabilities?.others), 
+            toNumeric(data.assets_liabilities?.liabilities?.total),
+            form.family_details_id
+          ];
           await pool.execute(`
             UPDATE family_details SET
               other_details = ?, wellbeing_food = ?, wellbeing_housing = ?, wellbeing_education = ?,
@@ -884,35 +946,7 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
               liabilities_borrowing_qardan = ?, liabilities_goods_credit = ?, liabilities_others = ?,
               liabilities_total = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-          `, [
-            data.other_details, data.wellbeing?.food, data.wellbeing?.housing, data.wellbeing?.education,
-            data.wellbeing?.health, data.wellbeing?.deeni,
-            data.income_expense?.income?.business_monthly, data.income_expense?.income?.business_yearly,
-            data.income_expense?.income?.salary_monthly, data.income_expense?.income?.salary_yearly,
-            data.income_expense?.income?.home_industry_monthly, data.income_expense?.income?.home_industry_yearly,
-            data.income_expense?.income?.others_monthly, data.income_expense?.income?.others_yearly,
-            data.income_expense?.income?.total_monthly, data.income_expense?.income?.total_yearly,
-            data.income_expense?.expenses?.food_monthly, data.income_expense?.expenses?.food_yearly,
-            data.income_expense?.expenses?.housing_monthly, data.income_expense?.expenses?.housing_yearly,
-            data.income_expense?.expenses?.health_monthly, data.income_expense?.expenses?.health_yearly,
-            data.income_expense?.expenses?.transport_monthly, data.income_expense?.expenses?.transport_yearly,
-            data.income_expense?.expenses?.education_monthly, data.income_expense?.expenses?.education_yearly,
-            data.income_expense?.expenses?.deeni_monthly, data.income_expense?.expenses?.deeni_yearly,
-            data.income_expense?.expenses?.essentials_monthly, data.income_expense?.expenses?.essentials_yearly,
-            data.income_expense?.expenses?.non_essentials_monthly, data.income_expense?.expenses?.non_essentials_yearly,
-            data.income_expense?.expenses?.others_monthly, data.income_expense?.expenses?.others_yearly,
-            data.income_expense?.expenses?.total_monthly, data.income_expense?.expenses?.total_yearly,
-            data.income_expense?.surplus_monthly, data.income_expense?.surplus_yearly,
-            data.income_expense?.deficit_monthly, data.income_expense?.deficit_yearly,
-            data.income_expense?.scholarship_monthly, data.income_expense?.scholarship_yearly,
-            data.income_expense?.borrowing_monthly, data.income_expense?.borrowing_yearly,
-            data.assets_liabilities?.assets?.residential, data.assets_liabilities?.assets?.shop_godown_land,
-            data.assets_liabilities?.assets?.machinery_vehicle, data.assets_liabilities?.assets?.stock_raw_material,
-            data.assets_liabilities?.assets?.goods_sold_credit, data.assets_liabilities?.assets?.others,
-            data.assets_liabilities?.liabilities?.borrowing_qardan, data.assets_liabilities?.liabilities?.goods_credit,
-            data.assets_liabilities?.liabilities?.others, data.assets_liabilities?.liabilities?.total,
-            form.family_details_id
-          ]);
+          `, updateValues);
 
           // Handle family members
           if (data.family_members && Array.isArray(data.family_members)) {
@@ -938,6 +972,69 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
           }
         } else {
           // Create new family details
+          // Helper function to convert empty strings to null for numeric fields
+          const toNumeric = (val) => {
+            if (val === '' || val === null || val === undefined) return null;
+            if (typeof val === 'string' && val.trim() === '') return null;
+            return val;
+          };
+          const insertValues = [
+            form.case_id, 
+            data.other_details || null, 
+            data.wellbeing?.food || null, 
+            data.wellbeing?.housing || null, 
+            data.wellbeing?.education || null,
+            data.wellbeing?.health || null, 
+            data.wellbeing?.deeni || null,
+            toNumeric(data.income_expense?.income?.business_monthly), 
+            toNumeric(data.income_expense?.income?.business_yearly),
+            toNumeric(data.income_expense?.income?.salary_monthly), 
+            toNumeric(data.income_expense?.income?.salary_yearly),
+            toNumeric(data.income_expense?.income?.home_industry_monthly), 
+            toNumeric(data.income_expense?.income?.home_industry_yearly),
+            toNumeric(data.income_expense?.income?.others_monthly), 
+            toNumeric(data.income_expense?.income?.others_yearly),
+            toNumeric(data.income_expense?.income?.total_monthly), 
+            toNumeric(data.income_expense?.income?.total_yearly),
+            toNumeric(data.income_expense?.expenses?.food_monthly), 
+            toNumeric(data.income_expense?.expenses?.food_yearly),
+            toNumeric(data.income_expense?.expenses?.housing_monthly), 
+            toNumeric(data.income_expense?.expenses?.housing_yearly),
+            toNumeric(data.income_expense?.expenses?.health_monthly), 
+            toNumeric(data.income_expense?.expenses?.health_yearly),
+            toNumeric(data.income_expense?.expenses?.transport_monthly), 
+            toNumeric(data.income_expense?.expenses?.transport_yearly),
+            toNumeric(data.income_expense?.expenses?.education_monthly), 
+            toNumeric(data.income_expense?.expenses?.education_yearly),
+            toNumeric(data.income_expense?.expenses?.deeni_monthly), 
+            toNumeric(data.income_expense?.expenses?.deeni_yearly),
+            toNumeric(data.income_expense?.expenses?.essentials_monthly), 
+            toNumeric(data.income_expense?.expenses?.essentials_yearly),
+            toNumeric(data.income_expense?.expenses?.non_essentials_monthly), 
+            toNumeric(data.income_expense?.expenses?.non_essentials_yearly),
+            toNumeric(data.income_expense?.expenses?.others_monthly), 
+            toNumeric(data.income_expense?.expenses?.others_yearly),
+            toNumeric(data.income_expense?.expenses?.total_monthly), 
+            toNumeric(data.income_expense?.expenses?.total_yearly),
+            toNumeric(data.income_expense?.surplus_monthly), 
+            toNumeric(data.income_expense?.surplus_yearly),
+            toNumeric(data.income_expense?.deficit_monthly), 
+            toNumeric(data.income_expense?.deficit_yearly),
+            toNumeric(data.income_expense?.scholarship_monthly), 
+            toNumeric(data.income_expense?.scholarship_yearly),
+            toNumeric(data.income_expense?.borrowing_monthly), 
+            toNumeric(data.income_expense?.borrowing_yearly),
+            data.assets_liabilities?.assets?.residential || null, 
+            data.assets_liabilities?.assets?.shop_godown_land || null,
+            data.assets_liabilities?.assets?.machinery_vehicle || null, 
+            data.assets_liabilities?.assets?.stock_raw_material || null,
+            data.assets_liabilities?.assets?.goods_sold_credit || null, 
+            data.assets_liabilities?.assets?.others || null,
+            toNumeric(data.assets_liabilities?.liabilities?.borrowing_qardan), 
+            toNumeric(data.assets_liabilities?.liabilities?.goods_credit),
+            toNumeric(data.assets_liabilities?.liabilities?.others), 
+            toNumeric(data.assets_liabilities?.liabilities?.total)
+          ];
           const [result] = await pool.execute(`
             INSERT INTO family_details (
               case_id, other_details, wellbeing_food, wellbeing_housing, wellbeing_education,
@@ -958,35 +1055,8 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
               assets_stock_raw_material, assets_goods_sold_credit, assets_others,
               liabilities_borrowing_qardan, liabilities_goods_credit, liabilities_others,
               liabilities_total
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `, [
-            form.case_id, data.other_details, data.wellbeing?.food, data.wellbeing?.housing, data.wellbeing?.education,
-            data.wellbeing?.health, data.wellbeing?.deeni,
-            data.income_expense?.income?.business_monthly, data.income_expense?.income?.business_yearly,
-            data.income_expense?.income?.salary_monthly, data.income_expense?.income?.salary_yearly,
-            data.income_expense?.income?.home_industry_monthly, data.income_expense?.income?.home_industry_yearly,
-            data.income_expense?.income?.others_monthly, data.income_expense?.income?.others_yearly,
-            data.income_expense?.income?.total_monthly, data.income_expense?.income?.total_yearly,
-            data.income_expense?.expenses?.food_monthly, data.income_expense?.expenses?.food_yearly,
-            data.income_expense?.expenses?.housing_monthly, data.income_expense?.expenses?.housing_yearly,
-            data.income_expense?.expenses?.health_monthly, data.income_expense?.expenses?.health_yearly,
-            data.income_expense?.expenses?.transport_monthly, data.income_expense?.expenses?.transport_yearly,
-            data.income_expense?.expenses?.education_monthly, data.income_expense?.expenses?.education_yearly,
-            data.income_expense?.expenses?.deeni_monthly, data.income_expense?.expenses?.deeni_yearly,
-            data.income_expense?.expenses?.essentials_monthly, data.income_expense?.expenses?.essentials_yearly,
-            data.income_expense?.expenses?.non_essentials_monthly, data.income_expense?.expenses?.non_essentials_yearly,
-            data.income_expense?.expenses?.others_monthly, data.income_expense?.expenses?.others_yearly,
-            data.income_expense?.expenses?.total_monthly, data.income_expense?.expenses?.total_yearly,
-            data.income_expense?.surplus_monthly, data.income_expense?.surplus_yearly,
-            data.income_expense?.deficit_monthly, data.income_expense?.deficit_yearly,
-            data.income_expense?.scholarship_monthly, data.income_expense?.scholarship_yearly,
-            data.income_expense?.borrowing_monthly, data.income_expense?.borrowing_yearly,
-            data.assets_liabilities?.assets?.residential, data.assets_liabilities?.assets?.shop_godown_land,
-            data.assets_liabilities?.assets?.machinery_vehicle, data.assets_liabilities?.assets?.stock_raw_material,
-            data.assets_liabilities?.assets?.goods_sold_credit, data.assets_liabilities?.assets?.others,
-            data.assets_liabilities?.liabilities?.borrowing_qardan, data.assets_liabilities?.liabilities?.goods_credit,
-            data.assets_liabilities?.liabilities?.others, data.assets_liabilities?.liabilities?.total
-          ]);
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `, insertValues);
 
           // Update counseling form with family details ID
           await pool.execute(
@@ -1600,8 +1670,8 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
         break;
 
       case 'declaration':
-        // Helper function to convert undefined to null
-        const toNull = (value) => value === undefined ? null : value;
+        // Helper function to convert undefined and empty strings to null
+        const toNull = (value) => (value === undefined || value === '') ? null : value;
         
         // Auto-populate applicant_its from personal_details if not provided
         if (!data.applicant_its && form.personal_details_id) {

@@ -22,6 +22,292 @@ const ArrowLeftIcon = () => (
   </svg>
 );
 
+// Manzoori Upload Section Component
+const ManzooriUploadSection = ({ caseId, canEdit: workflowCanEdit, canView: workflowCanView }) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [uploadSuccess, setUploadSuccess] = useState('');
+
+  // Fetch counseling form stage permissions as fallback (for Role Management configuration)
+  const { data: counselingFormData } = useQuery(
+    ['counseling-form-stage-permissions', caseId],
+    () => axios.get(`/api/counseling-forms/case/${caseId}`).then(res => res.data),
+    {
+      enabled: !!caseId,
+      retry: false,
+      // Don't fail if form doesn't exist - we just need permissions
+      onError: () => {},
+    }
+  );
+
+  // Get manzoori permissions from counseling form stage permissions (fallback)
+  const manzooriStagePerms = counselingFormData?.stage_permissions?.manzoori;
+  const counselingFormCanEdit = manzooriStagePerms?.can_update === true;
+  const counselingFormCanView = manzooriStagePerms?.can_read === true; // Require explicit Read permission
+
+  // Use workflow permissions first, fallback to counseling form stage permissions
+  // For viewing: require explicit permission (either workflow can_view OR counseling form can_read)
+  const canEdit = workflowCanEdit || counselingFormCanEdit || false;
+  const canView = workflowCanView === true || counselingFormCanView || false; // Require explicit Read permission
+
+  // Fetch attachments for this case (must be called before conditional return)
+  const { data: attachmentsData, isLoading: attachmentsLoading, refetch: refetchAttachments } = useQuery(
+    ['case-attachments', caseId],
+    () => axios.get(`/api/attachments/case/${caseId}`).then(res => res.data),
+    {
+      enabled: !!caseId && canView,
+      retry: false,
+    }
+  );
+
+  // Hide entire component if user doesn't have Read permission
+  if (!canView) {
+    return null;
+  }
+
+  // Filter for manzoori stage files
+  const manzooriFiles = attachmentsData?.attachments?.filter(
+    (file) => file.stage === 'manzoori'
+  ) || [];
+
+  // Handle file upload
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError('Invalid file type. Only PDF, DOC, DOCX, XLS, XLSX, JPG, and PNG files are allowed.');
+      return;
+    }
+
+    // Validate file size (10MB max)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      setUploadError('File size exceeds maximum allowed size of 10MB.');
+      return;
+    }
+
+    setUploading(true);
+    setUploadError('');
+    setUploadSuccess('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('stage', 'manzoori');
+
+      await axios.post(`/api/attachments/upload/${caseId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      setUploadSuccess('File uploaded successfully!');
+      queryClient.invalidateQueries(['case-attachments', caseId]);
+      queryClient.invalidateQueries(['case', caseId]);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setUploadSuccess(''), 3000);
+      
+      // Reset file input
+      event.target.value = '';
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadError(
+        error.response?.data?.error || 
+        error.message || 
+        'Failed to upload file. Please try again.'
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Handle file delete
+  const handleDeleteFile = async (attachmentId) => {
+    if (!window.confirm('Are you sure you want to delete this file?')) {
+      return;
+    }
+
+    try {
+      await axios.delete(`/api/attachments/${attachmentId}`);
+      queryClient.invalidateQueries(['case-attachments', caseId]);
+      queryClient.invalidateQueries(['case', caseId]);
+      setUploadSuccess('File deleted successfully!');
+      setTimeout(() => setUploadSuccess(''), 3000);
+    } catch (error) {
+      console.error('Delete error:', error);
+      setUploadError(
+        error.response?.data?.error || 
+        error.message || 
+        'Failed to delete file. Please try again.'
+      );
+    }
+  };
+
+  // Format file size
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Format date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (error) {
+      return 'Invalid Date';
+    }
+  };
+
+  return (
+    <Card>
+      <Card.Header>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">Manzoori Upload</h3>
+          {canEdit && (
+            <div className="flex items-center space-x-2">
+              <input
+                type="file"
+                id="manzoori-file-input"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                onChange={handleFileUpload}
+                disabled={uploading}
+                className="hidden"
+              />
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => document.getElementById('manzoori-file-input')?.click()}
+                disabled={uploading}
+                loading={uploading}
+                className="flex items-center space-x-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span>{uploading ? 'Uploading...' : 'Upload File'}</span>
+              </Button>
+            </div>
+          )}
+        </div>
+      </Card.Header>
+      <Card.Content>
+        {uploadError && (
+          <Alert severity="error" className="mb-4" onClose={() => setUploadError('')}>
+            {uploadError}
+          </Alert>
+        )}
+        {uploadSuccess && (
+          <Alert severity="success" className="mb-4" onClose={() => setUploadSuccess('')}>
+            {uploadSuccess}
+          </Alert>
+        )}
+
+        <p className="text-sm text-gray-600 mb-4">
+          Upload the manzoori document received for this case. Only authorized users can upload files.
+        </p>
+
+        {attachmentsLoading ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+          </div>
+        ) : manzooriFiles.length > 0 ? (
+          <div className="space-y-3">
+            {manzooriFiles.map((file) => (
+              <div
+                key={file.id}
+                className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+              >
+                <div className="flex items-center space-x-3 flex-1 min-w-0">
+                  <div className="flex-shrink-0">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {file.file_name}
+                    </p>
+                    <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
+                      <span>{formatFileSize(file.file_size)}</span>
+                      <span>Uploaded by {file.uploaded_by_name || file.uploaded_by_full_name || 'Unknown'}</span>
+                      <span>{formatDate(file.created_at)}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2 flex-shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      window.open(`/api/attachments/download/${file.id}`, '_blank');
+                    }}
+                    className="flex items-center space-x-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    <span>Download</span>
+                  </Button>
+                  {canEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteFile(file.id)}
+                      className="flex items-center space-x-1 text-red-600 hover:text-red-700"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span>Delete</span>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <svg className="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p className="text-sm">No manzoori files uploaded yet</p>
+            {!canEdit && (
+              <p className="text-xs mt-1">You don't have permission to upload files</p>
+            )}
+          </div>
+        )}
+      </Card.Content>
+    </Card>
+  );
+};
+
 // Comments Section Component
 const CommentsSection = ({ caseId }) => {
   const { user } = useAuth();
@@ -146,6 +432,8 @@ const CaseDetails = () => {
   const { hasPermission: canAssignCase } = usePermission('cases', 'assign_case');
   // Check if user has permission to assign counselors
   const { hasPermission: canAssignCounselor } = usePermission('cases', 'assign_counselor');
+  // Payment management permissions
+  const { hasPermission: hasPaymentManagementRead } = usePermission('payment_management', 'read');
   
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedRoleId, setSelectedRoleId] = useState('');
@@ -368,7 +656,7 @@ const CaseDetails = () => {
           <div className="flex items-center space-x-4">
             <Button
               variant="outline"
-              onClick={() => navigate('/cases')}
+              onClick={() => navigate(`/cases?search=${encodeURIComponent(caseItem.case_number || '')}`)}
               className="flex items-center space-x-2"
             >
               <ArrowLeftIcon />
@@ -501,8 +789,10 @@ const CaseDetails = () => {
             />
           )}
 
-          {/* Payment Schedule Action Button - Show during finance disbursement stage */}
-          {caseItem.status_name === 'finance_disbursement' && (
+          {/* Payment Schedule Action Button - Show during finance disbursement stage when user has payment management permission */}
+          {(caseItem.status_name === 'finance_disbursement' || 
+            caseItem.current_workflow_stage_name === 'Finance Disbursement') &&
+            hasPaymentManagementRead && (
             <Card>
               <Card.Header>
                 <div className="flex items-center justify-between">
@@ -528,6 +818,18 @@ const CaseDetails = () => {
                 </Button>
               </Card.Content>
             </Card>
+          )}
+
+          {/* Manzoori Upload Section - Show during Manzoori workflow stage */}
+          {/* Hide if case has been approved (moved to next stage) */}
+          {caseItem.current_workflow_stage_name === 'Manzoori' && 
+           !caseItem.status_name?.includes('approved') && 
+           caseItem.status_name !== 'finance_disbursement' && (
+            <ManzooriUploadSection 
+              caseId={caseId} 
+              canEdit={caseItem.workflowPermissions?.can_edit || false}
+              canView={caseItem.workflowPermissions?.can_view !== false}
+            />
           )}
 
           {/* Comments Section */}

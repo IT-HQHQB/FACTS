@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import axios from 'axios';
-import { useAuth } from '../contexts/AuthContext';
+import { usePermission } from '../utils/permissionUtils';
 import PaymentSchedule from '../components/PaymentSchedule';
 import { Button, Card, Alert } from '../components/ui';
 
@@ -15,7 +15,6 @@ const ArrowLeftIcon = () => (
 const PaymentSchedulePage = () => {
   const { caseId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   // Fetch case data to show case number and verify access
   const { data: caseData, isLoading, error } = useQuery(
@@ -23,6 +22,9 @@ const PaymentSchedulePage = () => {
     () => axios.get(`/api/cases/${caseId}`).then(res => res.data),
     { enabled: !!caseId }
   );
+  // Payment management permissions (must be declared before any early returns)
+  const { hasPermission: hasPaymentManagementRead } = usePermission('payment_management', 'read');
+  const { hasPermission: hasPaymentManagementUpdate } = usePermission('payment_management', 'update');
 
   if (isLoading) {
     return (
@@ -56,13 +58,9 @@ const PaymentSchedulePage = () => {
 
   const caseItem = caseData.case;
   const isFinanceStage = caseItem.status_name === 'finance_disbursement';
-  // Check role case-insensitively - also allow Finance role (capital F)
-  const userRole = user?.role?.toLowerCase();
-  const canEdit = userRole === 'finance' || userRole === 'admin' || userRole === 'super_admin' || 
-                  user?.role === 'Finance' || user?.role === 'Admin' || user?.role === 'Super Admin';
-  
-  // Debug: Log user info (can be removed later)
-  console.log('PaymentSchedulePage - User:', user?.role, 'canEdit:', canEdit, 'isFinanceStage:', isFinanceStage);
+
+  const canViewPayment = hasPaymentManagementRead && isFinanceStage;
+  const canEditPayment = hasPaymentManagementUpdate && isFinanceStage;
 
   return (
     <div className="p-6">
@@ -90,19 +88,26 @@ const PaymentSchedulePage = () => {
         </div>
       </div>
 
-      {/* Show alert if not in finance stage */}
+      {/* Permission / stage alerts */}
       {!isFinanceStage && (
         <Alert severity="warning" className="mb-6">
           This case is not in the finance disbursement stage. Payment schedules can only be managed when the case reaches the finance disbursement stage.
         </Alert>
       )}
+      {isFinanceStage && !hasPaymentManagementRead && (
+        <Alert severity="error" className="mb-6">
+          You do not have permission to view the payment schedule for this case. Please contact an administrator to request Payment Management access.
+        </Alert>
+      )}
 
       {/* Payment Schedule Component */}
-      <PaymentSchedule 
-        caseId={caseId}
-        isViewOnly={!canEdit || !isFinanceStage}
-        caseDetails={caseItem}
-      />
+      {canViewPayment && (
+        <PaymentSchedule 
+          caseId={caseId}
+          isViewOnly={!canEditPayment}
+          caseDetails={caseItem}
+        />
+      )}
     </div>
   );
 };

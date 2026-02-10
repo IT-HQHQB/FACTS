@@ -204,20 +204,32 @@ const Users = () => {
   // Fetch jamiat data
   const fetchJamiat = async () => {
     try {
+      if (!token) {
+        console.error('Authentication token is missing');
+        return;
+      }
+      
       const response = await fetch('/api/jamiat', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch jamiat');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to fetch jamiat: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
       setJamiat(data.jamiat || []);
     } catch (err) {
-      console.error('Error fetching jamiat:', err);
+      // Handle network errors
+      if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+        console.error('Unable to connect to the server. Please ensure the backend server is running on port 5000.');
+      } else {
+        console.error('Error fetching jamiat:', err);
+      }
     }
   };
 

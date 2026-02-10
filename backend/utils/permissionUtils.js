@@ -295,7 +295,7 @@ async function getCounselingFormStagePermissions(userRole) {
   try {
     // Super admin always has full access to all stages
     if (userRole === 'super_admin') {
-      const stages = ['personal', 'family', 'assessment', 'financial', 'growth', 'declaration', 'attachments'];
+      const stages = ['personal', 'family', 'assessment', 'financial', 'growth', 'declaration', 'attachments', 'manzoori'];
       const stagePermissions = {};
       stages.forEach(stage => {
         stagePermissions[stage] = {
@@ -320,7 +320,8 @@ async function getCounselingFormStagePermissions(userRole) {
           WHEN 'growth' THEN 5
           WHEN 'declaration' THEN 6
           WHEN 'attachments' THEN 7
-          ELSE 8
+          WHEN 'manzoori' THEN 8
+          ELSE 9
         END
     `, [userRole]);
 
@@ -337,7 +338,7 @@ async function getCounselingFormStagePermissions(userRole) {
       const canRead = await hasPermission(userRole, 'counseling_forms', 'read');
       const canUpdate = await hasPermission(userRole, 'counseling_forms', 'update');
       
-      const stages = ['personal', 'family', 'assessment', 'financial', 'growth', 'declaration', 'attachments'];
+      const stages = ['personal', 'family', 'assessment', 'financial', 'growth', 'declaration', 'attachments', 'manzoori'];
       stages.forEach(stage => {
         stagePermissions[stage] = {
           can_read: canRead,
@@ -353,7 +354,7 @@ async function getCounselingFormStagePermissions(userRole) {
     const canRead = await hasPermission(userRole, 'counseling_forms', 'read');
     const canUpdate = await hasPermission(userRole, 'counseling_forms', 'update');
     
-    const stages = ['personal', 'family', 'assessment', 'financial', 'growth', 'declaration', 'attachments'];
+    const stages = ['personal', 'family', 'assessment', 'financial', 'growth', 'declaration', 'attachments', 'manzoori'];
     const stagePermissions = {};
     stages.forEach(stage => {
       stagePermissions[stage] = {

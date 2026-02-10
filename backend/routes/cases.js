@@ -318,6 +318,21 @@ router.get('/', authenticateToken, async (req, res) => {
       console.warn('Could not check for cases SLA columns:', error.message);
     }
 
+    // Check if cover_letter_forms approval columns exist (migration may not have been applied yet)
+    let coverLetterApprovedColumnExists = false;
+    try {
+      const [columns] = await pool.execute(`
+        SELECT COLUMN_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'cover_letter_forms'
+        AND COLUMN_NAME = 'is_approved'
+      `);
+      coverLetterApprovedColumnExists = columns.length > 0;
+    } catch (error) {
+      console.warn('Could not check for cover_letter_forms is_approved column:', error.message);
+    }
+
     // Build query with or without SLA columns
     // workflow_stages SLA columns
     const workflowSlaFields = workflowSlaColumnsExist ? `
@@ -344,6 +359,9 @@ router.get('/', authenticateToken, async (req, res) => {
     `;
 
     const slaFields = workflowSlaFields + casesSlaFields;
+    const coverLetterApprovalField = coverLetterApprovedColumnExists
+      ? `COALESCE(clf.is_approved, FALSE) as cover_letter_form_approved,`
+      : `FALSE as cover_letter_form_approved,`;
 
     // Get cases with pagination
     const casesQuery = `
@@ -357,6 +375,7 @@ router.get('/', authenticateToken, async (req, res) => {
         cf.is_complete as counseling_form_completed,
         CASE WHEN clf.id IS NOT NULL THEN TRUE ELSE FALSE END as cover_letter_form_exists,
         clf.is_complete as cover_letter_form_completed,
+        ${coverLetterApprovalField}
         -- Individual section completion flags
         CASE WHEN cf.personal_details_id IS NOT NULL THEN TRUE ELSE FALSE END as personal_details_completed,
         CASE WHEN cf.family_details_id IS NOT NULL THEN TRUE ELSE FALSE END as family_details_completed,
@@ -377,6 +396,7 @@ router.get('/', authenticateToken, async (req, res) => {
           THEN TRUE 
           ELSE FALSE 
         END as all_sections_completed,
+        COALESCE(manzoori_attachments.manzoori_file_count, 0) as manzoori_file_count,
         COALESCE(j.name, a.jamiat_name) as jamiat_name,
         COALESCE(applicant_jamaat.name, ja.name) as jamaat_name,
         ct.name as case_type_name,
@@ -417,6 +437,14 @@ router.get('/', authenticateToken, async (req, res) => {
       LEFT JOIN case_types ct ON c.case_type_id = ct.id
       LEFT JOIN workflow_stages ws ON c.current_workflow_stage_id = ws.id
       LEFT JOIN executive_levels el ON c.current_executive_level = el.level_number AND el.is_active = TRUE
+      LEFT JOIN (
+        SELECT 
+          case_id, 
+          COUNT(*) as manzoori_file_count
+        FROM case_attachments
+        WHERE stage = 'manzoori'
+        GROUP BY case_id
+      ) manzoori_attachments ON c.id = manzoori_attachments.case_id
       ${whereClause}
       ORDER BY CAST(REPLACE(c.case_number, 'BS-', '') AS UNSIGNED) DESC
       LIMIT ? OFFSET ?
@@ -674,7 +702,8 @@ router.get('/:caseId', authenticateToken, authorizeCaseAccess, async (req, res) 
     const caseData = cases[0];
 
     // Auto-fix: Check if status matches workflow stage's associated_statuses
-    if (caseData.current_workflow_stage_id && caseData.status) {
+    // IMPORTANT: Never downgrade a case that has already reached finance_disbursement.
+    if (caseData.current_workflow_stage_id && caseData.status && caseData.status !== 'finance_disbursement') {
       try {
         const [stageData] = await pool.execute(
           'SELECT associated_statuses FROM workflow_stages WHERE id = ? AND is_active = TRUE',
@@ -1575,11 +1604,18 @@ router.put('/:caseId/welfare-approve', authenticateToken, async (req, res) => {
       );
 
       // Add welfare approval comment
+      // #region agent log
+      const commentTypeValue = 'approval';
+      fetch('http://127.0.0.1:7242/ingest/bfa26678-5497-4bdc-a2f0-ce1972c9f199',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cases.js:1577',message:'Before inserting case comment',data:{caseId,commentType:commentTypeValue,commentTypeLength:commentTypeValue.length},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       await pool.execute(
         `INSERT INTO case_comments (case_id, user_id, role_name, comment, comment_type, is_visible_to_dcm) 
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [caseId, userId, userRole, comments || 'Case approved by welfare department and forwarded to ZI Review', 'welfare_comment', true]
+        [caseId, userId, userRole, comments || 'Case approved by welfare department and forwarded to ZI Review', commentTypeValue, true]
       );
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/bfa26678-5497-4bdc-a2f0-ce1972c9f199',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cases.js:1583',message:'After inserting case comment - success',data:{caseId},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
 
       // Create notifications
       const notifications = [];
@@ -1593,6 +1629,18 @@ router.put('/:caseId/welfare-approve', authenticateToken, async (req, res) => {
           `Case ${caseData.case_number} for ${caseData.full_name} has been approved by welfare department and forwarded to ZI Review.`,
           'success'
         ]);
+      }
+
+      // Mark cover letter form as approved
+      const [coverLetterForms] = await pool.execute(
+        'SELECT id FROM cover_letter_forms WHERE case_id = ?',
+        [caseId]
+      );
+      if (coverLetterForms.length > 0) {
+        await pool.execute(
+          'UPDATE cover_letter_forms SET is_approved = TRUE, approved_at = CURRENT_TIMESTAMP, approved_by = ? WHERE case_id = ?',
+          [userId, caseId]
+        );
       }
 
       // Notify ZI users
@@ -1630,6 +1678,9 @@ router.put('/:caseId/welfare-approve', authenticateToken, async (req, res) => {
 
     } catch (error) {
       // Rollback transaction on error
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/bfa26678-5497-4bdc-a2f0-ce1972c9f199',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cases.js:1631',message:'Transaction error caught',data:{errorMessage:error.message,errorCode:error.code,caseId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       await pool.query('ROLLBACK');
       throw error;
     }
@@ -1637,6 +1688,9 @@ router.put('/:caseId/welfare-approve', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Welfare approval error:', error);
     console.error('Error stack:', error.stack);
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/bfa26678-5497-4bdc-a2f0-ce1972c9f199',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cases.js:1637',message:'Welfare approval outer catch',data:{errorMessage:error.message,errorCode:error.code,stack:error.stack?.substring(0,500)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
@@ -2227,6 +2281,20 @@ router.put('/:caseId/workflow-action', authenticateToken, async (req, res) => {
           'UPDATE cases SET status = ?, current_workflow_stage_id = ? WHERE id = ?',
           [newStatus, newStageId, caseId]
         );
+      }
+
+      // If approving cover_letter stage, mark cover letter form as approved
+      if (action === 'approve' && currentStage.stage_key === 'cover_letter') {
+        const [coverLetterForms] = await pool.execute(
+          'SELECT id FROM cover_letter_forms WHERE case_id = ?',
+          [caseId]
+        );
+        if (coverLetterForms.length > 0) {
+          await pool.execute(
+            'UPDATE cover_letter_forms SET is_approved = TRUE, approved_at = CURRENT_TIMESTAMP, approved_by = ? WHERE case_id = ?',
+            [userId, caseId]
+          );
+        }
       }
 
       // Update workflow history (pass newStageId to prevent override)
@@ -3116,10 +3184,14 @@ router.put('/:caseId/welfare-forward-rework', authenticateToken, async (req, res
       );
 
       // Add welfare comment (visible to DCM)
+      // #region agent log
+      const welfareReworkCommentType = 'rejection';
+      fetch('http://127.0.0.1:7242/ingest/bfa26678-5497-4bdc-a2f0-ce1972c9f199',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cases.js:3119',message:'Before inserting welfare rework comment',data:{caseId,commentType:welfareReworkCommentType,commentTypeLength:welfareReworkCommentType.length},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       await pool.execute(
         `INSERT INTO case_comments (case_id, user_id, role_name, comment, comment_type, is_visible_to_dcm) 
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [caseId, userId, userRole, comments, 'welfare_comment', true]
+        [caseId, userId, userRole, comments, welfareReworkCommentType, true]
       );
 
       // Create notification for assigned DCM
@@ -3869,6 +3941,103 @@ router.post('/:caseId/payment-schedule/:scheduleId/confirm-disbursement', authen
     }
   } catch (error) {
     console.error('Confirm disbursement error:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
+// Status diagnostics - list all statuses and highlight mismatches between status and workflow stage
+router.get('/status-diagnostics', authenticateToken, authorizeRoles(['admin', 'super_admin']), async (req, res) => {
+  try {
+    // 1) Distinct statuses currently used in cases table
+    const [statusRows] = await pool.execute(
+      `SELECT DISTINCT COALESCE(NULLIF(status, ''), 'NULL') AS status
+       FROM cases
+       ORDER BY status`
+    );
+
+    const statusesInCases = statusRows.map(row => row.status);
+
+    // 2) Workflow stages with associated_statuses
+    const [stageRows] = await pool.execute(
+      `SELECT id, stage_name, stage_key, sort_order, associated_statuses
+       FROM workflow_stages
+       WHERE is_active = TRUE
+       ORDER BY sort_order ASC`
+    );
+
+    const workflowStages = stageRows.map(stage => {
+      let associatedStatuses = [];
+      if (stage.associated_statuses) {
+        try {
+          associatedStatuses = JSON.parse(stage.associated_statuses);
+        } catch (e) {
+          // Fallback: handle legacy non-JSON data
+          associatedStatuses = Array.isArray(stage.associated_statuses)
+            ? stage.associated_statuses
+            : [];
+        }
+      }
+      return {
+        id: stage.id,
+        stage_name: stage.stage_name,
+        stage_key: stage.stage_key,
+        sort_order: stage.sort_order,
+        associated_statuses: associatedStatuses,
+        raw_associated_statuses: stage.associated_statuses
+      };
+    });
+
+    // Build a quick lookup for associated statuses by stage id
+    const stageStatusMap = new Map();
+    for (const s of workflowStages) {
+      stageStatusMap.set(s.id, s.associated_statuses || []);
+    }
+
+    // 3) Find cases where current_workflow_stage_id's associated_statuses
+    // do not contain the case status
+    const [caseRows] = await pool.execute(
+      `SELECT 
+         c.id,
+         c.case_number,
+         c.status,
+         c.current_workflow_stage_id,
+         ws.stage_name,
+         ws.stage_key,
+         ws.associated_statuses
+       FROM cases c
+       LEFT JOIN workflow_stages ws ON c.current_workflow_stage_id = ws.id
+       WHERE c.current_workflow_stage_id IS NOT NULL`
+    );
+
+    const inconsistentCases = [];
+
+    for (const row of caseRows) {
+      const currentStatus = row.status || 'draft';
+      const stageId = row.current_workflow_stage_id;
+      const stageAssociatedStatuses = stageStatusMap.get(stageId) || [];
+
+      // If stage has an explicit associated_statuses array, use it to validate
+      if (stageAssociatedStatuses.length > 0 && !stageAssociatedStatuses.includes(currentStatus)) {
+        inconsistentCases.push({
+          id: row.id,
+          case_number: row.case_number,
+          status: currentStatus,
+          stage_id: stageId,
+          stage_name: row.stage_name,
+          stage_key: row.stage_key,
+          stage_associated_statuses: stageAssociatedStatuses
+        });
+      }
+    }
+
+    res.json({
+      statusesInCases,
+      workflowStages,
+      inconsistentCasesPreview: inconsistentCases.slice(0, 200),
+      inconsistentCount: inconsistentCases.length
+    });
+  } catch (error) {
+    console.error('Status diagnostics error:', error);
     res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });

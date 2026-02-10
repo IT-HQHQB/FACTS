@@ -62,20 +62,35 @@ const JamiatMaster = () => {
   const fetchJamiat = async () => {
     try {
       setLoading(true);
+      setError('');
+      
+      if (!token) {
+        throw new Error('Authentication token is missing. Please log in again.');
+      }
+      
       const response = await fetch('/api/jamiat', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch jamiat');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to fetch jamiat: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
       setJamiat(data.jamiat || []);
+      setError('');
     } catch (err) {
-      setError(err.message);
+      // Handle network errors
+      if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+        setError('Unable to connect to the server. Please ensure the backend server is running on port 5000.');
+      } else {
+        setError(err.message || 'An error occurred while fetching jamiat data');
+      }
+      console.error('Error fetching jamiat:', err);
     } finally {
       setLoading(false);
     }

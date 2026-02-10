@@ -1388,14 +1388,18 @@ const CounselingForm = () => {
         if (financialAssistance.qh_fields && Array.isArray(financialAssistance.qh_fields) && financialAssistance.qh_fields.length > 0) {
           // Ensure all four QH entries exist
           const requiredQhNames = ['QH1', 'QH2', 'QH3', 'Local QH'];
-          const loadedQhGroups = [...financialAssistance.qh_fields];
+          // Normalize API data: map qh_name to name for consistency
+          const loadedQhGroups = financialAssistance.qh_fields.map(group => ({
+            ...group,
+            name: group.name || group.qh_name || ''
+          }));
           
           // Find or create each required QH entry
           requiredQhNames.forEach((qhName, index) => {
             const existingQh = loadedQhGroups.find(g => 
               g.name === qhName || 
               g.name === qhName.replace(' ', '') || 
-              (qhName === 'Local QH' && g.name.toLowerCase().includes('local'))
+              (qhName === 'Local QH' && (g.name || '').toLowerCase().includes('local'))
             );
             
             if (!existingQh) {
@@ -2700,7 +2704,6 @@ const CounselingForm = () => {
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Other Details
-                    <span className="text-red-500 ml-1">*</span>
                   </label>
                   <textarea
                     rows={3}
@@ -2713,7 +2716,7 @@ const CounselingForm = () => {
                         ? 'bg-gray-100 cursor-not-allowed' 
                         : 'bg-white'
                     }`}
-                    {...register('family_details.other_details', { required: 'Other details is required' })}
+                    {...register('family_details.other_details')}
                     disabled={!canUpdateSection('family')}
                   />
                   {errors.family_details?.other_details?.message && (
@@ -3177,21 +3180,13 @@ const CounselingForm = () => {
                         <td className="border border-gray-300 px-3 py-2 text-center">3</td>
                         <td className="border border-gray-300 px-3 py-2">
                           Scholarship (Enayat/Muwasat Etc.)
-                          {watch('family_details.income_expense.deficit_monthly') > 0 && <span className="text-red-500"> *</span>}
                         </td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.scholarship_monthly', { 
-                              valueAsNumber: true,
-                              validate: (value) => {
-                                const deficit = watch('family_details.income_expense.deficit_monthly');
-                                if (deficit > 0 && (!value || value === 0)) {
-                                  return 'Scholarship is required when there is a deficit';
-                                }
-                                return true;
-                              }
+                              valueAsNumber: true
                             })}
                             onKeyPress={handleDecimalInput}
                             onChange={(e) => {
@@ -3220,21 +3215,13 @@ const CounselingForm = () => {
                         <td className="border border-gray-300 px-3 py-2 text-center">4</td>
                         <td className="border border-gray-300 px-3 py-2">
                           Borrowing/Qardan etc.
-                          {watch('family_details.income_expense.deficit_monthly') > 0 && <span className="text-red-500"> *</span>}
                         </td>
                         <td className="border border-gray-300 px-3 py-2">
                           <input
                             type="number"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register('family_details.income_expense.borrowing_monthly', { 
-                              valueAsNumber: true,
-                              validate: (value) => {
-                                const deficit = watch('family_details.income_expense.deficit_monthly');
-                                if (deficit > 0 && (!value || value === 0)) {
-                                  return 'Borrowing is required when there is a deficit';
-                                }
-                                return true;
-                              }
+                              valueAsNumber: true
                             })}
                             onKeyPress={handleDecimalInput}
                             onChange={(e) => {
@@ -3314,8 +3301,7 @@ const CounselingForm = () => {
                       />
                       <Input
                         label="Others"
-                        required
-                        {...register('family_details.assets_liabilities.assets.others', { required: 'Other assets is required' })}
+                        {...register('family_details.assets_liabilities.assets.others')}
                         error={errors.family_details?.assets_liabilities?.assets?.others?.message}
                         disabled={!canUpdateSection('family')}
                         className={!canUpdateSection('family') ? 'bg-gray-100' : ''}
@@ -3353,9 +3339,8 @@ const CounselingForm = () => {
                       <Input
                         label="Others"
                         type="number"
-                        required
                         onKeyPress={handleDecimalInput}
-                        {...register('family_details.assets_liabilities.liabilities.others', { required: 'Other liabilities is required', valueAsNumber: true })}
+                        {...register('family_details.assets_liabilities.liabilities.others', { valueAsNumber: true })}
                         error={errors.family_details?.assets_liabilities?.liabilities?.others?.message}
                         onChange={(e) => {
                           setValue('family_details.assets_liabilities.liabilities.others', parseFloat(e.target.value) || 0);
@@ -4652,7 +4637,7 @@ const CounselingForm = () => {
                           
                           {/* Local QH Row - Always visible */}
                           {(() => {
-                            const localQh = qhGroups.find(g => g.name.toLowerCase().includes('local') || g.name === 'Local QH') || qhGroups[3];
+                            const localQh = qhGroups.find(g => (g.name || '').toLowerCase().includes('local') || g.name === 'Local QH') || qhGroups[3];
                             return (
                               <tr>
                                 <td className="bg-yellow-50 border border-gray-300 px-4 py-4 align-top">
@@ -7435,7 +7420,7 @@ const CounselingForm = () => {
                           <button
                             type="button"
                             disabled={!canUpdateSection('attachments')}
-                            className={!canUpdateSection('attachments') ? 'opacity-50 cursor-not-allowed' : ''}
+                            className={`bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 ${!canUpdateSection('attachments') ? 'opacity-50 cursor-not-allowed' : ''}`}
                             onClick={() => {
                               if (!canUpdateSection('attachments')) {
                                 setError('You do not have permission');
@@ -7467,7 +7452,6 @@ const CounselingForm = () => {
                               };
                               input.click();
                             }}
-                            className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
                           >
                             +
                           </button>
@@ -7680,7 +7664,7 @@ const CounselingForm = () => {
                           <button
                             type="button"
                             disabled={!canUpdateSection('attachments')}
-                            className={!canUpdateSection('attachments') ? 'opacity-50 cursor-not-allowed' : ''}
+                            className={`bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 ${!canUpdateSection('attachments') ? 'opacity-50 cursor-not-allowed' : ''}`}
                             onClick={() => {
                               if (!canUpdateSection('attachments')) {
                                 setError('You do not have permission');
@@ -7712,7 +7696,6 @@ const CounselingForm = () => {
                               };
                               input.click();
                             }}
-                            className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
                           >
                             +
                           </button>
@@ -8311,7 +8294,7 @@ const CounselingForm = () => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate('/cases')}
+            onClick={() => navigate(`/cases?search=${encodeURIComponent(formData?.form?.case_number || caseId || '')}`)}
           >
             Back to Cases
           </Button>

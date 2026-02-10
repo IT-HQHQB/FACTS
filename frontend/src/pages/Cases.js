@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
@@ -22,6 +22,7 @@ import { useCounselingFormAccess, usePermission } from '../utils/permissionUtils
 import WelfareChecklistForm from '../components/WelfareChecklistForm';
 import CoverLetterForm from '../components/CoverLetterForm';
 import CaseSLAStatus from '../components/CaseSLAStatus';
+import { generateCoverLetterPDF } from '../utils/generateCoverLetterPDF';
 
 // Icon components
 const AddIcon = () => (
@@ -60,9 +61,10 @@ const FilterIcon = () => (
 
 const Cases = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  
+
   // Use database-driven permission check
   const { hasAccess: hasCounselingFormAccess, loading: permissionLoading } = useCounselingFormAccess();
   
@@ -83,6 +85,9 @@ const Cases = () => {
   const { hasPermission: hasCoverLetterFormsCreate } = usePermission('cover_letter_forms', 'create');
   const { hasPermission: hasCoverLetterFormsUpdate } = usePermission('cover_letter_forms', 'update');
   const { hasPermission: hasCoverLetterFormsRead } = usePermission('cover_letter_forms', 'read');
+  // Payment management permissions
+  const { hasPermission: hasPaymentManagementRead } = usePermission('payment_management', 'read');
+  const { hasPermission: hasPaymentManagementUpdate } = usePermission('payment_management', 'update');
 
   // Alternative approach: Check if user can access counseling forms by making an API call
   const checkCounselingFormAccess = async (caseId) => {
@@ -173,6 +178,18 @@ const Cases = () => {
   const [workflowComments, setWorkflowComments] = useState('');
 
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm();
+
+  // Initialize search filter from URL query parameter (e.g., /cases?search=BS-0895)
+  useEffect(() => {
+    const searchFromUrl = searchParams.get('search') || '';
+    if (searchFromUrl) {
+      setFilters(prev => ({
+        ...prev,
+        search: searchFromUrl,
+      }));
+      setPage(1);
+    }
+  }, [searchParams]);
   
   // Watch for ITS number changes in create modal
   const watchedCreateItsNumber = watch('its_number');
@@ -244,6 +261,103 @@ const Cases = () => {
       }
     }
   );
+
+  // Handle PDF download for cover letter
+  const handleDownloadCoverLetterPDF = async (caseId, caseNumber) => {
+    try {
+      // Fetch latest cover letter form data
+      const formResponse = await axios.get(`/api/cover-letter-forms/case/${caseId}`);
+      const formData = formResponse.data.form;
+
+      if (!formData) {
+        alert('Cover letter form not found');
+        return;
+      }
+
+      // Get user info for PDF
+      const user = JSON.parse(localStorage.getItem('user'));
+      const userName = user?.full_name || user?.username || user?.name || 'System';
+
+      // Generate PDF
+      const pdfDoc = await generateCoverLetterPDF(formData, {
+        caseNumber: caseNumber || formData.applicant_details?.case_id || `#${caseId}`,
+        userName,
+        caseId
+      });
+
+      // Generate blob and download
+      const pdfBlob = pdfDoc.output('blob');
+      if (!pdfBlob || pdfBlob.size === 0) {
+        throw new Error('PDF blob is empty');
+      }
+
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const fileName = `cover_letter_${caseNumber || caseId || 'unknown'}_${timestamp}.pdf`;
+
+      // Trigger download
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Open in new tab
+      window.open(pdfUrl, '_blank');
+
+      // Clean up blob URL after a delay
+      setTimeout(() => {
+        URL.revokeObjectURL(pdfUrl);
+      }, 100);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert(`Failed to generate PDF: ${error.message}`);
+    }
+  };
+
+  // Handle Manzoori file click - opens Manzoori files in new tabs
+  const handleManzooriClick = async (caseId) => {
+    try {
+      // 1) Fetch attachments for the case
+      const response = await axios.get(`/api/attachments/case/${caseId}`);
+      const manzooriFiles =
+        response.data.attachments?.filter((file) => file.stage === 'manzoori') ||
+        [];
+
+      if (manzooriFiles.length === 0) {
+        alert('No Manzoori files found for this case');
+        return;
+      }
+
+      // 2) For each manzoori file, fetch the binary and open in a new tab
+      for (const file of manzooriFiles) {
+        try {
+          const downloadResponse = await axios.get(
+            `/api/attachments/download/${file.id}`,
+            {
+              responseType: 'blob',
+            }
+          );
+
+          const contentType =
+            downloadResponse.headers['content-type'] || 'application/pdf';
+          const blob = new Blob([downloadResponse.data], { type: contentType });
+          const url = window.URL.createObjectURL(blob);
+          window.open(url, '_blank');
+
+          // Clean up URL object after a short delay
+          setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+        } catch (err) {
+          console.error('Error opening Manzoori file:', err);
+          alert('Failed to open one of the Manzoori files.');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching Manzoori files:', error);
+      alert('Failed to open Manzoori files');
+    }
+  };
 
   // Executive rework mutation
   const executiveReworkMutation = useMutation(
@@ -523,6 +637,26 @@ const Cases = () => {
       keepPreviousData: true,
     }
   );
+
+  // Get counseling form stage permissions for current user (used for Manzoori visibility)
+  // Permissions are role-based, so we can use any case ID; use first case in list if available
+  const { data: stagePermissionsData } = useQuery(
+    ['counseling-form-stage-permissions', casesData?.cases?.[0]?.id],
+    async () => {
+      // Permissions are role-based, so we can use any case ID; use first case in list
+      const firstCaseId = casesData?.cases?.[0]?.id;
+      if (!firstCaseId) return null;
+      const res = await axios.get(`/api/counseling-forms/case/${firstCaseId}`);
+      return res.data;
+    },
+    {
+      enabled: !!casesData?.cases?.length,
+      retry: false,
+    }
+  );
+
+  const hasManzooriReadPermission =
+    stagePermissionsData?.stage_permissions?.manzoori?.can_read === true;
 
   // Fetch applicants for the dropdown with filtering
   // Only use search term if it's not in the format "ITS - Name" (which means an applicant was selected)
@@ -1546,8 +1680,10 @@ const Cases = () => {
                             <ViewIcon />
                           </Button>
                           
-                          {/* Payment Schedule Button - Show for finance disbursement status */}
-                          {caseItem.status_name === 'finance_disbursement' && (
+                          {/* Payment Schedule Button - Show only at finance disbursement stage when user has payment management permission */}
+                          {(caseItem.status_name === 'finance_disbursement' ||
+                            caseItem.current_workflow_stage_name === 'Finance Disbursement') &&
+                            hasPaymentManagementRead && (
                             <Button
                               variant="primary"
                               size="sm"
@@ -1562,12 +1698,11 @@ const Cases = () => {
                             </Button>
                           )}
 
-                          {/* Cover Letter Button - Show when case is in Cover Letter stage OR if cover letter form exists */}
-                          {((caseItem.current_workflow_stage_name === 'Cover Letter' || 
-                             caseItem.status_name === 'submitted_to_cover_letter' ||
-                             caseItem.cover_letter_form_exists) &&
+                          {/* Cover Letter Button - Show until last stage (finance_disbursement) if cover letter form exists */}
+                          {((caseItem.status_name !== 'finance_disbursement' && caseItem.cover_letter_form_exists) &&
                             (hasCoverLetterFormsCreate || hasCoverLetterFormsUpdate || hasCoverLetterFormsRead || 
                              user?.role === 'admin' || user?.role === 'super_admin')) && (
+                            <>
                             <Button
                               variant="primary"
                               size="sm"
@@ -1582,7 +1717,23 @@ const Cases = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                               </svg>
                               <span className="hidden sm:inline">Cover Letter</span>
+                              </Button>
+                              {/* PDF Download Button - Show when cover letter form exists */}
+                              {caseItem.cover_letter_form_exists && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDownloadCoverLetterPDF(caseItem.id, caseItem.case_number)}
+                                  className="flex items-center space-x-1 border-gray-300 hover:bg-gray-50 text-gray-700 hover:text-gray-900"
+                                  title="Download Cover Letter PDF"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                  <span className="hidden sm:inline">PDF</span>
                             </Button>
+                              )}
+                            </>
                           )}
                           
                           {/* Welfare Department Actions */}
@@ -1842,6 +1993,20 @@ const Cases = () => {
                               <span className="text-xs font-medium">👤 Change</span>
                             </Button>
                           )}
+
+                          {/* Manzoori button - visible in any stage for users with Manzoori Read permission when case has Manzoori files */}
+                          {hasManzooriReadPermission &&
+                            caseItem.manzoori_file_count > 0 && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleManzooriClick(caseItem.id)}
+                                className="flex items-center justify-center px-3 py-2 border-0 hover:bg-green-50 text-gray-600 hover:text-green-700"
+                                title="Open Manzoori PDF"
+                              >
+                                <span className="text-xs font-medium">📄 Manzoori</span>
+                              </Button>
+                            )}
 
                           {canDeleteCase && (
                             <Button
@@ -2525,15 +2690,12 @@ const Cases = () => {
           {coverLetterCaseId && (() => {
             // Get case details to determine if form should be view-only
             const selectedCase = casesData?.cases?.find(c => c.id === coverLetterCaseId);
-            const isCaseInCoverLetterStage = selectedCase?.current_workflow_stage_name === 'Cover Letter' || 
-                                             selectedCase?.status_name === 'submitted_to_cover_letter';
-            const isFormSubmitted = selectedCase?.cover_letter_form_completed;
+            const isCoverLetterApproved = !!selectedCase?.cover_letter_form_approved;
             
-            // Form should be view-only if:
-            // 1. User doesn't have edit permissions, OR
-            // 2. Case is past Cover Letter stage AND form is already submitted
-            const shouldBeViewOnly = !(hasCoverLetterFormsCreate || hasCoverLetterFormsUpdate || user?.role === 'admin' || user?.role === 'super_admin') ||
-                                    (!isCaseInCoverLetterStage && isFormSubmitted);
+            // IMPORTANT:
+            // Cover letter stays editable in any workflow stage until it is approved.
+            // Once approved, lock for everyone except super_admin.
+            const shouldBeViewOnly = isCoverLetterApproved && user?.role !== 'super_admin';
             
             return (
               <CoverLetterForm 

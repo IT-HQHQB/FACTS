@@ -33,6 +33,9 @@ const welfareChecklistRoutes = require('./routes/welfareChecklist');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust proxy - required for express-rate-limit when behind a proxy
+app.set('trust proxy', true);
+
 // Security middleware
 app.use(helmet());
 
