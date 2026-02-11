@@ -1,11 +1,11 @@
 const express = require('express');
 const { pool } = require('../config/database');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, authorizePermission } = require('../middleware/auth');
 const { hasPermission } = require('../utils/roleUtils');
 
 const router = express.Router();
 
-// Get all relations
+// Get all relations - open to all authenticated users (used in dropdowns)
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const [relations] = await pool.execute(
@@ -39,7 +39,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create new relation (Admin only)
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, authorizePermission('master', 'create'), async (req, res) => {
   try {
     const { name, description } = req.body;
     
@@ -74,7 +74,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update relation (Admin only)
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, authorizePermission('master', 'update'), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, is_active } = req.body;
@@ -109,7 +109,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete relation (Admin only)
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, authorizePermission('master', 'delete'), async (req, res) => {
   try {
     const { id } = req.params;
     

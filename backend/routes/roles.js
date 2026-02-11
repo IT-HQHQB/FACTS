@@ -502,6 +502,8 @@ router.get('/permissions/available', authenticateToken, authorizeRoles('super_ad
       { resource: 'dashboard', actions: ['read'] },
       // Welfare checklist permissions
       { resource: 'welfare_checklist', actions: ['create', 'read', 'update', 'delete', 'fill', 'view'] },
+      // Master data permissions (Jamiat Master, Case Types, Relations, etc.)
+      { resource: 'master', actions: ['read', 'create', 'update', 'delete'] },
     ];
     
     res.json({ permissions });

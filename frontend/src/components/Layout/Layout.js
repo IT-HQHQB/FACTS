@@ -209,6 +209,16 @@ const Layout = ({ children }) => {
     return roleNames[role] || role;
   };
 
+  // Helper to check if the current user has a specific permission
+  const userHasPermission = (resource, action) => {
+    if (!user?.permissions) return false;
+    const resourcePermissions = user.permissions[resource];
+    if (!resourcePermissions) return false;
+    return resourcePermissions.includes(action) || resourcePermissions.includes('all');
+  };
+
+  const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'Super Administrator';
+
   const getNavigationItems = () => {
     const baseItems = [
       { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', color: 'text-blue-500' },
@@ -225,9 +235,10 @@ const Layout = ({ children }) => {
       );
     }
 
-    // Master dropdown items
+    // Master dropdown items - shown for super_admin always, or for roles with master:read permission
     const masterItems = [];
-    if (user?.role === 'super_admin' || user?.role === 'Super Administrator' || user?.role === 'admin') {
+    const hasMasterAccess = isSuperAdmin || userHasPermission('master', 'read');
+    if (hasMasterAccess) {
       masterItems.push(
         { text: 'Jamiat Master', icon: <SettingsIcon />, path: '/jamiat-master', color: 'text-orange-500' },
         { text: 'Case Types', icon: <CaseTypeIcon />, path: '/case-types', color: 'text-pink-500' },
@@ -240,19 +251,18 @@ const Layout = ({ children }) => {
     }
 
     // Add Counseling Forms to Master for super admin
-    if (user?.role === 'super_admin' || user?.role === 'Super Administrator') {
+    if (isSuperAdmin) {
       masterItems.push(
         { text: 'Counseling Forms', icon: <FormIcon />, path: '/counseling-forms', color: 'text-rose-500' },
         { text: 'Checklist Categories', icon: <FormIcon />, path: '/welfare-checklist-categories', color: 'text-sky-500' },
         { text: 'Checklist Items', icon: <FormIcon />, path: '/welfare-checklist-items', color: 'text-lime-500' }
       );
-    } else if (['dcm', 'counselor', 'admin'].includes(user?.role)) {
-      // For other roles, add Counseling Forms as a regular item or under Master
-      if (user?.role === 'admin') {
-        masterItems.push({ text: 'Counseling Forms', icon: <FormIcon />, path: '/counseling-forms', color: 'text-rose-500' });
-      } else {
-        baseItems.push({ text: 'Counseling Forms', icon: <FormIcon />, path: '/counseling-forms', color: 'text-rose-500' });
-      }
+    } else if (['dcm', 'counselor'].includes(user?.role)) {
+      // For dcm/counselor roles, add Counseling Forms as a regular menu item
+      baseItems.push({ text: 'Counseling Forms', icon: <FormIcon />, path: '/counseling-forms', color: 'text-rose-500' });
+    } else if (hasMasterAccess) {
+      // For other roles with master access, add Counseling Forms under Master
+      masterItems.push({ text: 'Counseling Forms', icon: <FormIcon />, path: '/counseling-forms', color: 'text-rose-500' });
     }
 
     // Add Administration dropdown if it has items

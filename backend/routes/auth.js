@@ -143,7 +143,34 @@ router.get('/profile', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json({ user: users[0] });
+    const user = users[0];
+
+    // Fetch user permissions from role_permissions table
+    let permissions = {};
+    try {
+      const [rolePermissions] = await pool.execute(
+        `SELECT rp.resource, rp.action 
+         FROM role_permissions rp 
+         JOIN roles r ON rp.role_id = r.id 
+         WHERE r.name = ? AND r.is_active = 1`,
+        [user.role]
+      );
+
+      // Group permissions by resource: { master: ['read', 'create'], cases: ['read', 'update'], ... }
+      rolePermissions.forEach(rp => {
+        if (!permissions[rp.resource]) {
+          permissions[rp.resource] = [];
+        }
+        permissions[rp.resource].push(rp.action);
+      });
+    } catch (permErr) {
+      // If role_permissions table doesn't exist or query fails, continue with empty permissions
+      console.log('Could not fetch role permissions:', permErr.message);
+    }
+
+    user.permissions = permissions;
+
+    res.json({ user });
   } catch (error) {
     console.error('Profile error:', error);
     res.status(500).json({ error: 'Internal server error' });

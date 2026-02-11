@@ -1,11 +1,11 @@
 const express = require('express');
 const { pool } = require('../config/database');
-const { authenticateToken, authorizeRoles } = require('../middleware/auth');
+const { authenticateToken, authorizePermission } = require('../middleware/auth');
 
 const router = express.Router();
 
 // Get all executive levels
-router.get('/', authenticateToken, authorizeRoles('super_admin', 'admin'), async (req, res) => {
+router.get('/', authenticateToken, authorizePermission('master', 'read'), async (req, res) => {
   try {
     const [levels] = await pool.execute(`
       SELECT 
@@ -27,7 +27,7 @@ router.get('/', authenticateToken, authorizeRoles('super_admin', 'admin'), async
 });
 
 // Get executive level by ID
-router.get('/:id', authenticateToken, authorizeRoles('super_admin', 'admin'), async (req, res) => {
+router.get('/:id', authenticateToken, authorizePermission('master', 'read'), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -48,7 +48,7 @@ router.get('/:id', authenticateToken, authorizeRoles('super_admin', 'admin'), as
 });
 
 // Create new executive level
-router.post('/', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
+router.post('/', authenticateToken, authorizePermission('master', 'create'), async (req, res) => {
   try {
     const { level_number, level_name, description, sort_order } = req.body;
     
@@ -86,7 +86,7 @@ router.post('/', authenticateToken, authorizeRoles('super_admin'), async (req, r
 });
 
 // Update executive level
-router.put('/:id', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
+router.put('/:id', authenticateToken, authorizePermission('master', 'update'), async (req, res) => {
   try {
     const { id } = req.params;
     const { level_number, level_name, description, sort_order, is_active } = req.body;
@@ -130,7 +130,7 @@ router.put('/:id', authenticateToken, authorizeRoles('super_admin'), async (req,
 });
 
 // Delete executive level
-router.delete('/:id', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, authorizePermission('master', 'delete'), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -184,7 +184,7 @@ router.delete('/:id', authenticateToken, authorizeRoles('super_admin'), async (r
 });
 
 // Reorder executive levels
-router.put('/reorder', authenticateToken, authorizeRoles('super_admin'), async (req, res) => {
+router.put('/reorder', authenticateToken, authorizePermission('master', 'update'), async (req, res) => {
   try {
     const { levels } = req.body; // Array of { id, sort_order }
     

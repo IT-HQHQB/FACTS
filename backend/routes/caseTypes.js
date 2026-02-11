@@ -42,7 +42,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create new case type (admin only)
-router.post('/', authenticateToken, authorizePermission('cases', 'create'), async (req, res) => {
+router.post('/', authenticateToken, authorizePermission('master', 'create'), async (req, res) => {
   try {
     const { name, description, sort_order } = req.body;
 
@@ -70,7 +70,7 @@ router.post('/', authenticateToken, authorizePermission('cases', 'create'), asyn
 });
 
 // Update case type (admin only)
-router.put('/:id', authenticateToken, authorizePermission('cases', 'update'), async (req, res) => {
+router.put('/:id', authenticateToken, authorizePermission('master', 'update'), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, sort_order, is_active } = req.body;
@@ -96,7 +96,7 @@ router.put('/:id', authenticateToken, authorizePermission('cases', 'update'), as
 });
 
 // Delete case type (admin only)
-router.delete('/:id', authenticateToken, authorizePermission('cases', 'delete'), async (req, res) => {
+router.delete('/:id', authenticateToken, authorizePermission('master', 'delete'), async (req, res) => {
   try {
     const { id } = req.params;
 
