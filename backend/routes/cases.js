@@ -1,9 +1,50 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const { pool } = require('../config/database');
 const { authenticateToken, authorizeRoles, authorizeCaseAccess, canCreateCaseInStage, canFillCaseInStage, authorizePermission } = require('../middleware/auth');
 const { hasPermission, canAccessAllCases } = require('../utils/permissionUtils');
 const notificationService = require('../services/notificationService');
 const { v4: uuidv4 } = require('uuid');
+
+// Configure multer for case closure document uploads
+const closureStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const { caseId } = req.params;
+    const uploadDir = path.join(__dirname, '../uploads/case_closures', caseId);
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const closureUpload = multer({
+  storage: closureStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /pdf|doc|docx|jpg|jpeg|png|xls|xlsx/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype) || 
+      file.mimetype === 'application/pdf' ||
+      file.mimetype === 'application/msword' ||
+      file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      file.mimetype === 'application/vnd.ms-excel' ||
+      file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      file.mimetype === 'image/jpeg' ||
+      file.mimetype === 'image/png';
+    if (extname && mimetype) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF, DOC, DOCX, XLS, XLSX, JPG, and PNG files are allowed.'), false);
+    }
+  }
+});
 
 const router = express.Router();
 
@@ -4039,6 +4080,138 @@ router.get('/status-diagnostics', authenticateToken, authorizeRoles(['admin', 's
   } catch (error) {
     console.error('Status diagnostics error:', error);
     res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
+// Close a case with reason and optional supporting document
+router.post('/:caseId/close', authenticateToken, authorizePermission('cases', 'close_case'), closureUpload.single('document'), async (req, res) => {
+  try {
+    const { caseId } = req.params;
+    const { reason } = req.body;
+    const userId = req.user.id;
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ error: 'Reason for closure is required' });
+    }
+
+    // Get current case details
+    const [caseData] = await pool.execute(
+      'SELECT id, case_number, status FROM cases WHERE id = ?',
+      [caseId]
+    );
+
+    if (caseData.length === 0) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+
+    const currentCase = caseData[0];
+
+    if (currentCase.status === 'closed') {
+      return res.status(400).json({ error: 'Case is already closed' });
+    }
+
+    const previousStatus = currentCase.status;
+
+    // Prepare document data if file uploaded
+    let documentPath = null;
+    let documentName = null;
+    let documentType = null;
+    let documentSize = null;
+
+    if (req.file) {
+      documentPath = `case_closures/${caseId}/${req.file.filename}`;
+      documentName = req.file.originalname;
+      documentType = req.file.mimetype;
+      documentSize = req.file.size;
+    }
+
+    // Insert closure record
+    await pool.execute(`
+      INSERT INTO case_closures (case_id, reason, document_path, document_name, document_type, document_size, closed_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [caseId, reason.trim(), documentPath, documentName, documentType, documentSize, userId]);
+
+    // Update case status to closed
+    await pool.execute(
+      'UPDATE cases SET status = ? WHERE id = ?',
+      ['closed', caseId]
+    );
+
+    // Log status change in status_history
+    await pool.execute(
+      `INSERT INTO status_history (case_id, from_status, to_status, changed_by, comments)
+       VALUES (?, ?, ?, ?, ?)`,
+      [caseId, previousStatus, 'closed', userId, `Case closed. Reason: ${reason.trim()}`]
+    );
+
+    res.json({
+      message: 'Case closed successfully',
+      case_number: currentCase.case_number,
+      status: 'closed'
+    });
+  } catch (error) {
+    console.error('Case closure error:', error);
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File too large. Maximum size is 10MB.' });
+    }
+    if (error.message?.includes('Invalid file type')) {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get case closure details
+router.get('/:caseId/closure', authenticateToken, async (req, res) => {
+  try {
+    const { caseId } = req.params;
+
+    const [closure] = await pool.execute(`
+      SELECT cc.*, u.full_name as closed_by_name
+      FROM case_closures cc
+      JOIN users u ON cc.closed_by = u.id
+      WHERE cc.case_id = ?
+      ORDER BY cc.created_at DESC
+      LIMIT 1
+    `, [caseId]);
+
+    if (closure.length === 0) {
+      return res.status(404).json({ error: 'No closure record found for this case' });
+    }
+
+    res.json({ closure: closure[0] });
+  } catch (error) {
+    console.error('Get case closure error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Download case closure document
+router.get('/:caseId/closure/document', authenticateToken, async (req, res) => {
+  try {
+    const { caseId } = req.params;
+
+    const [closure] = await pool.execute(
+      'SELECT document_path, document_name, document_type FROM case_closures WHERE case_id = ? AND document_path IS NOT NULL ORDER BY created_at DESC LIMIT 1',
+      [caseId]
+    );
+
+    if (closure.length === 0) {
+      return res.status(404).json({ error: 'No closure document found' });
+    }
+
+    const filePath = path.join(__dirname, '../uploads', closure[0].document_path);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Document file not found on server' });
+    }
+
+    res.setHeader('Content-Type', closure[0].document_type);
+    res.setHeader('Content-Disposition', `attachment; filename="${closure[0].document_name}"`);
+    res.sendFile(filePath);
+  } catch (error) {
+    console.error('Download closure document error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

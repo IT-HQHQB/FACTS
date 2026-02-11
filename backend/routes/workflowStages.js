@@ -1,11 +1,11 @@
 const express = require('express');
 const { pool } = require('../config/database');
-const { authenticateToken, authorizeRoles } = require('../middleware/auth');
+const { authenticateToken, authorizePermission } = require('../middleware/auth');
 
 const router = express.Router();
 
 // Get all workflow stages with roles and users (optionally filtered by case type)
-router.get('/', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.get('/', authenticateToken, authorizePermission('master', 'read'), async (req, res) => {
   try {
     const { case_type_id } = req.query;
     
@@ -101,7 +101,7 @@ router.get('/', authenticateToken, authorizeRoles('admin', 'super_admin'), async
 });
 
 // Get status to workflow stage mapping (for viewing mappings)
-router.get('/status-mappings', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.get('/status-mappings', authenticateToken, authorizePermission('master', 'read'), async (req, res) => {
   try {
     // Get all active workflow stages with their associated statuses
     const [stages] = await pool.execute(
@@ -176,7 +176,7 @@ router.get('/status-mappings', authenticateToken, authorizeRoles('admin', 'super
 });
 
 // Get workflow stages grouped by case type
-router.get('/by-case-type', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.get('/by-case-type', authenticateToken, authorizePermission('master', 'read'), async (req, res) => {
   try {
     const { include_deleted } = req.query;
     console.log('API called with include_deleted:', include_deleted);
@@ -276,7 +276,7 @@ router.get('/by-case-type', authenticateToken, authorizeRoles('admin', 'super_ad
 });
 
 // Get single workflow stage by ID
-router.get('/:id', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.get('/:id', authenticateToken, authorizePermission('master', 'read'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -342,7 +342,7 @@ router.get('/:id', authenticateToken, authorizeRoles('admin', 'super_admin'), as
 });
 
 // Create new workflow stage
-router.post('/', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.post('/', authenticateToken, authorizePermission('master', 'create'), async (req, res) => {
   try {
      const { 
        stage_name, 
@@ -513,7 +513,7 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'super_admin'), asyn
 });
 
 // Reorder workflow stages (must be before /:id route)
-router.put('/reorder', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.put('/reorder', authenticateToken, authorizePermission('master', 'update'), async (req, res) => {
   try {
     const { stages } = req.body;
 
@@ -547,7 +547,7 @@ router.put('/reorder', authenticateToken, authorizeRoles('admin', 'super_admin')
 });
 
 // Update role permissions in workflow stage (must be before /:id route)
-router.put('/:id/roles/:roleId', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.put('/:id/roles/:roleId', authenticateToken, authorizePermission('master', 'update'), async (req, res) => {
   try {
     const { id, roleId } = req.params;
     const { can_approve, can_reject, can_review, can_view, can_edit, can_delete, can_create_case, can_fill_case } = req.body;
@@ -579,7 +579,7 @@ router.put('/:id/roles/:roleId', authenticateToken, authorizeRoles('admin', 'sup
 });
 
 // Update user permissions in workflow stage (must be before /:id route)
-router.put('/:id/users/:userId', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.put('/:id/users/:userId', authenticateToken, authorizePermission('master', 'update'), async (req, res) => {
   try {
     const { id, userId } = req.params;
     const { can_approve, can_reject, can_review, can_view, can_edit, can_delete, can_create_case, can_fill_case } = req.body;
@@ -611,7 +611,7 @@ router.put('/:id/users/:userId', authenticateToken, authorizeRoles('admin', 'sup
 });
 
 // Update workflow stage
-router.put('/:id', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.put('/:id', authenticateToken, authorizePermission('master', 'update'), async (req, res) => {
   try {
     const { id } = req.params;
      const { 
@@ -754,7 +754,7 @@ router.put('/:id', authenticateToken, authorizeRoles('admin', 'super_admin'), as
 });
 
 // Delete workflow stage (soft delete)
-router.delete('/:id', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id', authenticateToken, authorizePermission('master', 'delete'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -794,7 +794,7 @@ router.delete('/:id', authenticateToken, authorizeRoles('admin', 'super_admin'),
 });
 
 // Restore soft-deleted workflow stage
-router.put('/:id/restore', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.put('/:id/restore', authenticateToken, authorizePermission('master', 'update'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -822,7 +822,7 @@ router.put('/:id/restore', authenticateToken, authorizeRoles('admin', 'super_adm
 });
 
 // Add role to workflow stage
-router.post('/:id/roles', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.post('/:id/roles', authenticateToken, authorizePermission('master', 'create'), async (req, res) => {
   try {
     const { id } = req.params;
     const { role_id, can_approve, can_reject, can_review, can_view, can_edit, can_delete, can_create_case, can_fill_case } = req.body;
@@ -874,7 +874,7 @@ router.post('/:id/roles', authenticateToken, authorizeRoles('admin', 'super_admi
 });
 
 // Remove role from workflow stage
-router.delete('/:id/roles/:roleId', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id/roles/:roleId', authenticateToken, authorizePermission('master', 'delete'), async (req, res) => {
   try {
     const { id, roleId } = req.params;
 
@@ -895,7 +895,7 @@ router.delete('/:id/roles/:roleId', authenticateToken, authorizeRoles('admin', '
 });
 
 // Add user to workflow stage
-router.post('/:id/users', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.post('/:id/users', authenticateToken, authorizePermission('master', 'create'), async (req, res) => {
   try {
     const { id } = req.params;
     const { user_id, can_approve, can_reject, can_review, can_view, can_edit, can_delete, can_create_case, can_fill_case } = req.body;
@@ -947,7 +947,7 @@ router.post('/:id/users', authenticateToken, authorizeRoles('admin', 'super_admi
 });
 
 // Remove user from workflow stage
-router.delete('/:id/users/:userId', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id/users/:userId', authenticateToken, authorizePermission('master', 'delete'), async (req, res) => {
   try {
     const { id, userId } = req.params;
 
@@ -968,7 +968,7 @@ router.delete('/:id/users/:userId', authenticateToken, authorizeRoles('admin', '
 });
 
 // Get available roles for assignment
-router.get('/available/roles', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.get('/available/roles', authenticateToken, authorizePermission('master', 'read'), async (req, res) => {
   try {
     const [roles] = await pool.execute(`
       SELECT id, name, display_name, description
@@ -985,7 +985,7 @@ router.get('/available/roles', authenticateToken, authorizeRoles('admin', 'super
 });
 
 // Get available users for assignment
-router.get('/available/users', authenticateToken, authorizeRoles('admin', 'super_admin'), async (req, res) => {
+router.get('/available/users', authenticateToken, authorizePermission('master', 'read'), async (req, res) => {
   try {
     const [users] = await pool.execute(`
       SELECT id, full_name, email, role, username
