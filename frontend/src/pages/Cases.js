@@ -88,6 +88,8 @@ const Cases = () => {
   // Payment management permissions
   const { hasPermission: hasPaymentManagementRead } = usePermission('payment_management', 'read');
   const { hasPermission: hasPaymentManagementUpdate } = usePermission('payment_management', 'update');
+  // Case closure permission
+  const { hasPermission: canCloseCase } = usePermission('cases', 'close_case');
 
   // Alternative approach: Check if user can access counseling forms by making an API call
   const checkCounselingFormAccess = async (caseId) => {
@@ -163,6 +165,13 @@ const Cases = () => {
   // Delete confirmation modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  // Case closure modal state
+  const [closureModalOpen, setClosureModalOpen] = useState(false);
+  const [closureTarget, setClosureTarget] = useState(null);
+  const [closureReason, setClosureReason] = useState('');
+  const [closureDocument, setClosureDocument] = useState(null);
+  const [closureError, setClosureError] = useState('');
 
   // Executive department modals
   const [executiveApprovalModalOpen, setExecutiveApprovalModalOpen] = useState(false);
@@ -461,6 +470,57 @@ const Cases = () => {
   const handleDeleteCase = (caseId, caseNumber) => {
     setDeleteTarget({ id: caseId, caseNumber });
     setDeleteModalOpen(true);
+  };
+
+  // Case closure mutation
+  const closeCaseMutation = useMutation(
+    ({ caseId, reason, document }) => {
+      const formData = new FormData();
+      formData.append('reason', reason);
+      if (document) {
+        formData.append('document', document);
+      }
+      return axios.post(`/api/cases/${caseId}/close`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    },
+    {
+      onSuccess: () => {
+        setClosureModalOpen(false);
+        setClosureTarget(null);
+        setClosureReason('');
+        setClosureDocument(null);
+        setClosureError('');
+        refetch();
+        queryClient.invalidateQueries(['cases']);
+      },
+      onError: (error) => {
+        console.error('Case closure error:', error);
+        setClosureError(error?.response?.data?.error || 'Failed to close case');
+      }
+    }
+  );
+
+  const handleCloseCase = (caseId, caseNumber) => {
+    setClosureTarget({ id: caseId, caseNumber });
+    setClosureReason('');
+    setClosureDocument(null);
+    setClosureError('');
+    setClosureModalOpen(true);
+  };
+
+  const handleCloseCaseSubmit = () => {
+    if (!closureReason.trim()) {
+      setClosureError('Please provide a reason for closure');
+      return;
+    }
+    if (closureTarget) {
+      closeCaseMutation.mutate({
+        caseId: closureTarget.id,
+        reason: closureReason,
+        document: closureDocument
+      });
+    }
   };
 
   // Handler functions
@@ -1212,6 +1272,8 @@ const Cases = () => {
       executive_approved: 'success',
       executive_rejected: 'error',
       finance_disbursement: 'success',
+      completed: 'success',
+      closed: 'default',
     };
     return statusColors[status] || 'default';
   };
@@ -1809,6 +1871,121 @@ const Cases = () => {
                             </Modal.Footer>
                           </Modal>
 
+                          {/* Case Closure Modal */}
+                          <Modal
+                            isOpen={closureModalOpen}
+                            onClose={() => {
+                              setClosureModalOpen(false);
+                              setClosureTarget(null);
+                              setClosureReason('');
+                              setClosureDocument(null);
+                              setClosureError('');
+                            }}
+                            title="Close Case"
+                            size="md"
+                          >
+                            <div className="space-y-4">
+                              {closureError && (
+                                <Alert severity="error">
+                                  <p className="break-words whitespace-normal">{closureError}</p>
+                                </Alert>
+                              )}
+                              <Alert severity="warning">
+                                <p className="break-words whitespace-normal">
+                                  You are about to close case <strong>{closureTarget?.caseNumber || ''}</strong>. This will change the case status to <strong>Closed</strong>.
+                                </p>
+                              </Alert>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Reason for Closure <span className="text-red-500">*</span>
+                                </label>
+                                <textarea
+                                  value={closureReason}
+                                  onChange={(e) => setClosureReason(e.target.value)}
+                                  rows={4}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                                  placeholder="Please provide a reason for closing this case..."
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Supporting Document <span className="text-gray-400">(Optional)</span>
+                                </label>
+                                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-primary-400 transition-colors">
+                                  <div className="space-y-1 text-center">
+                                    <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                    <div className="flex text-sm text-gray-600 justify-center">
+                                      <label className="relative cursor-pointer rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none">
+                                        <span>{closureDocument ? 'Change file' : 'Upload a file'}</span>
+                                        <input
+                                          type="file"
+                                          className="sr-only"
+                                          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                                          onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                              if (file.size > 10 * 1024 * 1024) {
+                                                setClosureError('File size must be less than 10MB');
+                                                return;
+                                              }
+                                              setClosureDocument(file);
+                                              setClosureError('');
+                                            }
+                                          }}
+                                        />
+                                      </label>
+                                    </div>
+                                    <p className="text-xs text-gray-500">PDF, DOC, DOCX, XLS, XLSX, JPG, PNG up to 10MB</p>
+                                  </div>
+                                </div>
+                                {closureDocument && (
+                                  <div className="mt-2 flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
+                                    <div className="flex items-center space-x-2">
+                                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                      </svg>
+                                      <span className="text-sm text-gray-700 truncate max-w-xs">{closureDocument.name}</span>
+                                      <span className="text-xs text-gray-500">({(closureDocument.size / 1024).toFixed(1)} KB)</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setClosureDocument(null)}
+                                      className="text-red-500 hover:text-red-700 text-sm font-medium"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <Modal.Footer>
+                              <div className="flex space-x-3">
+                                <Button
+                                  variant="secondary"
+                                  onClick={() => {
+                                    setClosureModalOpen(false);
+                                    setClosureTarget(null);
+                                    setClosureReason('');
+                                    setClosureDocument(null);
+                                    setClosureError('');
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  variant="danger"
+                                  onClick={handleCloseCaseSubmit}
+                                  loading={closeCaseMutation.isLoading}
+                                  disabled={!closureReason.trim()}
+                                >
+                                  Close Case
+                                </Button>
+                              </div>
+                            </Modal.Footer>
+                          </Modal>
+
                           {/* Generic Permission-Based Workflow Actions */}
                           {/* These buttons appear based on workflow stage permissions, not hardcoded roles */}
                           {/* Only show if welfare-specific buttons are NOT showing (welfare has special checklist logic) */}
@@ -2007,6 +2184,18 @@ const Cases = () => {
                                 <span className="text-xs font-medium">📄 Manzoori</span>
                               </Button>
                             )}
+
+                          {canCloseCase && caseItem.status_name !== 'closed' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCloseCase(caseItem.id, caseItem.case_number)}
+                              className="flex items-center justify-center px-3 py-2 border-0 hover:bg-orange-50 text-gray-600 hover:text-orange-600"
+                              title="Close Case"
+                            >
+                              <span className="text-xs font-medium">🔒 Close</span>
+                            </Button>
+                          )}
 
                           {canDeleteCase && (
                             <Button
