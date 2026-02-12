@@ -597,6 +597,14 @@ const Users = () => {
         setIsFullNameFromApi(true);
       }
       
+      if (apiData.email) {
+        setCreateForm(prev => ({ ...prev, email: apiData.email }));
+      }
+
+      if (apiData.phone) {
+        setCreateForm(prev => ({ ...prev, phone: apiData.phone }));
+      }
+
       if (apiData.photo) {
         console.log('✅ Setting photo in form and preview');
         setCreateForm(prev => ({ ...prev, photo: apiData.photo }));
@@ -653,6 +661,14 @@ const Users = () => {
         setIsEditFullNameFromApi(true);
       }
       
+      if (apiData.email) {
+        setEditForm(prev => ({ ...prev, email: apiData.email }));
+      }
+
+      if (apiData.phone) {
+        setEditForm(prev => ({ ...prev, phone: apiData.phone }));
+      }
+
       if (apiData.photo) {
         console.log('✅ EDIT - Setting photo in form and preview');
         setEditForm(prev => ({ ...prev, photo: apiData.photo }));
