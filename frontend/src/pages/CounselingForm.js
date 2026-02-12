@@ -1131,6 +1131,16 @@ const CounselingForm = () => {
               ? JSON.parse(form.declaration) 
               : form.declaration;
             
+            // Format date fields for <input type="date"> (expects yyyy-mm-dd)
+            const formatDateForInput = (d) => {
+              if (d == null || d === '') return d;
+              const s = typeof d === 'string' ? d : (d.toISOString ? d.toISOString() : String(d));
+              return s.slice(0, 10);
+            };
+            declaration.declaration_date = formatDateForInput(declaration.declaration_date);
+            declaration.counselor_date = formatDateForInput(declaration.counselor_date);
+            declaration.tr_committee_date = formatDateForInput(declaration.tr_committee_date);
+            
             // Auto-populate counselor info if not already set
             if (form.counselor_info) {
               if (!declaration.counselor_name && form.counselor_info.name) {
@@ -6921,24 +6931,44 @@ const CounselingForm = () => {
                       />
                     ) : (
                       <div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (event) => {
-                                setValue('declaration.signature_file_path', event.target.result);
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Upload a signature image file (PNG, JPG, etc.)
-                        </p>
+                        {watch('declaration.signature_file_path') ? (
+                          <div className="space-y-2">
+                            <img
+                              src={watch('declaration.signature_file_path')}
+                              alt="Applicant signature"
+                              className="max-h-24 border border-gray-200 rounded object-contain bg-gray-50"
+                            />
+                            <p className="text-sm text-gray-600">Signature image uploaded</p>
+                            <button
+                              type="button"
+                              onClick={() => setValue('declaration.signature_file_path', '')}
+                              className="text-sm text-primary-600 hover:underline"
+                            >
+                              Change signature
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    setValue('declaration.signature_file_path', event.target.result);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Upload a signature image file (PNG, JPG, etc.)
+                            </p>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
@@ -7065,24 +7095,44 @@ const CounselingForm = () => {
                       />
                     ) : (
                       <div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (event) => {
-                                setValue('declaration.counselor_signature_file_path', event.target.result);
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Upload a signature image file (PNG, JPG, etc.)
-                        </p>
+                        {watch('declaration.counselor_signature_file_path') ? (
+                          <div className="space-y-2">
+                            <img
+                              src={watch('declaration.counselor_signature_file_path')}
+                              alt="Counselor signature"
+                              className="max-h-24 border border-gray-200 rounded object-contain bg-gray-50"
+                            />
+                            <p className="text-sm text-gray-600">Signature image uploaded</p>
+                            <button
+                              type="button"
+                              onClick={() => setValue('declaration.counselor_signature_file_path', '')}
+                              className="text-sm text-primary-600 hover:underline"
+                            >
+                              Change signature
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    setValue('declaration.counselor_signature_file_path', event.target.result);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Upload a signature image file (PNG, JPG, etc.)
+                            </p>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
@@ -7240,24 +7290,44 @@ const CounselingForm = () => {
                       />
                     ) : (
                       <div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (event) => {
-                                setValue('declaration.tr_committee_signature_file_path', event.target.result);
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Upload a signature image file (PNG, JPG, etc.)
-                        </p>
+                        {watch('declaration.tr_committee_signature_file_path') ? (
+                          <div className="space-y-2">
+                            <img
+                              src={watch('declaration.tr_committee_signature_file_path')}
+                              alt="TR Committee signature"
+                              className="max-h-24 border border-gray-200 rounded object-contain bg-gray-50"
+                            />
+                            <p className="text-sm text-gray-600">Signature image uploaded</p>
+                            <button
+                              type="button"
+                              onClick={() => setValue('declaration.tr_committee_signature_file_path', '')}
+                              className="text-sm text-primary-600 hover:underline"
+                            >
+                              Change signature
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    setValue('declaration.tr_committee_signature_file_path', event.target.result);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Upload a signature image file (PNG, JPG, etc.)
+                            </p>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

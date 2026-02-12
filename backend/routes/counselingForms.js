@@ -518,11 +518,21 @@ router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, 
         }
       }
 
-      // Get declaration
+      // Get declaration (use DATE_FORMAT for dates so they are returned as yyyy-mm-dd strings and avoid timezone shift)
       let declaration = null;
       if (form.declaration_id) {
         const [declarationData] = await pool.execute(
-          'SELECT * FROM declaration WHERE id = ?',
+          `SELECT id, case_id, applicant_confirmation, applicant_its, applicant_name, applicant_contact,
+            DATE_FORMAT(declaration_date, '%Y-%m-%d') AS declaration_date,
+            signature_type, signature_file_path, signature_drawing_data, other_comments, applicant_signature,
+            counselor_confirmation, counselor_its, counselor_name, counselor_contact,
+            DATE_FORMAT(counselor_date, '%Y-%m-%d') AS counselor_date,
+            counselor_signature_type, counselor_comments, counselor_signature, counselor_signature_file_path, counselor_signature_drawing_data,
+            tr_committee_its, tr_committee_name, tr_committee_contact,
+            DATE_FORMAT(tr_committee_date, '%Y-%m-%d') AS tr_committee_date,
+            tr_committee_signature_type, tr_committee_signature_file_path, tr_committee_signature_drawing_data,
+            tr_committee_signature, created_at, updated_at
+          FROM declaration WHERE id = ?`,
           [form.declaration_id]
         );
         declaration = declarationData[0] || null;
