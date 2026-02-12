@@ -29,6 +29,7 @@ const businessAssetsRoutes = require('./routes/businessAssets');
 const executiveLevelRoutes = require('./routes/executiveLevels');
 const workflowStagesRoutes = require('./routes/workflowStages');
 const welfareChecklistRoutes = require('./routes/welfareChecklist');
+const caseIdentificationRoutes = require('./routes/caseIdentifications');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -84,6 +85,7 @@ app.use('/api/business-assets', businessAssetsRoutes);
 app.use('/api/executive-levels', executiveLevelRoutes);
 app.use('/api/workflow-stages', workflowStagesRoutes);
 app.use('/api/welfare-checklist', welfareChecklistRoutes);
+app.use('/api/case-identifications', caseIdentificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

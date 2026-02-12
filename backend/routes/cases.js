@@ -53,23 +53,8 @@ const router = express.Router();
 router.get('/available-counselors', authenticateToken, async (req, res) => {
   try {
     const { caseId, jamiat_id, jamaat_id } = req.query;
-    const userRole = req.user.role;
 
-    // First, get the Counselor workflow stage ID(s)
-    const [counselorStages] = await pool.execute(
-      `SELECT id FROM workflow_stages 
-       WHERE (stage_key LIKE '%counselor%' OR stage_key = 'counselor') 
-       AND is_active = TRUE`
-    );
-
-    if (counselorStages.length === 0) {
-      console.log('[available-counselors] No Counselor workflow stage found');
-      return res.json({ counselors: [], message: 'No Counselor workflow stage found' });
-    }
-
-    const counselorStageIds = counselorStages.map(s => s.id);
-    console.log('[available-counselors] Counselor stage IDs:', counselorStageIds);
-
+    // Query all active users with Counselor role directly
     let query = `
       SELECT DISTINCT
         u.id,
@@ -79,13 +64,11 @@ router.get('/available-counselors', authenticateToken, async (req, res) => {
         u.jamiat_ids,
         u.jamaat_ids
       FROM users u
-      INNER JOIN workflow_stage_users wsu ON u.id = wsu.user_id
-      WHERE u.role = 'counselor' 
+      WHERE LOWER(u.role) = 'counselor'
         AND u.is_active = TRUE
-        AND wsu.workflow_stage_id IN (${counselorStageIds.map(() => '?').join(',')})
     `;
 
-    const queryParams = [...counselorStageIds];
+    const queryParams = [];
 
     // If caseId provided, filter by case location
     if (caseId) {
@@ -95,7 +78,6 @@ router.get('/available-counselors', authenticateToken, async (req, res) => {
       );
       
       if (caseData.length > 0) {
-        const assignedCounselorId = caseData[0].assigned_counselor_id;
         const caseJamiatId = caseData[0].jamiat_id;
         const caseJamaatId = caseData[0].jamaat_id;
 
@@ -112,13 +94,9 @@ router.get('/available-counselors', authenticateToken, async (req, res) => {
           )`;
           queryParams.push(caseJamiatId, caseJamaatId);
           console.log(`[available-counselors] Adding location filter: jamiat_id=${caseJamiatId}, jamaat_id=${caseJamaatId || 'NULL'}`);
-          console.log(`[available-counselors] This will match counselors with jamiat_ids containing ${caseJamiatId} or jamaat_ids containing ${caseJamaatId || 'NULL'}, or counselors with no location restrictions`);
         } else {
           console.log('[available-counselors] Case has no jamiat/jamaat (NULL), showing ALL counselors (no location filter)');
         }
-
-        // Include currently assigned counselor in results (don't exclude them)
-        // The query already shows all counselors, so assigned one will be included
       } else {
         console.log(`[available-counselors] Case ${caseId} not found`);
       }
@@ -137,7 +115,6 @@ router.get('/available-counselors', authenticateToken, async (req, res) => {
 
     query += ' ORDER BY u.full_name ASC';
 
-    console.log('[available-counselors] Executing query with params:', queryParams);
     const [counselors] = await pool.execute(query, queryParams);
     console.log(`[available-counselors] Found ${counselors.length} counselor(s)`);
 
@@ -872,103 +849,6 @@ router.get('/:caseId', authenticateToken, authorizeCaseAccess, async (req, res) 
     });
   } catch (error) {
     console.error('Get case error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Get available counselors for case assignment (filtered by jamiat/jamaat if applicable)
-// IMPORTANT: This route must come BEFORE /:caseId route, otherwise "available-counselors" will be matched as a caseId
-router.get('/available-counselors', authenticateToken, async (req, res) => {
-  try {
-    const { caseId, jamiat_id, jamaat_id } = req.query;
-    const userRole = req.user.role;
-
-    // First, get the Counselor workflow stage ID(s)
-    const [counselorStages] = await pool.execute(
-      `SELECT id FROM workflow_stages 
-       WHERE (stage_key LIKE '%counselor%' OR stage_key = 'counselor') 
-       AND is_active = TRUE`
-    );
-
-    if (counselorStages.length === 0) {
-      console.log('[available-counselors] No Counselor workflow stage found');
-      return res.json({ counselors: [], message: 'No Counselor workflow stage found' });
-    }
-
-    const counselorStageIds = counselorStages.map(s => s.id);
-    console.log('[available-counselors] Counselor stage IDs:', counselorStageIds);
-
-    let query = `
-      SELECT DISTINCT
-        u.id,
-        u.full_name,
-        u.email,
-        u.role,
-        u.jamiat_ids,
-        u.jamaat_ids
-      FROM users u
-      INNER JOIN workflow_stage_users wsu ON u.id = wsu.user_id
-      WHERE u.role = 'counselor' 
-        AND u.is_active = TRUE
-        AND wsu.workflow_stage_id IN (${counselorStageIds.map(() => '?').join(',')})
-    `;
-
-    const queryParams = [...counselorStageIds];
-
-    // If caseId provided, filter by case location
-    if (caseId) {
-      const [caseData] = await pool.execute(
-        'SELECT assigned_counselor_id, jamiat_id, jamaat_id FROM cases WHERE id = ?',
-        [caseId]
-      );
-      
-      if (caseData.length > 0) {
-        const assignedCounselorId = caseData[0].assigned_counselor_id;
-        const caseJamiatId = caseData[0].jamiat_id;
-        const caseJamaatId = caseData[0].jamaat_id;
-
-        console.log(`[available-counselors] Case ${caseId}: jamiat_id=${caseJamiatId}, jamaat_id=${caseJamaatId || 'NULL'}`);
-
-        // Filter by jamiat/jamaat if case has them
-        if (caseJamiatId || caseJamaatId) {
-          query += ` AND (
-            FIND_IN_SET(?, u.jamiat_ids) > 0 
-            OR FIND_IN_SET(?, u.jamaat_ids) > 0
-            OR (u.jamiat_ids IS NULL AND u.jamaat_ids IS NULL)
-          )`;
-          queryParams.push(caseJamiatId, caseJamaatId);
-          console.log(`[available-counselors] Adding location filter: jamiat_id=${caseJamiatId}, jamaat_id=${caseJamaatId || 'NULL'}`);
-        } else {
-          console.log('[available-counselors] Case has no jamiat/jamaat, showing all counselors');
-        }
-
-        // Include currently assigned counselor in results (don't exclude them)
-        // The query already shows all counselors, so assigned one will be included
-      } else {
-        console.log(`[available-counselors] Case ${caseId} not found`);
-      }
-    } else if (jamiat_id || jamaat_id) {
-      // Filter by provided jamiat/jamaat
-      query += ` AND (
-        FIND_IN_SET(?, u.jamiat_ids) > 0 
-        OR FIND_IN_SET(?, u.jamaat_ids) > 0
-        OR (u.jamiat_ids IS NULL AND u.jamaat_ids IS NULL)
-      )`;
-      queryParams.push(jamiat_id || null, jamaat_id || null);
-      console.log(`[available-counselors] Filtering by provided: jamiat_id=${jamiat_id || 'NULL'}, jamaat_id=${jamaat_id || 'NULL'}`);
-    } else {
-      console.log('[available-counselors] No caseId or location provided, showing all counselors');
-    }
-
-    query += ' ORDER BY u.full_name ASC';
-
-    console.log('[available-counselors] Executing query with params:', queryParams);
-    const [counselors] = await pool.execute(query, queryParams);
-    console.log(`[available-counselors] Found ${counselors.length} counselor(s)`);
-
-    res.json({ counselors });
-  } catch (error) {
-    console.error('[available-counselors] Error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

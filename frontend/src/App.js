@@ -28,6 +28,7 @@ import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
 import Reports from './pages/Reports';
 import PaymentSchedulePage from './pages/PaymentSchedulePage';
+import CaseIdentification from './pages/CaseIdentification';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -151,6 +152,17 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <Applicants />
+                  </Layout>
+                </ProtectedRoute>
+              } 
+            />
+
+            <Route 
+              path="/case-identification" 
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CaseIdentification />
                   </Layout>
                 </ProtectedRoute>
               } 
