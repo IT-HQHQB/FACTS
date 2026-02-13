@@ -1361,7 +1361,9 @@ const CounselingForm = () => {
             immediate: [{ id: Date.now() + Math.random() + 10, purpose_cost: '', enayat: '', qardan: '', months: '' }],
             after_1st_yr: [{ id: Date.now() + Math.random() + 11, purpose_cost: '', enayat: '', qardan: '', months: '' }],
             after_2nd_yr: [{ id: Date.now() + Math.random() + 12, purpose_cost: '', enayat: '', qardan: '', months: '' }],
-            after_3rd_yr: [{ id: Date.now() + Math.random() + 13, purpose_cost: '', enayat: '', qardan: '', months: '' }]
+            after_3rd_yr: [{ id: Date.now() + Math.random() + 13, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+            after_4th_yr: [{ id: Date.now() + Math.random() + 14, purpose_cost: '', enayat: '', qardan: '', months: '' }],
+            '5th_yr': [{ id: Date.now() + Math.random() + 15, purpose_cost: '', enayat: '', qardan: '', months: '' }]
           });
         }
       } else {
@@ -4256,7 +4258,7 @@ const CounselingForm = () => {
                             </td>
                             <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                               <div className="space-y-2">
-                                {timelineAssistanceItems.after_4th_yr.map((item, index) => (
+                                {(timelineAssistanceItems.after_4th_yr || []).map((item, index) => (
                                   <div key={item.id} className="flex items-start gap-2">
                                     <span className="text-sm font-medium text-gray-700 flex-shrink-0 pt-1">
                                       {getTimelineAssistanceNumber('after_4th_yr', index)}.
@@ -4293,7 +4295,7 @@ const CounselingForm = () => {
                             </td>
                             <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                               <div className="space-y-2">
-                                {timelineAssistanceItems.after_4th_yr.map((item, index) => (
+                                {(timelineAssistanceItems.after_4th_yr || []).map((item, index) => (
                                   <div key={item.id}>
                                     <Input
                                       type="number"
@@ -4309,7 +4311,7 @@ const CounselingForm = () => {
                             </td>
                             <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                               <div className="space-y-2">
-                                {timelineAssistanceItems.after_4th_yr.map((item, index) => (
+                                {(timelineAssistanceItems.after_4th_yr || []).map((item, index) => (
                                   <div key={item.id} className="flex gap-2">
                                     <Input
                                       type="number"
@@ -4341,7 +4343,7 @@ const CounselingForm = () => {
                             </td>
                             <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                               <div className="space-y-2">
-                                {timelineAssistanceItems['5th_yr'].map((item, index) => (
+                                {(timelineAssistanceItems['5th_yr'] || []).map((item, index) => (
                                   <div key={item.id} className="flex items-start gap-2">
                                     <span className="text-sm font-medium text-gray-700 flex-shrink-0 pt-1">
                                       {getTimelineAssistanceNumber('5th_yr', index)}.
@@ -4378,7 +4380,7 @@ const CounselingForm = () => {
                             </td>
                             <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                               <div className="space-y-2">
-                                {timelineAssistanceItems['5th_yr'].map((item, index) => (
+                                {(timelineAssistanceItems['5th_yr'] || []).map((item, index) => (
                                   <div key={item.id}>
                             <Input
                                       type="number"
@@ -4394,7 +4396,7 @@ const CounselingForm = () => {
                             </td>
                             <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                               <div className="space-y-2">
-                                {timelineAssistanceItems['5th_yr'].map((item, index) => (
+                                {(timelineAssistanceItems['5th_yr'] || []).map((item, index) => (
                                   <div key={item.id} className="flex gap-2">
                             <Input
                                       type="number"

@@ -403,6 +403,40 @@ const authorizeWorkflowStageAccess = (action = 'view') => {
 // Helper function to check workflow stage permissions
 const checkWorkflowStagePermission = async (userId, userRole, stageId, action) => {
   try {
+    // Normalize role: DB may store "Super Administrator" but code checks for "super_admin"
+    const normalizedRole = (userRole && typeof userRole === 'string') ? userRole.trim() : userRole;
+    const isSuperAdmin = normalizedRole === 'super_admin' || normalizedRole === 'Super Administrator';
+
+    // Super admin has access to all permissions: allow approve/reject on any review stage
+    if (isSuperAdmin && (action === 'approve' || action === 'reject')) {
+      const [stageRows] = await pool.execute(
+        'SELECT stage_key, stage_name FROM workflow_stages WHERE id = ? AND is_active = 1',
+        [stageId]
+      );
+      if (stageRows.length > 0) {
+        const stageKey = (stageRows[0].stage_key || '').toLowerCase();
+        const stageName = (stageRows[0].stage_name || '').toLowerCase();
+        const nonApprovalStages = [
+          'draft', 'case_assignment', 'assignment', 'counselor', 'counseling',
+          'finance', 'finance_disbursement', 'disbursement'
+        ];
+        const isNonApprovalStage = nonApprovalStages.some(key =>
+          stageKey.includes(key) || stageName.includes(key)
+        );
+        if (!isNonApprovalStage) {
+          return true;
+        }
+      } else {
+        // Stage not found or inactive: allow super_admin anyway (full access)
+        return true;
+      }
+    }
+
+    // Super admin for view/edit/review/delete: allow all stages
+    if (isSuperAdmin && ['view', 'edit', 'review', 'delete', 'update'].includes(action)) {
+      return true;
+    }
+
     // Get user's roles - check both user_roles table and users.role column
     const [userRoles] = await pool.execute(`
       SELECT r.id, r.name
@@ -587,7 +621,15 @@ const getWorkflowStagePermissions = async (userId, userRole, stageId) => {
         if (isNonApprovalStage) {
           permissions.can_approve = false;
           permissions.can_reject = false;
+        } else {
+          // Super admin has access to all permissions: allow approve/reject on any review stage
+          permissions.can_approve = true;
+          permissions.can_reject = true;
         }
+      } else {
+        // No stage info: allow super_admin approve/reject by default (full access)
+        permissions.can_approve = true;
+        permissions.can_reject = true;
       }
 
       // Super admin always has view access to all stages

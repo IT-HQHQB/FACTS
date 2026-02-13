@@ -1760,10 +1760,13 @@ const Cases = () => {
                             </Button>
                           )}
 
-                          {/* Cover Letter Button - Show until last stage (finance_disbursement) if cover letter form exists */}
-                          {((caseItem.status_name !== 'finance_disbursement' && caseItem.cover_letter_form_exists) &&
-                            (hasCoverLetterFormsCreate || hasCoverLetterFormsUpdate || hasCoverLetterFormsRead || 
-                             user?.role === 'admin' || user?.role === 'super_admin')) && (
+                          {/* Cover Letter Button - Show when in Cover Letter stage OR cover letter form exists (until finance_disbursement) */}
+                          {(() => {
+                            const isCoverLetterStage = caseItem.current_workflow_stage_name === 'Cover Letter' || caseItem.status_name === 'submitted_to_cover_letter';
+                            const showCoverLetterBlock = caseItem.status_name !== 'finance_disbursement' && (caseItem.cover_letter_form_exists || isCoverLetterStage);
+                            return showCoverLetterBlock && (hasCoverLetterFormsCreate || hasCoverLetterFormsUpdate || hasCoverLetterFormsRead ||
+                             user?.role === 'admin' || user?.role === 'super_admin');
+                          })() && (
                             <>
                             <Button
                               variant="primary"

@@ -42,18 +42,15 @@ const formatNumber = (value) => {
  */
 const addImageToPDF = async (doc, imageData, x, y, width, height) => {
   if (!imageData) return false;
-  
   try {
-    // Handle base64 data URLs
     let imageSrc = imageData;
     if (imageData.startsWith('data:image')) {
       imageSrc = imageData;
     } else if (imageData.startsWith('/') || imageData.startsWith('http')) {
-      // If it's a file path, we'd need to fetch it, but for now skip
       return false;
     }
-    
-    doc.addImage(imageSrc, 'JPEG', x, y, width, height);
+    const format = imageSrc.indexOf('image/png') !== -1 ? 'PNG' : 'JPEG';
+    doc.addImage(imageSrc, format, x, y, width, height);
     return true;
   } catch (error) {
     console.error('Error adding image to PDF:', error);
@@ -61,8 +58,27 @@ const addImageToPDF = async (doc, imageData, x, y, width, height) => {
   }
 };
 
+/** Draw a section box with title bar (form-like card) */
+const drawSectionBox = (doc, x, y, width, titleBarHeight, title, fillHeader = true) => {
+  doc.setDrawColor(180, 180, 180);
+  doc.setLineWidth(0.2);
+  if (fillHeader) {
+    doc.setFillColor(245, 245, 245);
+    doc.rect(x, y, width, titleBarHeight, 'FD');
+    doc.rect(x, y, width, titleBarHeight, 'S');
+  }
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(50, 50, 50);
+  doc.text(title, x + 4, y + titleBarHeight / 2 + 1.5);
+  doc.setTextColor(0, 0, 0);
+  doc.setDrawColor(200, 200, 200);
+  doc.line(x, y + titleBarHeight, x + width, y + titleBarHeight);
+  return y + titleBarHeight;
+};
+
 /**
- * Generates a PDF for the cover letter form
+ * Generates a PDF for the cover letter form — formatted like the form for executive sign-off.
  * @param {Object} formData - The form data object
  * @param {Object} options - Options including caseNumber, userName, etc.
  * @returns {jsPDF} The generated PDF document
@@ -75,7 +91,6 @@ export const generateCoverLetterPDF = async (formData, options = {}) => {
   } = options;
 
   try {
-    // Create PDF document (A4 size: 210mm x 297mm)
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -84,17 +99,17 @@ export const generateCoverLetterPDF = async (formData, options = {}) => {
 
     const pageWidth = 210;
     const pageHeight = 297;
-    const margin = 10;
-    const contentWidth = pageWidth - (margin * 2);
+    const margin = 12;
+    const contentWidth = pageWidth - margin * 2;
+    const sectionTitleHeight = 8;
+    const padding = 5;
     let yPosition = margin;
 
-    // Helper function to convert any value to string for PDF text
     const toString = (val) => {
       if (val === null || val === undefined) return '';
       return String(val);
     };
 
-    // Helper function to check if we need a new page
     const checkNewPage = (requiredHeight) => {
       if (yPosition + requiredHeight > pageHeight - margin) {
         doc.addPage();
@@ -104,401 +119,341 @@ export const generateCoverLetterPDF = async (formData, options = {}) => {
       return false;
     };
 
-  // Header
-  doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Baaseteen - 1447H', pageWidth / 2, yPosition + 10, { align: 'center' });
-  yPosition += 20;
+    // ----- Document header (professional, form-like) -----
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('COVER LETTER', pageWidth / 2, yPosition + 6, { align: 'center' });
+    yPosition += 10;
 
-  // Applicant and Counsellor Details Section (Two-column table)
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  yPosition += 5;
-  
-  const tableStartY = yPosition;
-  const col1X = margin;
-  const col2X = pageWidth / 2;
-  const colWidth = (contentWidth / 2) - 5;
-  const rowHeight = 8;
-  
-  // Table headers
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Applicant Details', col1X + 5, yPosition);
-  doc.text('Counsellor Details', col2X + 5, yPosition);
-  yPosition += rowHeight;
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Baaseteen — 1447H', pageWidth / 2, yPosition + 4, { align: 'center' });
+    yPosition += 8;
 
-  // Draw table borders
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.1);
-  
-  // Applicant Details Column
-  const applicantFields = [
-    { label: 'Name', value: toString(formData.applicant_details?.name) },
-    { label: 'Contact', value: toString(formData.applicant_details?.contact_number) },
-    { label: 'Case Id', value: toString(formData.applicant_details?.case_id || caseNumber) },
-    { label: 'Jamiat', value: toString(formData.applicant_details?.jamiat) },
-    { label: 'Jamaat', value: toString(formData.applicant_details?.jamaat) },
-    { label: 'Age', value: toString(formData.applicant_details?.age) },
-  ];
-
-  // Counsellor Details Column
-  const counsellorFields = [
-    { label: 'Name', value: toString(formData.counsellor_details?.name) },
-    { label: 'Contact', value: toString(formData.counsellor_details?.contact_number) },
-    { label: 'Jamiat', value: toString(formData.counsellor_details?.jamiat) },
-    { label: 'Jamaat', value: toString(formData.counsellor_details?.jamaat) },
-    { label: 'Age', value: toString(formData.counsellor_details?.age) },
-    { label: 'ITS', value: toString(formData.counsellor_details?.its) },
-  ];
-
-  const maxRows = Math.max(applicantFields.length, counsellorFields.length);
-  let currentY = yPosition;
-
-  for (let i = 0; i < maxRows; i++) {
-    // Draw horizontal line
-    doc.line(col1X, currentY, pageWidth - margin, currentY);
-    
-    // Applicant column
-    if (i < applicantFields.length) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`${applicantFields[i].label}:`, col1X + 2, currentY + 5);
-      doc.text(toString(applicantFields[i].value), col1X + 25, currentY + 5);
-    }
-    
-    // Counsellor column
-    if (i < counsellorFields.length) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`${counsellorFields[i].label}:`, col2X + 2, currentY + 5);
-      doc.text(toString(counsellorFields[i].value), col2X + 25, currentY + 5);
-    }
-    
-    currentY += rowHeight;
-  }
-
-  // Draw vertical line between columns
-  doc.line(col2X, tableStartY - 5, col2X, currentY);
-  // Draw outer borders
-  doc.rect(col1X, tableStartY - 5, contentWidth, currentY - tableStartY + 5);
-
-  // Add photos (if available)
-  const photoSize = 20;
-  const photoY = tableStartY + 5;
-  
-  // Applicant photo
-  if (formData.applicant_details?.photo) {
-    const photoAdded = await addImageToPDF(
-      doc,
-      formData.applicant_details.photo,
-      col1X + contentWidth / 4 - photoSize / 2,
-      photoY,
-      photoSize,
-      photoSize
-    );
-    if (!photoAdded) {
-      doc.setFontSize(8);
-      doc.text('ITS Photo', col1X + contentWidth / 4 - 10, photoY + photoSize / 2);
-    }
-  } else {
-    doc.setFontSize(8);
-    doc.text('ITS Photo', col1X + contentWidth / 4 - 10, photoY + photoSize / 2);
-  }
-
-  // Counsellor photo
-  if (formData.counsellor_details?.photo) {
-    const photoAdded = await addImageToPDF(
-      doc,
-      formData.counsellor_details.photo,
-      col2X + contentWidth / 4 - photoSize / 2,
-      photoY,
-      photoSize,
-      photoSize
-    );
-    if (!photoAdded) {
-      doc.setFontSize(8);
-      doc.text('ITS Photo', col2X + contentWidth / 4 - 10, photoY + photoSize / 2);
-    }
-  } else {
-    doc.setFontSize(8);
-    doc.text('ITS Photo', col2X + contentWidth / 4 - 10, photoY + photoSize / 2);
-  }
-
-  yPosition = currentY + 10;
-
-  // Financial and Business Information Section
-  checkNewPage(60);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Financial and Business Information', margin, yPosition);
-  yPosition += 8;
-
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  const financialFields = [
-    { label: 'Current Personal Income', value: formatCurrency(formData.current_personal_income) },
-    { label: 'Current Family Income', value: formatCurrency(formData.current_family_income) },
-    { label: 'Earning family members', value: formatNumber(formData.earning_family_members) },
-    { label: 'Dependents', value: formatNumber(formData.dependents) },
-    { label: 'Assets (Shop / House / Gold / Machinery / Stock)', 
-      value: `${formatCurrency(formData.asset_shop)} / ${formatCurrency(formData.asset_house)} / ${formatCurrency(formData.asset_gold)} / ${formatCurrency(formData.asset_machinery)} / ${formatCurrency(formData.asset_stock)}` },
-    { label: 'Liabilities (Qardan / Den / Others)', 
-      value: `${formatCurrency(formData.liability_qardan)} / ${formatCurrency(formData.liability_den)} / ${formatCurrency(formData.liability_others)}` },
-    { label: 'Business Name & Year of starting', value: toString(formData.business_name) },
-    { label: 'Industry / Segment', value: toString(formData.industry_segment) },
-    { label: 'Present occupation / business (Products / Services, revenue, etc.)', value: toString(formData.present_occupation) },
-  ];
-
-  financialFields.forEach(field => {
-    if (yPosition > pageHeight - margin - 10) {
-      doc.addPage();
-      yPosition = margin;
-    }
-    doc.text(`${field.label}: ${toString(field.value)}`, margin + 5, yPosition);
-    yPosition += 6;
-  });
-
-  yPosition += 5;
-
-  // Financial Assistance Table
-  checkNewPage(30);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Financial Assistance', margin, yPosition);
-  yPosition += 8;
-
-  const tableY = yPosition;
-  const tableColWidth = contentWidth / 3;
-  const tableRowHeight = 8;
-
-  // Table headers
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Enayat Amount', margin + 5, yPosition);
-  doc.text('Qardan Amount', margin + tableColWidth + 5, yPosition);
-  doc.text('Total Amount', margin + (tableColWidth * 2) + 5, yPosition);
-  yPosition += tableRowHeight;
-
-  // Draw table borders
-  doc.line(margin, tableY - 5, pageWidth - margin, tableY - 5);
-  doc.line(margin, yPosition, pageWidth - margin, yPosition);
-  doc.line(margin + tableColWidth, tableY - 5, margin + tableColWidth, yPosition + tableRowHeight);
-  doc.line(margin + (tableColWidth * 2), tableY - 5, margin + (tableColWidth * 2), yPosition + tableRowHeight);
-
-  // Requested row
-  doc.setFont('helvetica', 'normal');
-  doc.text('Requested', margin + 2, yPosition);
-  doc.text(formatCurrency(formData.requested_enayat) || '', margin + tableColWidth + 5, yPosition);
-  doc.text(formatCurrency(formData.requested_qardan) || '', margin + (tableColWidth * 2) + 5, yPosition);
-  doc.text(formatCurrency(formData.requested_total) || '', margin + (tableColWidth * 2) + 5, yPosition);
-  yPosition += tableRowHeight;
-
-  // Recommended row
-  doc.text('Recommended', margin + 2, yPosition);
-  doc.text(formatCurrency(formData.recommended_enayat) || '', margin + tableColWidth + 5, yPosition);
-  doc.text(formatCurrency(formData.recommended_qardan) || '', margin + (tableColWidth * 2) + 5, yPosition);
-  doc.text(formatCurrency(formData.recommended_total) || '', margin + (tableColWidth * 2) + 5, yPosition);
-  yPosition += tableRowHeight + 5;
-
-  // Draw closing border
-  doc.line(margin, yPosition, pageWidth - margin, yPosition);
-
-  // Non-financial Assistance
-  checkNewPage(15);
-  yPosition += 5;
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Non-financial Assistance: ${formData.non_financial_assistance || ''}`, margin, yPosition);
-  yPosition += 10;
-
-  // Projected Income Table
-  checkNewPage(30);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Projected Income', margin, yPosition);
-  yPosition += 8;
-
-  const projectedTableY = yPosition;
-  const projectedColWidth = contentWidth / 6; // 6 columns: label + 5 years
-  const projectedRowHeight = 8;
-
-  // Table headers
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.text('After 1 year', margin + projectedColWidth + 5, yPosition);
-  doc.text('After 2 years', margin + (projectedColWidth * 2) + 5, yPosition);
-  doc.text('After 3 years', margin + (projectedColWidth * 3) + 5, yPosition);
-  doc.text('After 4 years', margin + (projectedColWidth * 4) + 5, yPosition);
-  doc.text('After 5 years', margin + (projectedColWidth * 5) + 5, yPosition);
-  yPosition += projectedRowHeight;
-
-  // Draw table borders
-  doc.line(margin, projectedTableY - 5, pageWidth - margin, projectedTableY - 5);
-  for (let i = 0; i <= 6; i++) {
-    doc.line(margin + (projectedColWidth * i), projectedTableY - 5, margin + (projectedColWidth * i), yPosition + (projectedRowHeight * 2));
-  }
-
-  // Applicant row
-  doc.setFont('helvetica', 'normal');
-  doc.text('Applicant', margin + 2, yPosition);
-  doc.text(formatCurrency(formData.applicant_projected_income_after_1_year) || '', margin + projectedColWidth + 5, yPosition);
-  doc.text(formatCurrency(formData.applicant_projected_income_after_2_years) || '', margin + (projectedColWidth * 2) + 5, yPosition);
-  doc.text(formatCurrency(formData.applicant_projected_income_after_3_years) || '', margin + (projectedColWidth * 3) + 5, yPosition);
-  doc.text(formatCurrency(formData.applicant_projected_income_after_4_years) || '', margin + (projectedColWidth * 4) + 5, yPosition);
-  doc.text(formatCurrency(formData.applicant_projected_income_after_5_years) || '', margin + (projectedColWidth * 5) + 5, yPosition);
-  yPosition += projectedRowHeight;
-
-  // Family row
-  doc.text('Family', margin + 2, yPosition);
-  doc.text(formatCurrency(formData.family_projected_income_after_1_year) || '', margin + projectedColWidth + 5, yPosition);
-  doc.text(formatCurrency(formData.family_projected_income_after_2_years) || '', margin + (projectedColWidth * 2) + 5, yPosition);
-  doc.text(formatCurrency(formData.family_projected_income_after_3_years) || '', margin + (projectedColWidth * 3) + 5, yPosition);
-  doc.text(formatCurrency(formData.family_projected_income_after_4_years) || '', margin + (projectedColWidth * 4) + 5, yPosition);
-  doc.text(formatCurrency(formData.family_projected_income_after_5_years) || '', margin + (projectedColWidth * 5) + 5, yPosition);
-  yPosition += projectedRowHeight + 5;
-
-  // Draw closing border
-  doc.line(margin, yPosition, pageWidth - margin, yPosition);
-
-  // Summary of Proposed Upliftment Plan
-  checkNewPage(30);
-  yPosition += 10;
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Summary of Proposed Upliftment Plan: ${formData.proposed_upliftment_plan || ''}`, margin, yPosition);
-  yPosition += 15;
-
-  // Welfare Dept Comments
-  checkNewPage(30);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  const comments = formData.welfare_department_comments || '';
-  const splitComments = doc.splitTextToSize(`Welfare Dept Comments: ${comments}`, contentWidth);
-  doc.text(splitComments, margin, yPosition);
-  yPosition += splitComments.length * 5 + 10;
-
-  // Executive Approval Section (with green background)
-  checkNewPage(40);
-  const execStartY = yPosition;
-  doc.setFillColor(200, 255, 200); // Light green
-  doc.rect(margin, yPosition, contentWidth, 30, 'F');
-  
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(255, 0, 0); // Red text
-  doc.text('Executive Approval:', margin + 5, yPosition + 8);
-  
-  doc.setTextColor(0, 0, 0); // Black text
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  yPosition += 15;
-  doc.text(`Enayat: ${formatCurrency(formData.approved_enayat)}`, margin + 5, yPosition);
-  doc.text(`Qardan: ${formatCurrency(formData.approved_qardan)}`, margin + 5, yPosition + 8);
-  doc.text(`QH Months: ${formData.approved_qh_months || ''}`, margin + 5, yPosition + 16);
-  
-  yPosition = execStartY + 35;
-
-  // Signature and Date Section (Three columns)
-  checkNewPage(50);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Executive Management Name, Signature and Date', margin, yPosition);
-  yPosition += 10;
-
-  const sigTableY = yPosition;
-  const sigColWidth = contentWidth / 3;
-  const sigRowHeight = 10;
-
-  // Draw table borders
-  doc.rect(margin, sigTableY, contentWidth, sigRowHeight * 4);
-
-  // Column headers
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Welfare Dept', margin + 5, sigTableY + 7);
-  doc.text('Zonal In-charge', margin + sigColWidth + 5, sigTableY + 7);
-  doc.text('Operations Head', margin + (sigColWidth * 2) + 5, sigTableY + 7);
-
-  // Draw vertical lines
-  doc.line(margin + sigColWidth, sigTableY, margin + sigColWidth, sigTableY + (sigRowHeight * 4));
-  doc.line(margin + (sigColWidth * 2), sigTableY, margin + (sigColWidth * 2), sigTableY + (sigRowHeight * 4));
-
-  // Draw horizontal lines
-  doc.line(margin, sigTableY + sigRowHeight, pageWidth - margin, sigTableY + sigRowHeight);
-  doc.line(margin, sigTableY + (sigRowHeight * 2), pageWidth - margin, sigTableY + (sigRowHeight * 2));
-  doc.line(margin, sigTableY + (sigRowHeight * 3), pageWidth - margin, sigTableY + (sigRowHeight * 3));
-
-  // Welfare Department
-  let sigY = sigTableY + sigRowHeight + 5;
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Name:', margin + 5, sigY);
-  doc.text(formData.welfare_department_name || '', margin + 20, sigY);
-  sigY += sigRowHeight;
-  doc.text('Signature:', margin + 5, sigY);
-  
-  // Add signature image if available
-  const welfareSig = formData.welfare_department_signature_drawing_data || formData.welfare_department_signature_file_path;
-  if (welfareSig) {
-    const sigAdded = await addImageToPDF(doc, welfareSig, margin + 20, sigY - 5, 30, 10);
-    if (!sigAdded) {
-      doc.text('________________', margin + 20, sigY);
-    }
-  } else {
-    doc.text('________________', margin + 20, sigY);
-  }
-  sigY += sigRowHeight;
-  doc.text('Date:', margin + 5, sigY);
-  doc.text(formatDate(formData.welfare_department_date) || '', margin + 20, sigY);
-
-  // Zonal In-charge
-  sigY = sigTableY + sigRowHeight + 5;
-  doc.text('Name:', margin + sigColWidth + 5, sigY);
-  doc.text(formData.zonal_incharge_name || '', margin + sigColWidth + 20, sigY);
-  sigY += sigRowHeight;
-  doc.text('Signature:', margin + sigColWidth + 5, sigY);
-  
-  const zonalSig = formData.zonal_incharge_signature_drawing_data || formData.zonal_incharge_signature_file_path;
-  if (zonalSig) {
-    const sigAdded = await addImageToPDF(doc, zonalSig, margin + sigColWidth + 20, sigY - 5, 30, 10);
-    if (!sigAdded) {
-      doc.text('________________', margin + sigColWidth + 20, sigY);
-    }
-  } else {
-    doc.text('________________', margin + sigColWidth + 20, sigY);
-  }
-  sigY += sigRowHeight;
-  doc.text('Date:', margin + sigColWidth + 5, sigY);
-  doc.text(formatDate(formData.zonal_incharge_date) || '', margin + sigColWidth + 20, sigY);
-
-  // Operations Head
-  sigY = sigTableY + sigRowHeight + 5;
-  doc.text('Name:', margin + (sigColWidth * 2) + 5, sigY);
-  doc.text(formData.operations_head_name || '', margin + (sigColWidth * 2) + 20, sigY);
-  sigY += sigRowHeight;
-  doc.text('Signature:', margin + (sigColWidth * 2) + 5, sigY);
-  
-  const opsSig = formData.operations_head_signature_drawing_data || formData.operations_head_signature_file_path;
-  if (opsSig) {
-    const sigAdded = await addImageToPDF(doc, opsSig, margin + (sigColWidth * 2) + 20, sigY - 5, 30, 10);
-    if (!sigAdded) {
-      doc.text('________________', margin + (sigColWidth * 2) + 20, sigY);
-    }
-  } else {
-    doc.text('________________', margin + (sigColWidth * 2) + 20, sigY);
-  }
-  sigY += sigRowHeight;
-  doc.text('Date:', margin + (sigColWidth * 2) + 5, sigY);
-  doc.text(formatDate(formData.operations_head_date) || '', margin + (sigColWidth * 2) + 20, sigY);
-
-  yPosition = sigTableY + (sigRowHeight * 4) + 10;
-
-    // Footer
-    checkNewPage(15);
     doc.setFontSize(10);
+    doc.setTextColor(80, 80, 80);
+    const caseLabel = `Case No.: ${toString(formData.applicant_details?.case_id || caseNumber)}`;
+    const dateLabel = `Date: ${formatDate(new Date().toISOString().slice(0, 10))}`;
+    doc.text(caseLabel, margin, yPosition + 4);
+    doc.text(dateLabel, pageWidth - margin - doc.getTextWidth(dateLabel), yPosition + 4);
+    doc.setTextColor(0, 0, 0);
+    yPosition += 12;
+
+    // ----- Applicant & Counsellor (two side-by-side sections like the form) -----
+    checkNewPage(55);
+    const colWidth = (contentWidth - 6) / 2;
+    const boxHeight = 52;
+
+    // Applicant Details box
+    let sectionY = drawSectionBox(doc, margin, yPosition, colWidth, sectionTitleHeight, 'Applicant Details');
+    let innerY = sectionY + padding;
+    const applicantFields = [
+      { label: 'Name', value: toString(formData.applicant_details?.name) },
+      { label: 'Contact', value: toString(formData.applicant_details?.contact_number) },
+      { label: 'Case Id', value: toString(formData.applicant_details?.case_id || caseNumber) },
+      { label: 'Jamiat', value: toString(formData.applicant_details?.jamiat) },
+      { label: 'Jamaat', value: toString(formData.applicant_details?.jamaat) },
+      { label: 'Age', value: toString(formData.applicant_details?.age) },
+      { label: 'ITS', value: toString(formData.applicant_details?.its) },
+    ];
+    const photoSize = 18;
+    const hasApplicantPhoto = !!formData.applicant_details?.photo;
+    if (hasApplicantPhoto) {
+      const added = await addImageToPDF(doc, formData.applicant_details.photo, margin + colWidth - photoSize - 4, innerY, photoSize, photoSize);
+      if (!added) doc.setFontSize(7).text('Photo', margin + colWidth - photoSize - 2, innerY + photoSize / 2);
+    }
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    const labelW = 22;
+    applicantFields.forEach((f, i) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${f.label}:`, margin + 4, innerY + 4 + i * 5);
+      doc.setFont('helvetica', 'normal');
+      const val = toString(f.value);
+      doc.text(val.length > 28 ? val.substring(0, 27) + '…' : val, margin + 4 + labelW, innerY + 4 + i * 5);
+    });
+    doc.rect(margin, yPosition, colWidth, boxHeight, 'S');
+    doc.setDrawColor(200, 200, 200);
+
+    // Counsellor Details box
+    sectionY = drawSectionBox(doc, margin + colWidth + 6, yPosition, colWidth, sectionTitleHeight, 'Counsellor Details');
+    innerY = sectionY + padding;
+    const counsellorFields = [
+      { label: 'Name', value: toString(formData.counsellor_details?.name) },
+      { label: 'Contact', value: toString(formData.counsellor_details?.contact_number) },
+      { label: 'Jamiat', value: toString(formData.counsellor_details?.jamiat) },
+      { label: 'Jamaat', value: toString(formData.counsellor_details?.jamaat) },
+      { label: 'Age', value: toString(formData.counsellor_details?.age) },
+      { label: 'ITS', value: toString(formData.counsellor_details?.its) },
+      { label: 'Certified', value: formData.counsellor_details?.certified ? 'Yes' : 'No' },
+    ];
+    if (formData.counsellor_details?.photo) {
+      const added = await addImageToPDF(doc, formData.counsellor_details.photo, margin + colWidth + 6 + colWidth - photoSize - 4, innerY, photoSize, photoSize);
+      if (!added) doc.setFontSize(7).text('Photo', margin + colWidth + 6 + colWidth - photoSize - 2, innerY + photoSize / 2);
+    }
+    doc.setFontSize(9);
+    counsellorFields.forEach((f, i) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${f.label}:`, margin + colWidth + 10, innerY + 4 + i * 5);
+      doc.setFont('helvetica', 'normal');
+      const val = toString(f.value);
+      doc.text(val.length > 28 ? val.substring(0, 27) + '…' : val, margin + colWidth + 10 + labelW, innerY + 4 + i * 5);
+    });
+    doc.rect(margin + colWidth + 6, yPosition, colWidth, boxHeight, 'S');
+    yPosition += boxHeight + 10;
+
+    // ----- Financial and Business Overview (single section like form) -----
+    checkNewPage(75);
+    const finStartY = yPosition;
+    sectionY = drawSectionBox(doc, margin, yPosition, contentWidth, sectionTitleHeight, 'Financial and Business Overview');
+    yPosition = sectionY + padding;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+
+    const incomeRows = [
+      { label: 'Current Personal Income', value: formatCurrency(formData.current_personal_income) },
+      { label: 'Current Family Income', value: formatCurrency(formData.current_family_income) },
+      { label: 'Earning Family Members', value: formatNumber(formData.earning_family_members) },
+      { label: 'Dependents', value: formatNumber(formData.dependents) },
+    ];
+    incomeRows.forEach((r, i) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${r.label}:`, margin + 4, yPosition + 4 + i * 5);
+      doc.setFont('helvetica', 'normal');
+      doc.text(toString(r.value), margin + 55, yPosition + 4 + i * 5);
+    });
+    yPosition += incomeRows.length * 5 + 4;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Assets (House / Shop / Gold / Machinery / Stock):', margin + 4, yPosition + 4);
+    doc.setFont('helvetica', 'normal');
+    doc.text(
+      `${formatCurrency(formData.asset_house)} / ${formatCurrency(formData.asset_shop)} / ${formatCurrency(formData.asset_gold)} / ${formatCurrency(formData.asset_machinery)} / ${formatCurrency(formData.asset_stock)}`,
+      margin + 4,
+      yPosition + 9
+    );
+    yPosition += 16;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Liabilities (Qardan / Den / Others):', margin + 4, yPosition + 4);
+    doc.setFont('helvetica', 'normal');
+    doc.text(
+      `${formatCurrency(formData.liability_qardan)} / ${formatCurrency(formData.liability_den)} / ${formatCurrency(formData.liability_others)}`,
+      margin + 4,
+      yPosition + 9
+    );
+    yPosition += 16;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Business Name & Year:', margin + 4, yPosition + 4);
+    doc.setFont('helvetica', 'normal');
+    doc.text(toString(formData.business_name), margin + 45, yPosition + 4);
+    yPosition += 6;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Industry / Segment:', margin + 4, yPosition + 4);
+    doc.setFont('helvetica', 'normal');
+    doc.text(toString(formData.industry_segment), margin + 45, yPosition + 4);
+    yPosition += 8;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Present Occupation / Business:', margin + 4, yPosition + 4);
+    doc.setFont('helvetica', 'normal');
+    const occupation = toString(formData.present_occupation);
+    const occLines = doc.splitTextToSize(occupation || '—', contentWidth - 12);
+    doc.text(occLines, margin + 4, yPosition + 8);
+    yPosition += Math.max(8, occLines.length * 5) + 6;
+
+    doc.rect(margin, finStartY, contentWidth, yPosition - finStartY, 'S');
+    yPosition += 8;
+
+    // ----- Summary of Proposed Upliftment Plan -----
+    checkNewPage(35);
+    const upliftStartY = yPosition;
+    sectionY = drawSectionBox(doc, margin, yPosition, contentWidth, sectionTitleHeight, 'Summary of Proposed Upliftment Plan');
+    yPosition = sectionY + padding;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    const upliftText = toString(formData.proposed_upliftment_plan) || '—';
+    const upliftLines = doc.splitTextToSize(upliftText, contentWidth - 8);
+    doc.text(upliftLines, margin + 4, yPosition + 4);
+    yPosition += Math.max(12, upliftLines.length * 5) + 6;
+    doc.rect(margin, upliftStartY, contentWidth, yPosition - upliftStartY, 'S');
+    yPosition += 8;
+
+    // ----- Financial Assistance (4 columns: Label, Enayat, Qardan, Total) -----
+    checkNewPage(35);
+    const faStartY = yPosition;
+    sectionY = drawSectionBox(doc, margin, yPosition, contentWidth, sectionTitleHeight, 'Financial Assistance');
+    yPosition = sectionY + padding;
+
+    const faLabelW = 28;
+    const faColW = (contentWidth - faLabelW) / 3;
+    const faX1 = margin + faLabelW;
+    const faX2 = margin + faLabelW + faColW;
+    const faX3 = margin + faLabelW + faColW * 2;
+    const rowH = 8;
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('', margin + 2, yPosition);
+    doc.text('Enayat Amount', faX1 + 3, yPosition);
+    doc.text('Qardan Amount', faX2 + 3, yPosition);
+    doc.text('Total Amount', faX3 + 3, yPosition);
+    yPosition += rowH;
+    doc.line(margin, yPosition, pageWidth - margin, yPosition);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFont('helvetica', 'bold');
+    doc.text('Requested', margin + 2, yPosition + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.text(formatCurrency(formData.requested_enayat) || '—', faX1 + 3, yPosition + 5);
+    doc.text(formatCurrency(formData.requested_qardan) || '—', faX2 + 3, yPosition + 5);
+    doc.text(formatCurrency(formData.requested_total) || '—', faX3 + 3, yPosition + 5);
+    yPosition += rowH;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Recommended', margin + 2, yPosition + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.text(formatCurrency(formData.recommended_enayat) || '—', faX1 + 3, yPosition + 5);
+    doc.text(formatCurrency(formData.recommended_qardan) || '—', faX2 + 3, yPosition + 5);
+    doc.text(formatCurrency(formData.recommended_total) || '—', faX3 + 3, yPosition + 5);
+    yPosition += rowH + 4;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Non-financial Assistance:', margin + 2, yPosition + 4);
+    doc.setFont('helvetica', 'normal');
+    doc.text(toString(formData.non_financial_assistance) || '—', margin + 50, yPosition + 4);
+    yPosition += 10;
+
+    doc.rect(margin, faStartY, contentWidth, yPosition - faStartY, 'S');
+    yPosition += 8;
+
+    // ----- Projected Income -----
+    checkNewPage(40);
+    const projStartY = yPosition;
+    sectionY = drawSectionBox(doc, margin, yPosition, contentWidth, sectionTitleHeight, 'Projected Income');
+    yPosition = sectionY + padding;
+
+    const projColW = (contentWidth - 22) / 5;
+    const projRowH = 7;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('', margin + 2, yPosition);
+    for (let i = 1; i <= 5; i++) doc.text(`Year ${i}`, margin + 22 + (i - 1) * projColW + 3, yPosition);
+    yPosition += projRowH;
+    doc.line(margin, yPosition, pageWidth - margin, yPosition);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFont('helvetica', 'bold');
+    doc.text('Applicant', margin + 2, yPosition + 4);
+    doc.setFont('helvetica', 'normal');
+    doc.text(formatCurrency(formData.applicant_projected_income_after_1_year) || '—', margin + 22 + 3, yPosition + 4);
+    doc.text(formatCurrency(formData.applicant_projected_income_after_2_years) || '—', margin + 22 + projColW + 3, yPosition + 4);
+    doc.text(formatCurrency(formData.applicant_projected_income_after_3_years) || '—', margin + 22 + projColW * 2 + 3, yPosition + 4);
+    doc.text(formatCurrency(formData.applicant_projected_income_after_4_years) || '—', margin + 22 + projColW * 3 + 3, yPosition + 4);
+    doc.text(formatCurrency(formData.applicant_projected_income_after_5_years) || '—', margin + 22 + projColW * 4 + 3, yPosition + 4);
+    yPosition += projRowH;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Family', margin + 2, yPosition + 4);
+    doc.setFont('helvetica', 'normal');
+    doc.text(formatCurrency(formData.family_projected_income_after_1_year) || '—', margin + 22 + 3, yPosition + 4);
+    doc.text(formatCurrency(formData.family_projected_income_after_2_years) || '—', margin + 22 + projColW + 3, yPosition + 4);
+    doc.text(formatCurrency(formData.family_projected_income_after_3_years) || '—', margin + 22 + projColW * 2 + 3, yPosition + 4);
+    doc.text(formatCurrency(formData.family_projected_income_after_4_years) || '—', margin + 22 + projColW * 3 + 3, yPosition + 4);
+    doc.text(formatCurrency(formData.family_projected_income_after_5_years) || '—', margin + 22 + projColW * 4 + 3, yPosition + 4);
+    yPosition += projRowH + 4;
+
+    doc.rect(margin, projStartY, contentWidth, yPosition - projStartY, 'S');
+    yPosition += 8;
+
+    // ----- Welfare Dept Comments -----
+    checkNewPage(30);
+    const commentsStartY = yPosition;
+    sectionY = drawSectionBox(doc, margin, yPosition, contentWidth, sectionTitleHeight, 'Welfare Department Comments');
+    yPosition = sectionY + padding;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    const comments = toString(formData.welfare_department_comments) || '—';
+    const commentLines = doc.splitTextToSize(comments, contentWidth - 8);
+    doc.text(commentLines, margin + 4, yPosition + 4);
+    yPosition += Math.max(10, commentLines.length * 5) + 6;
+    doc.rect(margin, commentsStartY, contentWidth, yPosition - commentsStartY, 'S');
+    yPosition += 8;
+
+    // ----- Executive Approval (for executive table sign-off) -----
+    checkNewPage(45);
+    const execBoxH = 38;
+    const execStartY = yPosition;
+    doc.setFillColor(232, 245, 233); // light green
+    doc.rect(margin, yPosition, contentWidth, execBoxH, 'F');
+    doc.setDrawColor(160, 180, 160);
+    doc.rect(margin, yPosition, contentWidth, execBoxH, 'S');
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 100, 0);
+    doc.text('Executive Approval (For Sign-off)', margin + 6, yPosition + 10);
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Approved Enayat: ${formatCurrency(formData.approved_enayat)}`, margin + 6, yPosition + 20);
+    doc.text(`Approved Qardan: ${formatCurrency(formData.approved_qardan)}`, margin + 6, yPosition + 28);
+    doc.text(`QH Months: ${toString(formData.approved_qh_months) || '—'}`, margin + 6, yPosition + 36);
+    yPosition = execStartY + execBoxH + 10;
+
+    // ----- Signatures (Welfare Dept | Zonal In-charge | Operations Head) -----
+    checkNewPage(55);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Executive Management — Name, Signature and Date', margin, yPosition);
+    yPosition += 8;
+
+    const sigColW = contentWidth / 3;
+    const sigBoxH = 42;
+    const sigTableY = yPosition;
+
+    doc.setDrawColor(180, 180, 180);
+    doc.rect(margin, sigTableY, contentWidth, sigBoxH, 'S');
+    doc.line(margin + sigColW, sigTableY, margin + sigColW, sigTableY + sigBoxH);
+    doc.line(margin + sigColW * 2, sigTableY, margin + sigColW * 2, sigTableY + sigBoxH);
+    doc.line(margin, sigTableY + 10, pageWidth - margin, sigTableY + 10);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Welfare Department', margin + 5, sigTableY + 7);
+    doc.text('Zonal In-charge', margin + sigColW + 5, sigTableY + 7);
+    doc.text('Operations Head', margin + sigColW * 2 + 5, sigTableY + 7);
+
+    const drawSignatureBlock = async (startX, rolePrefix) => {
+      let sy = sigTableY + 14;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text('Name:', startX + 5, sy);
+      doc.text(toString(formData[`${rolePrefix}_name`]) || '—', startX + 18, sy);
+      sy += 8;
+      doc.text('Signature:', startX + 5, sy);
+      const sigData = formData[`${rolePrefix}_signature_drawing_data`] || formData[`${rolePrefix}_signature_file_path`];
+      if (sigData) {
+        const added = await addImageToPDF(doc, sigData, startX + 18, sy - 4, 28, 10);
+        if (!added) doc.text('________________', startX + 18, sy);
+      } else doc.text('________________', startX + 18, sy);
+      sy += 10;
+      doc.text('Date:', startX + 5, sy);
+      doc.text(formatDate(formData[`${rolePrefix}_date`]) || '—', startX + 18, sy);
+    };
+
+    await drawSignatureBlock(margin, 'welfare_department');
+    await drawSignatureBlock(margin + sigColW, 'zonal_incharge');
+    await drawSignatureBlock(margin + sigColW * 2, 'operations_head');
+
+    yPosition = sigTableY + sigBoxH + 10;
+
+    // ----- Footer -----
+    checkNewPage(12);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'italic');
-    doc.text(`Cover page prepared by ${userName || 'System'}`, pageWidth / 2, yPosition, { align: 'center' });
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Cover letter prepared by ${userName || 'System'}`, pageWidth / 2, yPosition, { align: 'center' });
+    doc.setTextColor(0, 0, 0);
 
     return doc;
   } catch (error) {
