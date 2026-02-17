@@ -80,12 +80,13 @@ async function fetchUserDataFromAPI(itsNumber) {
       // Continue without photo if photo API fails
     }
     
-    // Return only the fields we need for users
+    // Return only the fields we need for users (including email for fetch-contact)
     return {
       success: true,
       data: {
         full_name: userData.Fullname || '',
         phone: userData.Mobile || '',
+        email: userData.Email || '',
         photo: photoBase64
       }
     };
@@ -97,6 +98,7 @@ async function fetchUserDataFromAPI(itsNumber) {
       data: {
         full_name: '',
         phone: '',
+        email: '',
         photo: null
       }
     };
@@ -260,7 +262,13 @@ router.get('/', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'You do not have permission to view users' });
     }
     
-    const { role, is_active, search, jamiat_id } = req.query;
+    const { role, is_active, search, jamiat_id, page: pageParam, limit: limitParam } = req.query;
+
+    const allowedLimits = [10, 20, 50, 100, 500];
+    const parsedLimit = limitParam ? parseInt(limitParam, 10) : 10;
+    const effectiveLimit = allowedLimits.includes(parsedLimit) ? parsedLimit : 10;
+    const page = Math.max(1, parseInt(pageParam, 10) || 1);
+    const offset = (page - 1) * effectiveLimit;
 
     let whereConditions = [];
     let queryParams = [];
@@ -289,14 +297,27 @@ router.get('/', authenticateToken, async (req, res) => {
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
-    const [users] = await pool.execute(`
+    // Get total count for pagination
+    const [countResult] = await pool.execute(
+      `SELECT COUNT(*) as total FROM users u ${whereClause}`,
+      queryParams
+    );
+    const total = Number(countResult[0]?.total ?? 0);
+    const totalPages = Math.ceil(total / effectiveLimit) || 1;
+
+    // Use string interpolation for LIMIT/OFFSET (validated integers) to avoid parameter binding issues
+    const safeLimit = parseInt(effectiveLimit, 10);
+    const safeOffset = parseInt(offset, 10);
+    const usersQuery = `
       SELECT 
         u.id, u.username, u.email, u.full_name, u.role, u.is_active, u.phone, u.its_number, u.photo,
         u.jamiat_ids, u.jamaat_ids, u.executive_level, u.created_at, u.updated_at
       FROM users u
       ${whereClause}
       ORDER BY u.created_at DESC
-    `, queryParams);
+      LIMIT ${safeLimit} OFFSET ${safeOffset}
+    `;
+    const [users] = await pool.execute(usersQuery, queryParams);
 
     // Process jamiat and jamaat associations for each user
     for (let user of users) {
@@ -342,7 +363,7 @@ router.get('/', authenticateToken, async (req, res) => {
       delete user.jamaat_ids;
     }
 
-    res.json({ users });
+    res.json({ users, total, page, limit: effectiveLimit, totalPages });
   } catch (error) {
     console.error('Get users error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -372,6 +393,59 @@ router.get('/by-role/:role', authenticateToken, async (req, res) => {
     res.json({ users });
   } catch (error) {
     console.error('Get users by role error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get current user with assigned roles (for Switch role UI)
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const [users] = await pool.execute(
+      'SELECT id, username, email, full_name, role, is_active, phone, its_number, photo, executive_level, created_at, updated_at FROM users WHERE id = ?',
+      [userId]
+    );
+    if (users.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const user = users[0];
+    const [assignedRoles] = await pool.execute(`
+      SELECT r.id, r.name FROM roles r
+      JOIN user_roles ur ON r.id = ur.role_id
+      WHERE ur.user_id = ? AND ur.is_active = 1 AND r.is_active = 1
+      AND (ur.expires_at IS NULL OR ur.expires_at > NOW())
+      ORDER BY r.name
+    `, [userId]);
+    user.assigned_roles = assignedRoles;
+    res.json({ user });
+  } catch (error) {
+    console.error('Get me error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Set current user's primary (display) role - persisted as default for next login
+router.patch('/me/primary-role', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { role: roleName } = req.body;
+    if (!roleName || typeof roleName !== 'string') {
+      return res.status(400).json({ error: 'Role is required' });
+    }
+    const name = roleName.trim();
+    const [hasRole] = await pool.execute(`
+      SELECT r.id FROM roles r
+      JOIN user_roles ur ON r.id = ur.role_id
+      WHERE ur.user_id = ? AND ur.is_active = 1 AND r.is_active = 1
+      AND (ur.expires_at IS NULL OR ur.expires_at > NOW()) AND r.name = ?
+    `, [userId, name]);
+    if (hasRole.length === 0) {
+      return res.status(400).json({ error: 'You do not have this role assigned' });
+    }
+    await pool.execute('UPDATE users SET role = ? WHERE id = ?', [name, userId]);
+    res.json({ success: true, role: name });
+  } catch (error) {
+    console.error('Patch primary-role error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -823,26 +897,11 @@ router.delete('/:userId', authenticateToken, authorizePermission('users', 'delet
 // Export sample Excel template for user import
 router.get('/export/template', authenticateToken, authorizePermission('users', 'read'), async (req, res) => {
   try {
-    // Create sample data
+    // Create sample data (optional Jamiat ID and Jamaat ID for access by jamiat/jamaat)
     const sampleData = [
-      { 
-        'ITS Number': '30335640',
-        'Email': 'user1@example.com',
-        'Username': 'user1.example',
-        'Role': 'Counselor'
-      },
-      { 
-        'ITS Number': '30335641',
-        'Email': 'user2@example.com',
-        'Username': 'user2.example',
-        'Role': 'Finance'
-      },
-      { 
-        'ITS Number': '30335642',
-        'Email': 'user3@example.com',
-        'Username': 'user3.example',
-        'Role': 'Operations Lead'
-      }
+      { 'ITS Number': '30335640', 'Username': 'user1.example', 'Role': 'Counselor', 'Jamiat ID': '', 'Jamaat ID': '' },
+      { 'ITS Number': '30335641', 'Username': 'user2.example', 'Role': 'Finance', 'Jamiat ID': '', 'Jamaat ID': '' },
+      { 'ITS Number': '30335642', 'Username': 'user3.example', 'Role': 'Operations Lead', 'Jamiat ID': '', 'Jamaat ID': '' }
     ];
 
     // Create workbook and worksheet
@@ -884,8 +943,8 @@ router.post('/import-excel', authenticateToken, authorizePermission('users', 'cr
       return res.status(400).json({ error: 'No data found in Excel file' });
     }
 
-    // Validate required columns
-    const requiredColumns = ['ITS Number', 'Email', 'Username', 'Role'];
+    // Validate required columns (no Email - email set to NULL on import)
+    const requiredColumns = ['ITS Number', 'Username', 'Role'];
     const firstRow = data[0];
     const missingColumns = requiredColumns.filter(col => !(col in firstRow));
     
@@ -903,38 +962,31 @@ router.post('/import-excel', authenticateToken, authorizePermission('users', 'cr
       roleMap[r.name] = r.id;
     });
 
-    // Get all active Jamiat IDs
-    const [allJamiat] = await pool.execute('SELECT id FROM jamiat WHERE is_active = 1');
-    const allJamiatIds = allJamiat.map(j => j.id.toString());
-    const jamiatIdsString = allJamiatIds.length > 0 ? allJamiatIds.join(',') : null;
-
-    // Get all active Jamaat IDs
-    const [allJamaat] = await pool.execute('SELECT id FROM jamaat WHERE is_active = 1');
-    const allJamaatIds = allJamaat.map(j => j.id.toString());
-    const jamaatIdsString = allJamaatIds.length > 0 ? allJamaatIds.join(',') : null;
-
     const connection = await pool.getConnection();
-    await connection.beginTransaction();
 
     let inserted = 0;
     let updated = 0;
     let skipped = 0;
     const errors = [];
+    const BATCH_SIZE = 100; // Commit every N rows so partial progress is saved and request doesn't time out
 
     try {
       for (let i = 0; i < data.length; i++) {
+        if (i % BATCH_SIZE === 0) {
+          await connection.beginTransaction();
+        }
+
         const row = data[i];
         const rowNum = i + 2; // +2 because Excel rows start at 1 and we have a header
 
         try {
           const itsNumber = String(row['ITS Number'] || '').trim();
-          const email = String(row['Email'] || '').trim();
           const username = String(row['Username'] || '').trim();
           const role = String(row['Role'] || '').trim();
 
-          // Validate required fields
-          if (!itsNumber || !email || !username || !role) {
-            errors.push(`Row ${rowNum}: Missing required fields (ITS Number, Email, Username, or Role)`);
+          // Validate required fields (no Email - set to NULL)
+          if (!itsNumber || !username || !role) {
+            errors.push(`Row ${rowNum}: Missing required fields (ITS Number, Username, or Role)`);
             skipped++;
             continue;
           }
@@ -954,74 +1006,62 @@ router.post('/import-excel', authenticateToken, authorizePermission('users', 'cr
             continue;
           }
 
-          // Validate email format
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(email)) {
-            errors.push(`Row ${rowNum}: Invalid email format`);
-            skipped++;
-            continue;
+          // Optional Jamiat ID and Jamaat ID (codes from master) - resolve to internal ids
+          const jamiatCode = String(row['Jamiat ID'] || '').trim();
+          const jamaatCode = String(row['Jamaat ID'] || '').trim();
+          let rowJamiatIdsString = null;
+          let rowJamaatIdsString = null;
+          if (jamiatCode) {
+            const [jamiatRows] = await connection.execute(
+              'SELECT id FROM jamiat WHERE jamiat_id = ? AND is_active = 1',
+              [jamiatCode]
+            );
+            if (jamiatRows.length > 0) {
+              rowJamiatIdsString = String(jamiatRows[0].id);
+              if (jamaatCode) {
+                const [jamaatRows] = await connection.execute(
+                  'SELECT j.id FROM jamaat j JOIN jamiat ji ON j.jamiat_id = ji.id WHERE ji.jamiat_id = ? AND j.jamaat_id = ? AND j.is_active = 1',
+                  [jamiatCode, jamaatCode]
+                );
+                if (jamaatRows.length > 0) {
+                  rowJamaatIdsString = String(jamaatRows[0].id);
+                }
+              }
+            }
           }
 
-          // Fetch user data from API
-          let fullName = '';
-          let phone = '';
-          let photo = null;
-          
-          const apiResult = await fetchUserDataFromAPI(itsNumber);
-          if (apiResult.success && apiResult.data) {
-            fullName = apiResult.data.full_name || '';
-            phone = apiResult.data.phone || '';
-            photo = apiResult.data.photo || null;
-          }
-
-          // Generate password: first 4 characters of username + ITS number
-          const passwordPrefix = username.substring(0, 4).toLowerCase();
-          const generatedPassword = `${passwordPrefix}${itsNumber}`;
-          const saltRounds = 10;
-          const password_hash = await bcrypt.hash(generatedPassword, saltRounds);
-
-          // Check if user exists (by email or username)
-          const [existingUsers] = await connection.execute(
-            'SELECT id FROM users WHERE email = ? OR username = ?',
-            [email, username]
+          // Check if user exists: by ITS number first, then by username
+          let [existingUsers] = await connection.execute(
+            'SELECT id, jamiat_ids, jamaat_ids FROM users WHERE its_number = ? AND its_number IS NOT NULL AND its_number != ""',
+            [itsNumber]
           );
+          if (existingUsers.length === 0) {
+            [existingUsers] = await connection.execute(
+              'SELECT id, jamiat_ids, jamaat_ids FROM users WHERE username = ?',
+              [username]
+            );
+          }
 
           const roleId = roleMap[role];
 
           if (existingUsers.length > 0) {
-            // Update existing user
+            // Existing user: only add role and update jamiat/jamaat if provided; preserve name and credentials
             const userId = existingUsers[0].id;
+            const existingJamiatIds = existingUsers[0].jamiat_ids;
+            const existingJamaatIds = existingUsers[0].jamaat_ids;
+            const finalJamiatIds = rowJamiatIdsString !== null ? rowJamiatIdsString : existingJamiatIds;
+            const finalJamaatIds = rowJamaatIdsString !== null ? rowJamaatIdsString : existingJamaatIds;
 
-            // Update user fields
             await connection.execute(
-              `UPDATE users SET 
-                email = ?, 
-                username = ?, 
-                full_name = ?, 
-                phone = ?, 
-                its_number = ?, 
-                role = ?, 
-                password_hash = ?,
-                photo = ?,
-                is_active = 1,
-                jamiat_ids = ?,
-                jamaat_ids = ?
-              WHERE id = ?`,
-              [email, username, fullName || null, phone || null, itsNumber, role, password_hash, photo, jamiatIdsString, jamaatIdsString, userId]
+              'UPDATE users SET role = ?, jamiat_ids = ?, jamaat_ids = ? WHERE id = ?',
+              [role, finalJamiatIds, finalJamaatIds, userId]
             );
 
-            // Update role assignment
-            await connection.execute(
-              'UPDATE user_roles SET is_active = 0 WHERE user_id = ? AND is_active = 1',
-              [userId]
-            );
-
-            // Check if role assignment exists
+            // Add role (do not deactivate existing roles - dual role support)
             const [existingRole] = await connection.execute(
               'SELECT id FROM user_roles WHERE user_id = ? AND role_id = ?',
               [userId, roleId]
             );
-
             if (existingRole.length > 0) {
               await connection.execute(
                 'UPDATE user_roles SET is_active = 1, assigned_by = ?, assigned_at = NOW() WHERE user_id = ? AND role_id = ?',
@@ -1036,18 +1076,23 @@ router.post('/import-excel', authenticateToken, authorizePermission('users', 'cr
 
             updated++;
           } else {
-            // Create new user
+            // New user: email = NULL, password = ITS number, optional jamiat/jamaat from row
+            const fullName = null;
+            const phone = null;
+            const photo = null;
+            const saltRounds = 10;
+            const password_hash = await bcrypt.hash(itsNumber, saltRounds);
+
             const [result] = await connection.execute(
               `INSERT INTO users (
                 username, email, password_hash, full_name, phone, its_number, 
                 role, is_active, photo, jamiat_ids, jamaat_ids
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
-              [username, email, password_hash, fullName || null, phone || null, itsNumber, role, photo, jamiatIdsString, jamaatIdsString]
+              ) VALUES (?, NULL, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+              [username, password_hash, fullName || null, phone || null, itsNumber, role, photo, rowJamiatIdsString, rowJamaatIdsString]
             );
 
             const userId = result.insertId;
 
-            // Create role assignment
             if (roleId) {
               await connection.execute(
                 'INSERT INTO user_roles (user_id, role_id, assigned_by, expires_at) VALUES (?, ?, ?, NULL)',
@@ -1062,9 +1107,16 @@ router.post('/import-excel', authenticateToken, authorizePermission('users', 'cr
           errors.push(`Row ${rowNum}: ${rowError.message || 'Unknown error'}`);
           skipped++;
         }
+
+        // Commit every BATCH_SIZE rows so partial progress is saved and request stays responsive
+        if ((i + 1) % BATCH_SIZE === 0 || i === data.length - 1) {
+          await connection.commit();
+          if (i < data.length - 1) {
+            await connection.beginTransaction();
+          }
+        }
       }
 
-      await connection.commit();
       connection.release();
 
       res.json({
@@ -1085,6 +1137,60 @@ router.post('/import-excel', authenticateToken, authorizePermission('users', 'cr
     if (error.message === 'Only Excel files are allowed!') {
       return res.status(400).json({ error: error.message });
     }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Fetch email, phone and photo from external API for users with a given role
+router.post('/fetch-contact-from-api', authenticateToken, authorizePermission('users', 'update'), async (req, res) => {
+  try {
+    const { role: roleName } = req.body;
+    if (!roleName || typeof roleName !== 'string') {
+      return res.status(400).json({ error: 'Role is required' });
+    }
+
+    const [roles] = await pool.execute('SELECT id, name FROM roles WHERE is_active = 1');
+    const validRoles = roles.map(r => r.name);
+    if (!validRoles.includes(roleName.trim())) {
+      return res.status(400).json({ error: `Invalid role. Valid roles: ${validRoles.join(', ')}` });
+    }
+
+    // Users who have this role in user_roles OR in users.role, and have its_number
+    const [users] = await pool.execute(`
+      SELECT DISTINCT u.id, u.its_number, u.username
+      FROM users u
+      LEFT JOIN user_roles ur ON u.id = ur.user_id AND ur.is_active = 1
+      LEFT JOIN roles r ON r.id = ur.role_id AND r.is_active = 1
+      WHERE (u.role = ? OR r.name = ?) AND u.its_number IS NOT NULL AND TRIM(u.its_number) != ''
+    `, [roleName.trim(), roleName.trim()]);
+
+    let updated = 0;
+    let failed = 0;
+    const errors = [];
+
+    for (const user of users) {
+      try {
+        const apiResult = await fetchUserDataFromAPI(user.its_number);
+        if (!apiResult.success || !apiResult.data) {
+          failed++;
+          errors.push(`ITS ${user.its_number} (${user.username}): ${apiResult.error || 'No data'}`);
+          continue;
+        }
+        const { email = '', phone = '', photo = null, full_name: fullName = '' } = apiResult.data;
+        await pool.execute(
+          'UPDATE users SET email = ?, phone = ?, photo = ?, full_name = ? WHERE id = ?',
+          [email || null, phone || null, photo, fullName || null, user.id]
+        );
+        updated++;
+      } catch (err) {
+        failed++;
+        errors.push(`ITS ${user.its_number} (${user.username}): ${err.message || 'Unknown error'}`);
+      }
+    }
+
+    res.json({ success: true, updated, failed, total: users.length, errors: errors.length > 0 ? errors : undefined });
+  } catch (error) {
+    console.error('Fetch contact from API error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

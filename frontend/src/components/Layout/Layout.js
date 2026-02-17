@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 
 // Icon components (you can replace these with your preferred icon library)
@@ -156,11 +157,13 @@ const drawerWidth = 208;
 const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, setPrimaryRole } = useAuth();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [openDropdowns, setOpenDropdowns] = useState({});
+  const [meAssignedRoles, setMeAssignedRoles] = useState([]);
+  const [switchRoleLoading, setSwitchRoleLoading] = useState(false);
 
   // Check if any child path is active
   const isDropdownActive = (children) => {
@@ -176,12 +179,30 @@ const Layout = ({ children }) => {
     setMobileOpen(!mobileOpen);
   };
 
-  const handleProfileMenuOpen = (event) => {
+  const handleProfileMenuOpen = async (event) => {
     setAnchorEl(event.currentTarget);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('/api/users/me', { headers: { Authorization: `Bearer ${token}` } });
+      setMeAssignedRoles(res.data?.user?.assigned_roles || []);
+    } catch {
+      setMeAssignedRoles([]);
+    }
   };
 
   const handleProfileMenuClose = () => {
     setAnchorEl(null);
+    setMeAssignedRoles([]);
+  };
+
+  const handleSwitchRole = async (roleName) => {
+    setSwitchRoleLoading(true);
+    const result = await setPrimaryRole(roleName);
+    setSwitchRoleLoading(false);
+    if (result?.success) {
+      handleProfileMenuClose();
+      window.location.reload(); // Refresh so sidebar/permissions use new role
+    }
   };
 
   const handleLogout = () => {
@@ -495,17 +516,32 @@ const Layout = ({ children }) => {
       {/* Profile Menu */}
       {anchorEl && (
         <div className="fixed inset-0 z-50" onClick={handleProfileMenuClose}>
-          <div className="absolute top-16 right-4 bg-white rounded-lg shadow-lg border border-gray-200 py-2 w-48">
+          <div className="absolute top-16 right-4 bg-white rounded-lg shadow-lg border border-gray-200 py-2 w-56" onClick={e => e.stopPropagation()}>
             <button
-              onClick={() => handleNavigation('/profile')}
-              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              onClick={() => { handleProfileMenuClose(); handleNavigation('/profile'); }}
+              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
             >
               <ProfileIcon />
               <span className="ml-3">Profile</span>
             </button>
+            {meAssignedRoles.length >= 2 && (
+              <div className="border-t border-gray-100 mt-1 pt-1">
+                <div className="px-4 py-1.5 text-xs font-medium text-gray-500">Switch role</div>
+                {meAssignedRoles.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => handleSwitchRole(r.name)}
+                    disabled={switchRoleLoading}
+                    className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                  >
+                    <span className="ml-3">{user?.role === r.name ? '✓ ' : ''}{getRoleDisplayName(r.name) || r.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <button
               onClick={handleLogout}
-              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
             >
               <LogoutIcon />
               <span className="ml-3">Logout</span>

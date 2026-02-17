@@ -20,6 +20,12 @@ const Users = () => {
     is_active: '',
     search: ''
   });
+
+  // Pagination
+  const PAGE_SIZE_OPTIONS = [10, 20, 50, 100, 500];
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalUsers, setTotalUsers] = useState(0);
   
   // Modal states
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -75,6 +81,12 @@ const Users = () => {
   const [excelImportLoading, setExcelImportLoading] = useState(false);
   const [excelImportResult, setExcelImportResult] = useState(null);
   const [excelImportError, setExcelImportError] = useState('');
+
+  // Fetch contact from API (email, phone, photo) by role
+  const [fetchContactRole, setFetchContactRole] = useState('');
+  const [fetchContactLoading, setFetchContactLoading] = useState(false);
+  const [fetchContactResult, setFetchContactResult] = useState(null);
+  const [fetchContactError, setFetchContactError] = useState('');
 
   // Filtered jamaat based on selected jamiat
   const getFilteredJamaat = () => {
@@ -152,7 +164,7 @@ const Users = () => {
     }
   };
 
-  // Fetch users with filters
+  // Fetch users with filters and pagination
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -161,6 +173,8 @@ const Users = () => {
       if (filters.role) queryParams.append('role', filters.role);
       if (filters.is_active !== '') queryParams.append('is_active', filters.is_active);
       if (filters.search) queryParams.append('search', filters.search);
+      queryParams.append('page', page);
+      queryParams.append('limit', pageSize);
       
       const response = await fetch(`/api/users?${queryParams}`, {
         headers: {
@@ -174,6 +188,7 @@ const Users = () => {
       
       const data = await response.json();
       setUsers(data.users);
+      setTotalUsers(data.total ?? data.users.length);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -470,6 +485,31 @@ const Users = () => {
       setExcelImportError(errorMessage);
     } finally {
       setExcelImportLoading(false);
+    }
+  };
+
+  // Fetch name, email, phone and photo from API for users with selected role
+  const handleFetchContactFromApi = async () => {
+    if (!fetchContactRole) {
+      setFetchContactError('Please select a role');
+      return;
+    }
+    try {
+      setFetchContactLoading(true);
+      setFetchContactError('');
+      setFetchContactResult(null);
+      const response = await axios.post(
+        '/api/users/fetch-contact-from-api',
+        { role: fetchContactRole },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setFetchContactResult(response.data);
+      fetchUsers();
+      setTimeout(() => setFetchContactResult(null), 8000);
+    } catch (error) {
+      setFetchContactError(error.response?.data?.error || error.message || 'Failed to fetch contact from API');
+    } finally {
+      setFetchContactLoading(false);
     }
   };
 
@@ -803,12 +843,13 @@ const Users = () => {
     }
   };
 
-  // Handle filter changes
+  // Handle filter changes (reset to page 1 when filters change)
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({
       ...prev,
       [key]: value
     }));
+    setPage(1);
   };
 
   // Clear filters
@@ -818,6 +859,18 @@ const Users = () => {
       is_active: '',
       search: ''
     });
+    setPage(1);
+  };
+
+  // Pagination helpers
+  const totalPages = Math.ceil(totalUsers / pageSize) || 1;
+  const startItem = totalUsers === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endItem = Math.min(page * pageSize, totalUsers);
+
+  const handlePageSizeChange = (e) => {
+    const newSize = Number(e.target.value);
+    setPageSize(newSize);
+    setPage(1);
   };
 
   // Format role name
@@ -837,12 +890,15 @@ const Users = () => {
   };
 
   useEffect(() => {
-    fetchUsers();
     fetchRoles();
     fetchJamiat();
     fetchJamaat();
     fetchStats();
-  }, [filters]);
+  }, []);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [filters, page, pageSize]);
 
   useEffect(() => {
     if (success || error) {
@@ -1009,7 +1065,52 @@ const Users = () => {
             <h3 className="text-lg font-medium text-gray-900">Users List</h3>
             <div className="flex items-center space-x-4">
               <div className="text-sm text-gray-500">
-                {users.length} user{users.length !== 1 ? 's' : ''} found
+                {totalUsers === 0 ? 'No users' : `Showing ${startItem}–${endItem} of ${totalUsers}`}
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Rows per page:</span>
+                <select
+                  value={pageSize}
+                  onChange={handlePageSizeChange}
+                  className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                >
+                  {PAGE_SIZE_OPTIONS.map((size) => (
+                    <option key={size} value={size}>{size}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center space-x-2">
+                <select
+                  value={fetchContactRole}
+                  onChange={(e) => setFetchContactRole(e.target.value)}
+                  disabled={fetchContactLoading}
+                  className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="">Select role</option>
+                  {roles.map((r) => (
+                    <option key={r.id} value={r.name}>{r.name}</option>
+                  ))}
+                </select>
+                <Button
+                  variant="outline"
+                  onClick={handleFetchContactFromApi}
+                  disabled={fetchContactLoading || !fetchContactRole}
+                  className="flex items-center space-x-2"
+                >
+                  {fetchContactLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                      <span>Fetching...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span>Fetch name, email, phone &amp; photo from API</span>
+                    </>
+                  )}
+                </Button>
               </div>
               <Button
                 variant="outline"
@@ -1112,6 +1213,25 @@ const Users = () => {
               Selected file: {excelFile.name}
             </Alert>
           )}
+          {fetchContactError && (
+            <Alert severity="error" onClose={() => setFetchContactError('')} className="mb-4">
+              {fetchContactError}
+            </Alert>
+          )}
+          {fetchContactResult && (
+            <Alert severity="success" onClose={() => setFetchContactResult(null)} className="mb-4">
+              <div>
+                <strong>Fetch complete:</strong> {fetchContactResult.updated} updated, {fetchContactResult.failed} failed (total: {fetchContactResult.total}).
+                This may take several minutes for many users.
+                {fetchContactResult.errors && fetchContactResult.errors.length > 0 && (
+                  <ul className="list-disc list-inside mt-1 text-sm">
+                    {fetchContactResult.errors.slice(0, 5).map((err, idx) => <li key={idx}>{err}</li>)}
+                    {fetchContactResult.errors.length > 5 && <li>... and {fetchContactResult.errors.length - 5} more</li>}
+                  </ul>
+                )}
+              </div>
+            </Alert>
+          )}
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -1200,6 +1320,32 @@ const Users = () => {
                 ))}
               </Table.Body>
             </Table>
+          )}
+
+          {totalUsers > 0 && !loading && (
+            <div className="flex items-center justify-between border-t border-gray-200 px-2 py-3 mt-4">
+              <div className="text-sm text-gray-600">
+                Page {page} of {totalPages}
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           )}
 
           {users.length === 0 && !loading && (

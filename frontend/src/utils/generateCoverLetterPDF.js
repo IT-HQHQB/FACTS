@@ -58,23 +58,53 @@ const addImageToPDF = async (doc, imageData, x, y, width, height) => {
   }
 };
 
-/** Draw a section box with title bar (form-like card) */
-const drawSectionBox = (doc, x, y, width, titleBarHeight, title, fillHeader = true) => {
-  doc.setDrawColor(180, 180, 180);
+/** Draw a section box with title bar (form-like card). Use greenHeader for Applicant/Counsellor style (Image 1). */
+const drawSectionBox = (doc, x, y, width, titleBarHeight, title, fillHeader = true, greenHeader = false) => {
   doc.setLineWidth(0.2);
   if (fillHeader) {
-    doc.setFillColor(245, 245, 245);
+    if (greenHeader) {
+      doc.setFillColor(200, 228, 218); // light green/teal like reference
+      doc.setDrawColor(160, 200, 190);
+    } else {
+      doc.setFillColor(245, 245, 245);
+      doc.setDrawColor(180, 180, 180);
+    }
     doc.rect(x, y, width, titleBarHeight, 'FD');
     doc.rect(x, y, width, titleBarHeight, 'S');
   }
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(50, 50, 50);
-  doc.text(title, x + 4, y + titleBarHeight / 2 + 1.5);
   doc.setTextColor(0, 0, 0);
+  doc.text(title, x + 4, y + titleBarHeight / 2 + 1.5);
   doc.setDrawColor(200, 200, 200);
   doc.line(x, y + titleBarHeight, x + width, y + titleBarHeight);
   return y + titleBarHeight;
+};
+
+/** Normalize form data so PDF works with both nested (form state) and flat (API) shapes */
+const normalizeFormData = (formData, caseNumber) => {
+  const get = (obj, key) => (obj && obj[key] !== undefined && obj[key] !== null ? obj[key] : undefined);
+  const applicant = {
+    name: get(formData.applicant_details, 'name') ?? formData.applicant_name,
+    contact_number: get(formData.applicant_details, 'contact_number') ?? formData.applicant_contact_number,
+    case_id: get(formData.applicant_details, 'case_id') ?? formData.applicant_case_id ?? caseNumber,
+    jamiat: get(formData.applicant_details, 'jamiat') ?? formData.applicant_jamiat,
+    jamaat: get(formData.applicant_details, 'jamaat') ?? formData.applicant_jamaat,
+    age: get(formData.applicant_details, 'age') ?? formData.applicant_age,
+    its: get(formData.applicant_details, 'its') ?? formData.applicant_its,
+    photo: get(formData.applicant_details, 'photo') ?? formData.applicant_photo,
+  };
+  const counsellor = {
+    name: get(formData.counsellor_details, 'name') ?? formData.counsellor_name,
+    contact_number: get(formData.counsellor_details, 'contact_number') ?? formData.counsellor_contact_number,
+    jamiat: get(formData.counsellor_details, 'jamiat') ?? formData.counsellor_jamiat,
+    jamaat: get(formData.counsellor_details, 'jamaat') ?? formData.counsellor_jamaat,
+    age: get(formData.counsellor_details, 'age') ?? formData.counsellor_age,
+    its: get(formData.counsellor_details, 'its') ?? formData.counsellor_its,
+    certified: get(formData.counsellor_details, 'certified') ?? formData.counsellor_certified ?? false,
+    photo: get(formData.counsellor_details, 'photo') ?? formData.counsellor_photo,
+  };
+  return { applicant, counsellor };
 };
 
 /**
@@ -91,6 +121,8 @@ export const generateCoverLetterPDF = async (formData, options = {}) => {
   } = options;
 
   try {
+    const { applicant, counsellor } = normalizeFormData(formData, caseNumber);
+
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -132,74 +164,137 @@ export const generateCoverLetterPDF = async (formData, options = {}) => {
 
     doc.setFontSize(10);
     doc.setTextColor(80, 80, 80);
-    const caseLabel = `Case No.: ${toString(formData.applicant_details?.case_id || caseNumber)}`;
+    const caseLabel = `Case No.: ${toString(applicant.case_id)}`;
     const dateLabel = `Date: ${formatDate(new Date().toISOString().slice(0, 10))}`;
     doc.text(caseLabel, margin, yPosition + 4);
     doc.text(dateLabel, pageWidth - margin - doc.getTextWidth(dateLabel), yPosition + 4);
     doc.setTextColor(0, 0, 0);
     yPosition += 12;
 
-    // ----- Applicant & Counsellor (two side-by-side sections like the form) -----
-    checkNewPage(55);
-    const colWidth = (contentWidth - 6) / 2;
-    const boxHeight = 52;
+    // ----- Applicant Details (full width), then Counsellor Details below (full width) -----
+    const photoSize = 26; // fits reduced box height
+    const photoPad = 4;
+    const detailsXOffset = photoSize + photoPad;
+    const labelW = 24;
+    const lineH = 4.5;
+    const nameMaxChars = 50; // single row, truncate if longer
+    const boxHeight = 50; // reduced height for applicant/counsellor boxes
+    checkNewPage(boxHeight * 2 + 15);
 
-    // Applicant Details box
-    let sectionY = drawSectionBox(doc, margin, yPosition, colWidth, sectionTitleHeight, 'Applicant Details');
+    // Applicant Details — full width, photo LEFT, ITS below photo, Name (one compact row) then rest on RIGHT
+    let sectionY = drawSectionBox(doc, margin, yPosition, contentWidth, sectionTitleHeight, 'Applicant Details', true, true);
     let innerY = sectionY + padding;
-    const applicantFields = [
-      { label: 'Name', value: toString(formData.applicant_details?.name) },
-      { label: 'Contact', value: toString(formData.applicant_details?.contact_number) },
-      { label: 'Case Id', value: toString(formData.applicant_details?.case_id || caseNumber) },
-      { label: 'Jamiat', value: toString(formData.applicant_details?.jamiat) },
-      { label: 'Jamaat', value: toString(formData.applicant_details?.jamaat) },
-      { label: 'Age', value: toString(formData.applicant_details?.age) },
-      { label: 'ITS', value: toString(formData.applicant_details?.its) },
-    ];
-    const photoSize = 18;
-    const hasApplicantPhoto = !!formData.applicant_details?.photo;
-    if (hasApplicantPhoto) {
-      const added = await addImageToPDF(doc, formData.applicant_details.photo, margin + colWidth - photoSize - 4, innerY, photoSize, photoSize);
-      if (!added) doc.setFontSize(7).text('Photo', margin + colWidth - photoSize - 2, innerY + photoSize / 2);
+    const applicantPhotoX = margin + 4;
+    if (applicant.photo) {
+      const added = await addImageToPDF(doc, applicant.photo, applicantPhotoX, innerY, photoSize, photoSize);
+      if (!added) {
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(applicantPhotoX, innerY, photoSize, photoSize, 'S');
+        doc.setFontSize(7);
+        doc.setTextColor(140, 140, 140);
+        doc.text('Applicant', applicantPhotoX + 3, innerY + photoSize / 2 - 2);
+        doc.text('Photo', applicantPhotoX + 5, innerY + photoSize / 2 + 2);
+        doc.setTextColor(0, 0, 0);
+      }
+    } else {
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(applicantPhotoX, innerY, photoSize, photoSize, 'S');
+      doc.setFontSize(7);
+      doc.setTextColor(140, 140, 140);
+      doc.text('Applicant', applicantPhotoX + 3, innerY + photoSize / 2 - 2);
+      doc.text('Photo', applicantPhotoX + 5, innerY + photoSize / 2 + 2);
+      doc.setTextColor(0, 0, 0);
     }
-    doc.setFontSize(9);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`ITS: ${toString(applicant.its) || '—'}`, applicantPhotoX + photoSize / 2, innerY + photoSize + 4, { align: 'center' });
     doc.setFont('helvetica', 'normal');
-    const labelW = 22;
-    applicantFields.forEach((f, i) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${f.label}:`, margin + 4, innerY + 4 + i * 5);
-      doc.setFont('helvetica', 'normal');
-      const val = toString(f.value);
-      doc.text(val.length > 28 ? val.substring(0, 27) + '…' : val, margin + 4 + labelW, innerY + 4 + i * 5);
-    });
-    doc.rect(margin, yPosition, colWidth, boxHeight, 'S');
-    doc.setDrawColor(200, 200, 200);
-
-    // Counsellor Details box
-    sectionY = drawSectionBox(doc, margin + colWidth + 6, yPosition, colWidth, sectionTitleHeight, 'Counsellor Details');
-    innerY = sectionY + padding;
-    const counsellorFields = [
-      { label: 'Name', value: toString(formData.counsellor_details?.name) },
-      { label: 'Contact', value: toString(formData.counsellor_details?.contact_number) },
-      { label: 'Jamiat', value: toString(formData.counsellor_details?.jamiat) },
-      { label: 'Jamaat', value: toString(formData.counsellor_details?.jamaat) },
-      { label: 'Age', value: toString(formData.counsellor_details?.age) },
-      { label: 'ITS', value: toString(formData.counsellor_details?.its) },
-      { label: 'Certified', value: formData.counsellor_details?.certified ? 'Yes' : 'No' },
-    ];
-    if (formData.counsellor_details?.photo) {
-      const added = await addImageToPDF(doc, formData.counsellor_details.photo, margin + colWidth + 6 + colWidth - photoSize - 4, innerY, photoSize, photoSize);
-      if (!added) doc.setFontSize(7).text('Photo', margin + colWidth + 6 + colWidth - photoSize - 2, innerY + photoSize / 2);
-    }
+    const applicantDetailsX = margin + detailsXOffset + 2;
     doc.setFontSize(9);
-    counsellorFields.forEach((f, i) => {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Name:', applicantDetailsX, innerY + 4);
+    doc.setFont('helvetica', 'normal');
+    const applicantNameStr = toString(applicant.name) || '—';
+    const applicantNameDisplay = applicantNameStr.length > nameMaxChars ? applicantNameStr.substring(0, nameMaxChars - 1) + '…' : applicantNameStr;
+    doc.text(applicantNameDisplay, applicantDetailsX + labelW, innerY + 4);
+    const applicantRestFields = [
+      { label: 'Contact', value: applicant.contact_number },
+      { label: 'Case Id', value: applicant.case_id },
+      { label: 'Jamiat', value: applicant.jamiat },
+      { label: 'Jamaat', value: applicant.jamaat },
+      { label: 'Age', value: applicant.age },
+    ];
+    doc.setFontSize(9);
+    applicantRestFields.forEach((f, i) => {
+      const yOff = innerY + 4 + lineH + i * lineH;
       doc.setFont('helvetica', 'bold');
-      doc.text(`${f.label}:`, margin + colWidth + 10, innerY + 4 + i * 5);
+      doc.text(`${f.label}:`, applicantDetailsX, yOff);
       doc.setFont('helvetica', 'normal');
       const val = toString(f.value);
-      doc.text(val.length > 28 ? val.substring(0, 27) + '…' : val, margin + colWidth + 10 + labelW, innerY + 4 + i * 5);
+      const displayVal = val.length > 24 ? val.substring(0, 23) + '…' : val || '—';
+      doc.text(displayVal, applicantDetailsX + labelW, yOff);
     });
-    doc.rect(margin + colWidth + 6, yPosition, colWidth, boxHeight, 'S');
+    doc.setDrawColor(180, 200, 190);
+    doc.rect(margin, yPosition, contentWidth, boxHeight, 'S');
+    doc.setDrawColor(200, 200, 200);
+    yPosition += boxHeight + 8;
+
+    // Counsellor Details — full width section below Applicant, same layout
+    checkNewPage(boxHeight + 5);
+    sectionY = drawSectionBox(doc, margin, yPosition, contentWidth, sectionTitleHeight, 'Counsellor Details', true, true);
+    innerY = sectionY + padding;
+    const counsellorPhotoX = margin + 4;
+    if (counsellor.photo) {
+      const added = await addImageToPDF(doc, counsellor.photo, counsellorPhotoX, innerY, photoSize, photoSize);
+      if (!added) {
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(counsellorPhotoX, innerY, photoSize, photoSize, 'S');
+        doc.setFontSize(7);
+        doc.setTextColor(140, 140, 140);
+        doc.text('Counsellor', counsellorPhotoX + 2, innerY + photoSize / 2 - 2);
+        doc.text('Photo', counsellorPhotoX + 5, innerY + photoSize / 2 + 2);
+        doc.setTextColor(0, 0, 0);
+      }
+    } else {
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(counsellorPhotoX, innerY, photoSize, photoSize, 'S');
+      doc.setFontSize(7);
+      doc.setTextColor(140, 140, 140);
+      doc.text('Counsellor', counsellorPhotoX + 2, innerY + photoSize / 2 - 2);
+      doc.text('Photo', counsellorPhotoX + 5, innerY + photoSize / 2 + 2);
+      doc.setTextColor(0, 0, 0);
+    }
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`ITS: ${toString(counsellor.its) || '—'}`, counsellorPhotoX + photoSize / 2, innerY + photoSize + 4, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    const counsellorDetailsX = margin + detailsXOffset + 2;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Name:', counsellorDetailsX, innerY + 4);
+    doc.setFont('helvetica', 'normal');
+    const counsellorNameStr = toString(counsellor.name) || '—';
+    const counsellorNameDisplay = counsellorNameStr.length > nameMaxChars ? counsellorNameStr.substring(0, nameMaxChars - 1) + '…' : counsellorNameStr;
+    doc.text(counsellorNameDisplay, counsellorDetailsX + labelW, innerY + 4);
+    const counsellorRestFields = [
+      { label: 'Contact', value: counsellor.contact_number },
+      { label: 'Jamiat', value: counsellor.jamiat },
+      { label: 'Jamaat', value: counsellor.jamaat },
+      { label: 'Age', value: counsellor.age },
+      { label: 'Certified', value: counsellor.certified ? 'Yes' : 'No' },
+    ];
+    doc.setFontSize(9);
+    counsellorRestFields.forEach((f, i) => {
+      const yOff = innerY + 4 + lineH + i * lineH;
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${f.label}:`, counsellorDetailsX, yOff);
+      doc.setFont('helvetica', 'normal');
+      const val = toString(f.value);
+      const displayVal = val.length > 24 ? val.substring(0, 23) + '…' : val || '—';
+      doc.text(displayVal, counsellorDetailsX + labelW, yOff);
+    });
+    doc.setDrawColor(180, 200, 190);
+    doc.rect(margin, yPosition, contentWidth, boxHeight, 'S');
     yPosition += boxHeight + 10;
 
     // ----- Financial and Business Overview (single section like form) -----

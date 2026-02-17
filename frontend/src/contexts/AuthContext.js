@@ -143,6 +143,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const setPrimaryRole = async (role) => {
+    try {
+      await axios.patch('/api/users/me/primary-role', { role });
+      setUser(prev => (prev ? { ...prev, role } : null));
+      return { success: true };
+    } catch (error) {
+      console.error('Set primary role failed:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.error || 'Failed to switch role' 
+      };
+    }
+  };
+
   const value = {
     user,
     token,
@@ -151,6 +165,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateProfile,
     changePassword,
+    setPrimaryRole,
   };
 
   return (
