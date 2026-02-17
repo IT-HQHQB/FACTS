@@ -43,7 +43,7 @@ const Users = () => {
     phone: '',
     jamiat: [],
     jamaat: [],
-    role: '',
+    role: [],
     is_active: true, // 0 = Inactive, 1 = Active
     password: '',
     confirmPassword: '',
@@ -57,7 +57,7 @@ const Users = () => {
     phone: '',
     jamiat: [],
     jamaat: [],
-    role: '',
+    role: [],
     is_active: true, // 0 = Inactive, 1 = Active
     password: '',
     confirmPassword: '',
@@ -523,7 +523,7 @@ const Users = () => {
       phone: '',
       jamiat: [],
       jamaat: [],
-      role: '',
+      role: [],
       is_active: true,
       password: '',
       confirmPassword: '',
@@ -541,6 +541,7 @@ const Users = () => {
   // Open edit modal
   const openEditModal = (user) => {
     setSelectedUser(user);
+    const assignedRoles = (user.assigned_roles && user.assigned_roles.length) ? user.assigned_roles : (user.role ? [user.role] : []);
     setEditForm({
       its_number: user.its_number || '',
       full_name: user.full_name || '',
@@ -549,7 +550,7 @@ const Users = () => {
       phone: user.phone || '',
       jamiat: user.jamiat ? user.jamiat.map(j => j.id) : [],
       jamaat: user.jamaat ? user.jamaat.map(j => j.id) : [],
-      role: user.role || '',
+      role: assignedRoles,
       is_active: user.is_active === 1, // Convert 0/1 to boolean (0=inactive=false, 1=active=true)
       password: '',
       confirmPassword: '',
@@ -577,7 +578,7 @@ const Users = () => {
       phone: '',
       jamiat: [],
       jamaat: [],
-      role: '',
+      role: [],
       is_active: true, // 0 = Inactive, 1 = Active
       password: '',
       confirmPassword: '',
@@ -601,7 +602,7 @@ const Users = () => {
       phone: '',
       jamiat: [],
       jamaat: [],
-      role: '',
+      role: [],
       is_active: true, // 0 = Inactive, 1 = Active
       password: '',
       confirmPassword: '',
@@ -749,6 +750,12 @@ const Users = () => {
       setCreateLoading(true);
       setCreateError('');
       
+      if (!createForm.role || createForm.role.length === 0) {
+        setCreateError('At least one role is required');
+        setCreateLoading(false);
+        return;
+      }
+      
       // Validate passwords if provided
       if (createForm.password && createForm.password !== createForm.confirmPassword) {
         throw new Error('Passwords do not match');
@@ -798,6 +805,12 @@ const Users = () => {
     try {
       setEditLoading(true);
       setEditError('');
+      
+      if (!editForm.role || editForm.role.length === 0) {
+        setEditError('At least one role is required');
+        setEditLoading(false);
+        return;
+      }
       
       // Validate passwords if provided
       if (editForm.password && editForm.password !== editForm.confirmPassword) {
@@ -1471,19 +1484,14 @@ const Users = () => {
             onSelectAll={handleSelectAllJamaatForEdit}
           />
           
-          <Select
-            label="Role"
+          <MultiSelect
+            label="Role (required)"
+            options={roles.map(r => ({ value: r.name, label: formatRoleName(r.name) }))}
             value={editForm.role}
-            onChange={(e) => setEditForm(prev => ({ ...prev, role: e.target.value }))}
+            onChange={(value) => setEditForm(prev => ({ ...prev, role: value }))}
+            placeholder="Select roles..."
             required
-          >
-            <Select.Option value="">Select a role</Select.Option>
-            {roles.map(role => (
-              <Select.Option key={role.name} value={role.name}>
-                {formatRoleName(role.name)}
-              </Select.Option>
-            ))}
-          </Select>
+          />
           
           <div className="space-y-4">
             <div className="border-t pt-4">
@@ -1651,19 +1659,14 @@ const Users = () => {
             onSelectAll={handleSelectAllJamaat}
           />
           
-          <Select
-            label="Role"
+          <MultiSelect
+            label="Role (required)"
+            options={roles.map(r => ({ value: r.name, label: formatRoleName(r.name) }))}
             value={createForm.role}
-            onChange={(e) => setCreateForm(prev => ({ ...prev, role: e.target.value }))}
+            onChange={(value) => setCreateForm(prev => ({ ...prev, role: value }))}
+            placeholder="Select roles..."
             required
-          >
-            <Select.Option value="">Select a role</Select.Option>
-            {roles.map(role => (
-              <Select.Option key={role.name} value={role.name}>
-                {formatRoleName(role.name)}
-              </Select.Option>
-            ))}
-          </Select>
+          />
           
           <div className="space-y-4">
             <div className="border-t pt-4">

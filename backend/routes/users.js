@@ -149,8 +149,9 @@ router.post('/', authenticateToken, authorizePermission('users', 'create'), asyn
     } = req.body;
 
     // Validate required fields
-    if (!full_name || !username || !email || !role) {
-      return res.status(400).json({ error: 'Full name, username, email, and role are required' });
+    const roleArray = Array.isArray(role) ? role : (role ? [role] : []);
+    if (!full_name || !username || !email || roleArray.length === 0) {
+      return res.status(400).json({ error: 'Full name, username, email, and at least one role are required' });
     }
 
     // Validate username format (alphanumeric, underscores, and dots allowed, 3-30 characters)
@@ -161,19 +162,21 @@ router.post('/', authenticateToken, authorizePermission('users', 'create'), asyn
       });
     }
 
-    // Validate role against database and get role_id
+    // Validate roles against database
     const [roles] = await pool.execute('SELECT id, name FROM roles WHERE is_active = 1');
     const validRoles = roles.map(r => r.name);
-    const roleObj = roles.find(r => r.name === role);
-    
-    if (!validRoles.includes(role)) {
-      return res.status(400).json({ 
-        error: 'Invalid role specified', 
-        validRoles: validRoles 
-      });
+    const roleIds = [];
+    for (const r of roleArray) {
+      if (!validRoles.includes(r)) {
+        return res.status(400).json({ 
+          error: `Invalid role specified: ${r}`, 
+          validRoles: validRoles 
+        });
+      }
+      const roleObj = roles.find(x => x.name === r);
+      if (roleObj) roleIds.push(roleObj);
     }
-    
-    const roleId = roleObj ? roleObj.id : null;
+    const primaryRole = roleIds.length > 0 ? roleIds[0].name : null;
 
     // Check if username already exists
     const [existingUsername] = await pool.execute(
@@ -203,7 +206,7 @@ router.post('/', authenticateToken, authorizePermission('users', 'create'), asyn
     // Create user (without jamiat_id and jamaat_id as they're now handled separately)
     const [result] = await pool.execute(
       'INSERT INTO users (username, email, password_hash, full_name, phone, its_number, role, is_active, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [username, email, password_hash, full_name, phone, its_number || null, role, is_active, photo || null]
+      [username, email, password_hash, full_name, phone, its_number || null, primaryRole, is_active, photo || null]
     );
 
     const userId = result.insertId;
@@ -226,11 +229,11 @@ router.post('/', authenticateToken, authorizePermission('users', 'create'), asyn
       );
     }
 
-    // Create role assignment in user_roles table
-    if (roleId) {
+    // Create role assignments in user_roles table
+    for (const roleObj of roleIds) {
       await pool.execute(
         'INSERT INTO user_roles (user_id, role_id, assigned_by, expires_at) VALUES (?, ?, ?, NULL)',
-        [userId, roleId, req.user.id]
+        [userId, roleObj.id, req.user.id]
       );
     }
 
@@ -274,8 +277,8 @@ router.get('/', authenticateToken, async (req, res) => {
     let queryParams = [];
 
     if (role) {
-      whereConditions.push('role = ?');
-      queryParams.push(role);
+      whereConditions.push('(u.role = ? OR EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id AND ur.is_active = 1 AND r.name = ?))');
+      queryParams.push(role, role);
     }
 
     if (is_active !== undefined) {
@@ -362,6 +365,26 @@ router.get('/', authenticateToken, async (req, res) => {
       delete user.jamiat_ids;
       delete user.jamaat_ids;
     }
+
+    // Load assigned_roles for all users in this page
+    const userIds = users.map(u => u.id);
+    let roleNamesByUserId = {};
+    if (userIds.length > 0) {
+      const placeholders = userIds.map(() => '?').join(',');
+      const [assignedRows] = await pool.execute(
+        `SELECT ur.user_id, r.name FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id IN (${placeholders}) AND ur.is_active = 1 AND r.is_active = 1`,
+        userIds
+      );
+      assignedRows.forEach(row => {
+        if (!roleNamesByUserId[row.user_id]) roleNamesByUserId[row.user_id] = [];
+        roleNamesByUserId[row.user_id].push(row.name);
+      });
+    }
+    users.forEach(user => {
+      user.assigned_roles = (roleNamesByUserId[user.id] && roleNamesByUserId[user.id].length)
+        ? roleNamesByUserId[user.id]
+        : (user.role ? [user.role] : []);
+    });
 
     res.json({ users, total, page, limit: effectiveLimit, totalPages });
   } catch (error) {
@@ -510,6 +533,15 @@ router.get('/:userId', authenticateToken, authorizePermission('users', 'read'), 
     delete user.jamiat_ids;
     delete user.jamaat_ids;
 
+    // Load assigned_roles from user_roles
+    const [assignedRolesRows] = await pool.execute(
+      `SELECT r.name FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = ? AND ur.is_active = 1 AND r.is_active = 1 ORDER BY r.name`,
+      [userId]
+    );
+    user.assigned_roles = assignedRolesRows.length > 0
+      ? assignedRolesRows.map(r => r.name)
+      : (user.role ? [user.role] : []);
+
     res.json({ user });
   } catch (error) {
     console.error('Get user error:', error);
@@ -555,21 +587,28 @@ router.put('/:userId', authenticateToken, authorizePermission('users', 'update')
       }
     }
 
-    // Validate role if provided and get role_id
-    let roleId = null;
-    if (role) {
+    // Normalize role to array and validate
+    const roleArray = role === undefined ? undefined : Array.isArray(role) ? role : (role ? [role] : []);
+    if (role !== undefined) {
+      console.log('[PUT user] role (raw):', typeof role, role);
+      console.log('[PUT user] roleArray:', roleArray?.length, roleArray);
+    }
+    let roleIds = []; // array of { id, name } for user_roles sync
+    let primaryRole = null; // first role for users.role
+    if (roleArray !== undefined) {
+      if (roleArray.length === 0) {
+        return res.status(400).json({ error: 'At least one role is required' });
+      }
       const [roles] = await pool.execute('SELECT id, name FROM roles WHERE is_active = 1');
       const validRoles = roles.map(r => r.name);
-      
-      if (!validRoles.includes(role)) {
-        return res.status(400).json({ error: 'Invalid role' });
+      for (const r of roleArray) {
+        if (!validRoles.includes(r)) {
+          return res.status(400).json({ error: `Invalid role: ${r}` });
+        }
+        const roleObj = roles.find(x => x.name === r);
+        if (roleObj) roleIds.push(roleObj);
       }
-      
-      // Get role_id for user_roles table
-      const roleObj = roles.find(r => r.name === role);
-      if (roleObj) {
-        roleId = roleObj.id;
-      }
+      primaryRole = roleIds.length > 0 ? roleIds[0].name : null;
     }
 
     // Validate and hash password if provided
@@ -606,9 +645,9 @@ router.put('/:userId', authenticateToken, authorizePermission('users', 'update')
       updateValues.push(its_number);
     }
     // Note: jamiat and jamaat are now handled separately after the main user update
-    if (role !== undefined) {
+    if (primaryRole !== null) {
       updateFields.push('role = ?');
-      updateValues.push(role);
+      updateValues.push(primaryRole);
     }
     if (is_active !== undefined) {
       updateFields.push('is_active = ?');
@@ -656,32 +695,37 @@ router.put('/:userId', authenticateToken, authorizePermission('users', 'update')
       );
     }
 
-    // Handle role assignment in user_roles table if role was changed
-    if (role !== undefined && roleId) {
-      // Deactivate all existing role assignments for this user
+    // Handle role assignments in user_roles table if role was changed
+    if (roleArray !== undefined && roleIds.length > 0) {
       await pool.execute(
         'UPDATE user_roles SET is_active = 0 WHERE user_id = ? AND is_active = 1',
         [userId]
       );
-
-      // Check if assignment already exists (even if inactive)
-      const [existing] = await pool.execute(
-        'SELECT id FROM user_roles WHERE user_id = ? AND role_id = ?',
-        [userId, roleId]
+      for (const roleObj of roleIds) {
+        const [existing] = await pool.execute(
+          'SELECT id FROM user_roles WHERE user_id = ? AND role_id = ?',
+          [userId, roleObj.id]
+        );
+        if (existing.length > 0) {
+          await pool.execute(
+            'UPDATE user_roles SET is_active = 1, assigned_by = ?, assigned_at = NOW(), expires_at = NULL WHERE user_id = ? AND role_id = ?',
+            [req.user.id, userId, roleObj.id]
+          );
+        } else {
+          await pool.execute(
+            'INSERT INTO user_roles (user_id, role_id, assigned_by, expires_at) VALUES (?, ?, ?, NULL)',
+            [userId, roleObj.id, req.user.id]
+          );
+        }
+      }
+      // Verify sync: active user_roles count should match roleIds.length
+      const [countRows] = await pool.execute(
+        'SELECT COUNT(*) AS cnt FROM user_roles WHERE user_id = ? AND is_active = 1',
+        [userId]
       );
-
-      if (existing.length > 0) {
-        // Reactivate existing assignment
-        await pool.execute(
-          'UPDATE user_roles SET is_active = 1, assigned_by = ?, assigned_at = NOW(), expires_at = NULL WHERE user_id = ? AND role_id = ?',
-          [req.user.id, userId, roleId]
-        );
-      } else {
-        // Create new assignment
-        await pool.execute(
-          'INSERT INTO user_roles (user_id, role_id, assigned_by, expires_at) VALUES (?, ?, ?, NULL)',
-          [userId, roleId, req.user.id]
-        );
+      const activeCount = Number(countRows[0]?.cnt ?? 0);
+      if (activeCount !== roleIds.length) {
+        console.warn(`[PUT user] user_roles sync mismatch for user_id=${userId}: expected ${roleIds.length} active, got ${activeCount}`);
       }
     }
 
