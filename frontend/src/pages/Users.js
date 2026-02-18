@@ -250,6 +250,52 @@ const Users = () => {
     return jamaat.filter(j => jamiatIds.includes(j.jamiat_id));
   };
 
+  const handleSelectAllJamiatForEditRole = (roleName) => {
+    const allJamiatIds = jamiat.map(j => j.id);
+    const scopes = editForm.roleJamiatJamaat[roleName] || { jamiat: [], jamaat: [] };
+    const allSelected = allJamiatIds.length > 0 && allJamiatIds.every(id => (scopes.jamiat || []).includes(id));
+    if (allSelected) {
+      handleEditRoleJamiatChange(roleName, []);
+    } else {
+      handleEditRoleJamiatChange(roleName, allJamiatIds);
+    }
+  };
+
+  const handleSelectAllJamaatForEditRole = (roleName) => {
+    const filteredJamaat = getFilteredJamaatForEditRole(roleName);
+    const allJamaatIds = filteredJamaat.map(j => j.id);
+    const scopes = editForm.roleJamiatJamaat[roleName] || { jamiat: [], jamaat: [] };
+    const allSelected = allJamaatIds.length > 0 && allJamaatIds.every(id => (scopes.jamaat || []).includes(id));
+    if (allSelected) {
+      handleEditRoleJamaatChange(roleName, []);
+    } else {
+      handleEditRoleJamaatChange(roleName, allJamaatIds);
+    }
+  };
+
+  const handleSelectAllJamiatForCreateRole = (roleName) => {
+    const allJamiatIds = jamiat.map(j => j.id);
+    const scopes = createForm.roleJamiatJamaat[roleName] || { jamiat: [], jamaat: [] };
+    const allSelected = allJamiatIds.length > 0 && allJamiatIds.every(id => (scopes.jamiat || []).includes(id));
+    if (allSelected) {
+      handleCreateRoleJamiatChange(roleName, []);
+    } else {
+      handleCreateRoleJamiatChange(roleName, allJamiatIds);
+    }
+  };
+
+  const handleSelectAllJamaatForCreateRole = (roleName) => {
+    const filteredJamaat = getFilteredJamaatForCreateRole(roleName);
+    const allJamaatIds = filteredJamaat.map(j => j.id);
+    const scopes = createForm.roleJamiatJamaat[roleName] || { jamiat: [], jamaat: [] };
+    const allSelected = allJamaatIds.length > 0 && allJamaatIds.every(id => (scopes.jamaat || []).includes(id));
+    if (allSelected) {
+      handleCreateRoleJamaatChange(roleName, []);
+    } else {
+      handleCreateRoleJamaatChange(roleName, allJamaatIds);
+    }
+  };
+
   // Fetch users with filters and pagination
   const fetchUsers = async () => {
     try {
@@ -1600,6 +1646,9 @@ const Users = () => {
                       value={scopes.jamiat || []}
                       onChange={(value) => handleEditRoleJamiatChange(roleName, value)}
                       placeholder="Select Jamiat..."
+                      showSelectAll={true}
+                      selectAllLabel="Select All Jamiat"
+                      onSelectAll={() => handleSelectAllJamiatForEditRole(roleName)}
                     />
                     <MultiSelect
                       label="Jamaat"
@@ -1607,6 +1656,9 @@ const Users = () => {
                       value={scopes.jamaat || []}
                       onChange={(value) => handleEditRoleJamaatChange(roleName, value)}
                       placeholder="Select Jamaat..."
+                      showSelectAll={true}
+                      selectAllLabel="Select All Jamaat"
+                      onSelectAll={() => handleSelectAllJamaatForEditRole(roleName)}
                     />
                   </div>
                 );
@@ -1784,6 +1836,9 @@ const Users = () => {
                       value={scopes.jamiat || []}
                       onChange={(value) => handleCreateRoleJamiatChange(roleName, value)}
                       placeholder="Select Jamiat..."
+                      showSelectAll={true}
+                      selectAllLabel="Select All Jamiat"
+                      onSelectAll={() => handleSelectAllJamiatForCreateRole(roleName)}
                     />
                     <MultiSelect
                       label="Jamaat"
@@ -1791,6 +1846,9 @@ const Users = () => {
                       value={scopes.jamaat || []}
                       onChange={(value) => handleCreateRoleJamaatChange(roleName, value)}
                       placeholder="Select Jamaat..."
+                      showSelectAll={true}
+                      selectAllLabel="Select All Jamaat"
+                      onSelectAll={() => handleSelectAllJamaatForCreateRole(roleName)}
                     />
                   </div>
                 );
