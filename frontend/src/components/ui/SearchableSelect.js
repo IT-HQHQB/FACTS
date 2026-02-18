@@ -127,7 +127,7 @@ const SearchableSelect = ({
 
         {/* Dropdown menu */}
         {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-hidden">
+          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-[28rem] overflow-hidden">
             {/* Search input */}
             <div className="p-2 border-b border-gray-200">
               <input
@@ -142,7 +142,7 @@ const SearchableSelect = ({
             </div>
 
             {/* Options list */}
-            <div className="max-h-80 overflow-y-auto">
+            <div className="max-h-96 overflow-y-auto">
               {filteredOptions.length > 0 ? (
                 filteredOptions.map(option => {
                   const isSelected = value === option.value;

@@ -116,7 +116,7 @@ function App() {
             <Route 
               path="/cases" 
               element={
-                <ProtectedRoute requiredPermission={{ resource: 'cases', action: 'read' }}>
+                <ProtectedRoute requiredAnyOfPermissions={[{ resource: 'cases', action: 'read' }, { resource: 'cases', action: 'case_assigned' }]}>
                   <Layout>
                     <Cases />
                   </Layout>
@@ -127,7 +127,7 @@ function App() {
             <Route 
               path="/cases/:caseId" 
               element={
-                <ProtectedRoute requiredPermission={{ resource: 'cases', action: 'read' }}>
+                <ProtectedRoute requiredAnyOfPermissions={[{ resource: 'cases', action: 'read' }, { resource: 'cases', action: 'case_assigned' }]}>
                   <Layout>
                     <CaseDetails />
                   </Layout>
@@ -138,7 +138,7 @@ function App() {
             <Route 
               path="/cases/:caseId/payment-schedule" 
               element={
-                <ProtectedRoute requiredPermission={{ resource: 'cases', action: 'read' }}>
+                <ProtectedRoute requiredAnyOfPermissions={[{ resource: 'cases', action: 'read' }, { resource: 'cases', action: 'case_assigned' }]}>
                   <Layout>
                     <PaymentSchedulePage />
                   </Layout>

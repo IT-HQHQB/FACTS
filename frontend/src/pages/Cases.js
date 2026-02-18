@@ -749,13 +749,15 @@ const Cases = () => {
   );
 
 
-  // Fetch users for assign case modal - using role name (not ID) like case creation
+  // Fetch users for assign case modal - use high limit so all users for the role are available (e.g. 114 DCMs)
   const { data: assignUsersData } = useQuery(
     ['users', assignSelectedRoleId],
     () => {
       const params = {};
       if (assignSelectedRoleId) params.role = assignSelectedRoleId; // This is now role name, not ID
       params.is_active = 'true'; // Only fetch active users for assignment
+      params.limit = 500; // Backend default is 10; 500 ensures full list for Assign To dropdown
+      params.page = 1;
       return axios.get('/api/users', { params }).then(res => res.data);
     },
     {
@@ -3288,9 +3290,9 @@ const Cases = () => {
           setAssignSelectedCounselorId('');
         }}
         title="Assign Case"
-        size="lg"
+        size="xl"
       >
-        <div className="space-y-4">
+        <div className="space-y-4 min-h-[32rem]">
           <Select
             label="Role"
             value={assignSelectedRoleId}

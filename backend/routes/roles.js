@@ -477,7 +477,7 @@ router.get('/permissions/available', authenticateToken, authorizeRoles('super_ad
       // User permissions
       { resource: 'users', actions: ['create', 'read', 'update', 'delete'] },
       // Case permissions
-      { resource: 'cases', actions: ['create', 'read', 'update', 'delete', 'assign_case', 'assign_counselor', 'close_case'] },
+      { resource: 'cases', actions: ['create', 'read', 'update', 'delete', 'assign_case', 'assign_counselor', 'close_case', 'case_assigned'] },
       // Applicant permissions
       { resource: 'applicants', actions: ['create', 'read', 'update', 'delete'] },
       // Counseling form permissions

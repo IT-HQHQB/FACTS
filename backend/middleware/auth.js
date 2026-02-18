@@ -91,23 +91,25 @@ const authorizeCaseAccess = async (req, res, next) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    // Check if user has permission to access all cases
-    const canAccessAllCases = await hasPermission(userRole, 'cases', 'read');
-    if (canAccessAllCases) {
+    const hasRead = await hasPermission(userRole, 'cases', 'read');
+    const hasCaseAssigned = await hasPermission(userRole, 'cases', 'case_assigned');
+
+    // cases:read without case_assigned: access all cases
+    if (hasRead && !hasCaseAssigned) {
       return next();
     }
 
-    // DCM and counselor can only access assigned cases
-    const [cases] = await pool.execute(
-      'SELECT id FROM cases WHERE id = ? AND (roles = ? OR assigned_counselor_id = ?)',
-      [caseId, userId, userId]
-    );
-
-    if (cases.length === 0) {
+    // case_assigned: allow only when case is assigned to this user
+    if (hasCaseAssigned) {
+      const [cases] = await pool.execute(
+        'SELECT id FROM cases WHERE id = ? AND (roles = ? OR assigned_counselor_id = ?)',
+        [caseId, userId, userId]
+      );
+      if (cases.length > 0) return next();
       return res.status(403).json({ error: 'Access denied - case not assigned to you' });
     }
 
-    next();
+    return res.status(403).json({ error: 'Insufficient permissions to access this case' });
   } catch (error) {
     return res.status(500).json({ error: 'Error checking case access' });
   }

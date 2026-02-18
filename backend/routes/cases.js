@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { pool } = require('../config/database');
 const { authenticateToken, authorizeRoles, authorizeCaseAccess, canCreateCaseInStage, canFillCaseInStage, authorizePermission } = require('../middleware/auth');
-const { hasPermission, canAccessAllCases } = require('../utils/permissionUtils');
+const { hasPermission, hasCaseAssignedOnly, canAccessAllCases } = require('../utils/permissionUtils');
 const notificationService = require('../services/notificationService');
 const { v4: uuidv4 } = require('uuid');
 
@@ -170,8 +170,23 @@ router.get('/counselor-permissions/:counselorId', authenticateToken, authorizePe
   }
 });
 
+// Middleware: allow cases list if user has cases:read OR case_assigned
+const authorizeCasesList = async (req, res, next) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Authentication required' });
+    if (req.user.role === 'super_admin') return next();
+    const hasRead = await hasPermission(req.user.role, 'cases', 'read');
+    const hasAssigned = await hasPermission(req.user.role, 'cases', 'case_assigned');
+    if (hasRead || hasAssigned) return next();
+    return res.status(403).json({ error: 'Insufficient permissions. Required: cases:read or cases:case_assigned' });
+  } catch (err) {
+    console.error('authorizeCasesList error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Get all cases with filtering and pagination
-router.get('/', authenticateToken, authorizePermission('cases', 'read'), async (req, res) => {
+router.get('/', authenticateToken, authorizeCasesList, async (req, res) => {
   try {
     const { 
       page = 1, 
@@ -195,22 +210,19 @@ router.get('/', authenticateToken, authorizePermission('cases', 'read'), async (
     let whereConditions = [];
     let queryParams = [];
 
-    // Explicit check for Deputy Counseling Manager - they should only see assigned cases
-    // This overrides any cases.read permission they might have
-    if (userRole === 'Deputy Counseling Manager' || userRole === 'dcm') {
-      whereConditions.push('c.roles = ?');
-      queryParams.push(userId);
-    } else {
-      // Role-based filtering using database permissions
-      const canAccessAll = await canAccessAllCases(userRole);
-      
-      if (!canAccessAll) {
-        // For roles that can't access all cases, filter by assignment or jamiat/jamaat
-        if (userRole === 'ZI' || userRole === 'Zonal Incharge') {
-          // ZI can see cases in their assigned jamiat/jamaat areas (from current role scopes on req.user)
-          const jamiatIdsStr = req.user.jamiat_ids || '';
-          const jamaatIdsStr = req.user.jamaat_ids || '';
-          whereConditions.push(`
+    // Permission-based filtering: no hardcoded role names
+    const hasAssignedOnly = await hasCaseAssignedOnly(userRole);
+    const canAccessAll = await canAccessAllCases(userRole);
+
+    if (hasAssignedOnly) {
+      // case_assigned: only cases where user is in Assign to or Counselor
+      whereConditions.push('(c.roles = ? OR c.assigned_counselor_id = ?)');
+      queryParams.push(userId, userId);
+    } else if (userRole === 'ZI' || userRole === 'Zonal Incharge') {
+      // ZI: geographic scope (optional special case)
+      const jamiatIdsStr = req.user.jamiat_ids || '';
+      const jamaatIdsStr = req.user.jamaat_ids || '';
+      whereConditions.push(`
             (c.roles = ? OR c.assigned_counselor_id = ? OR 
              EXISTS (
                SELECT 1 FROM applicants a 
@@ -218,13 +230,12 @@ router.get('/', authenticateToken, authorizePermission('cases', 'read'), async (
                AND (FIND_IN_SET(a.jamiat_id, ?) > 0 OR FIND_IN_SET(a.jamaat_id, ?) > 0)
              ))
           `);
-          queryParams.push(userId, userId, jamiatIdsStr, jamaatIdsStr);
-        } else {
-          // Other roles (counselor) can only see assigned cases
-          whereConditions.push('(c.roles = ? OR c.assigned_counselor_id = ?)');
-          queryParams.push(userId, userId);
-        }
-      }
+      queryParams.push(userId, userId, jamiatIdsStr, jamaatIdsStr);
+    } else if (canAccessAll) {
+      // cases:read without case_assigned: all cases (no filter)
+    } else {
+      // No case permission: no cases (filter to impossible condition or 403 handled by authorizeCasesList)
+      whereConditions.push('1 = 0');
     }
 
     // Additional filters (only add if value is not empty)
@@ -3555,12 +3566,16 @@ router.get('/:caseId/comments', authenticateToken, async (req, res) => {
 
     const caseData = cases[0];
 
-    // Check if user has access to this case
+    // Permission-based access: no hardcoded role names
     const canAccessAll = await canAccessAllCases(userRole);
+    const hasAssignedOnly = await hasCaseAssignedOnly(userRole);
+
     if (!canAccessAll) {
-      // For roles that can't access all cases, check assignment
-      if (userRole === 'ZI' || userRole === 'Zonal Incharge') {
-        // ZI can see cases in their assigned jamiat/jamaat areas (from current role scopes on req.user)
+      if (hasAssignedOnly) {
+        if (caseData.roles !== userId && caseData.assigned_counselor_id !== userId) {
+          return res.status(403).json({ error: 'You do not have access to this case' });
+        }
+      } else if (userRole === 'ZI' || userRole === 'Zonal Incharge') {
         const jamiatIdsStr = req.user.jamiat_ids || '';
         const jamaatIdsStr = req.user.jamaat_ids || '';
         const [accessCheck] = await pool.execute(
@@ -3573,10 +3588,7 @@ router.get('/:caseId/comments', authenticateToken, async (req, res) => {
           return res.status(403).json({ error: 'You do not have access to this case' });
         }
       } else {
-        // Other roles (DCM, counselor) can only see assigned cases
-        if (caseData.roles !== userId && caseData.assigned_counselor_id !== userId) {
-          return res.status(403).json({ error: 'You do not have access to this case' });
-        }
+        return res.status(403).json({ error: 'You do not have access to this case' });
       }
     }
 

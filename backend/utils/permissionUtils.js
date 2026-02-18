@@ -114,13 +114,33 @@ async function hasCounselingFormAccess(userRole) {
 }
 
 /**
+ * Check if a user role has case_assigned permission (see only assigned cases)
+ * Super admin is never treated as assigned-only; they always see all cases.
+ * @param {string} userRole - The user's role name
+ * @returns {Promise<boolean>} - True if the role has case_assigned
+ */
+async function hasCaseAssignedOnly(userRole) {
+  try {
+    if (userRole === 'super_admin' || userRole === 'Super Administrator') return false;
+    return await hasPermission(userRole, 'cases', 'case_assigned');
+  } catch (error) {
+    console.error('Error checking case_assigned:', error);
+    return false;
+  }
+}
+
+/**
  * Check if a user role can access all cases (admin-level access)
+ * Super admin always has access to all cases. Otherwise true when role has cases:read and does NOT have case_assigned.
  * @param {string} userRole - The user's role name
  * @returns {Promise<boolean>} - True if the role can access all cases
  */
 async function canAccessAllCases(userRole) {
   try {
-    return await hasPermission(userRole, 'cases', 'read');
+    if (userRole === 'super_admin' || userRole === 'Super Administrator') return true;
+    const hasRead = await hasPermission(userRole, 'cases', 'read');
+    const hasAssignedOnly = await hasCaseAssignedOnly(userRole);
+    return hasRead && !hasAssignedOnly;
   } catch (error) {
     console.error('Error checking case access:', error);
     return false;
@@ -370,6 +390,7 @@ module.exports = {
   hasPermission,
   hasAnyPermission,
   hasCounselingFormAccess,
+  hasCaseAssignedOnly,
   canAccessAllCases,
   canManageUsers,
   canManageRoles,

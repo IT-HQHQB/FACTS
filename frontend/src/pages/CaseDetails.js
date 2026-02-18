@@ -1003,9 +1003,9 @@ const CaseDetails = () => {
           setSelectedCounselorId('');
         }}
         title="Assign Case"
-        size="md"
+        size="xl"
       >
-        <div className="space-y-4">
+        <div className="space-y-4 min-h-[32rem]">
           <Select
             label="Role (DCM)"
             value={selectedRoleId}

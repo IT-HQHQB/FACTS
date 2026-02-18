@@ -76,11 +76,15 @@ router.get('/recent-activities', authenticateToken, async (req, res) => {
     let whereClause = '';
     let queryParams = [];
 
-    // Role-based filtering for recent activities
-    const { canAccessAllCases } = require('../utils/permissionUtils');
+    // Permission-based filtering: no hardcoded role names
+    const { canAccessAllCases, hasCaseAssignedOnly } = require('../utils/permissionUtils');
     const canAccessAll = await canAccessAllCases(userRole);
-    
-    if (!canAccessAll) {
+    const hasAssignedOnly = await hasCaseAssignedOnly(userRole);
+
+    if (hasAssignedOnly) {
+      whereClause = 'WHERE (c.roles = ? OR c.assigned_counselor_id = ?)';
+      queryParams = [userId, userId];
+    } else if (!canAccessAll) {
       if (userRole === 'ZI' || userRole === 'Zonal Incharge') {
         const jamiatIdsStr = req.user.jamiat_ids || '';
         const jamaatIdsStr = req.user.jamaat_ids || '';
@@ -92,9 +96,7 @@ router.get('/recent-activities', authenticateToken, async (req, res) => {
           ))`;
         queryParams = [userId, userId, jamiatIdsStr, jamaatIdsStr];
       } else {
-        // Other roles (DCM, counselor) can only see assigned cases
-        whereClause = 'WHERE (c.roles = ? OR c.assigned_counselor_id = ?)';
-        queryParams = [userId, userId];
+        whereClause = 'WHERE 1 = 0';
       }
     }
 

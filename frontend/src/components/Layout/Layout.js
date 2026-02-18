@@ -253,14 +253,15 @@ const Layout = ({ children }) => {
     const hasDashboardAccess = isSuperAdmin ||
       userHasPermission('dashboard', 'read') ||
       userHasPermission('cases', 'read') ||
+      userHasPermission('cases', 'case_assigned') ||
       userHasPermission('applicants', 'read') ||
       userHasPermission('case_identification', 'read');
     if (hasDashboardAccess) {
       baseItems.push({ text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', color: 'text-blue-500' });
     }
 
-    // Cases - only visible when user has permission
-    if (isSuperAdmin || userHasPermission('cases', 'read')) {
+    // Cases - visible when user has cases:read or case_assigned
+    if (isSuperAdmin || userHasPermission('cases', 'read') || userHasPermission('cases', 'case_assigned')) {
       baseItems.push({ text: 'Cases', icon: <CasesIcon />, path: '/cases', color: 'text-purple-500' });
     }
 
