@@ -2,6 +2,39 @@ const jwt = require('jsonwebtoken');
 const { pool } = require('../config/database');
 const { hasPermission } = require('../utils/roleUtils');
 
+/**
+ * Get jamiat_ids and jamaat_ids for a user's current (primary) role.
+ * Uses user_roles.jamiat_ids/jamaat_ids; falls back to users table if NULL.
+ * @param {number} userId
+ * @param {string} roleName - users.role (primary role name)
+ * @returns {Promise<{ jamiat_ids: string|null, jamaat_ids: string|null }>}
+ */
+async function getCurrentRoleScopes(userId, roleName) {
+  if (!userId || !roleName) {
+    return { jamiat_ids: null, jamaat_ids: null };
+  }
+  const [rows] = await pool.execute(
+    `SELECT ur.jamiat_ids, ur.jamaat_ids
+     FROM user_roles ur
+     JOIN roles r ON r.id = ur.role_id
+     WHERE ur.user_id = ? AND LOWER(r.name) = LOWER(?) AND ur.is_active = 1 AND r.is_active = 1
+     AND (ur.expires_at IS NULL OR ur.expires_at > NOW())
+     LIMIT 1`,
+    [userId, roleName]
+  );
+  let jamiat_ids = rows[0]?.jamiat_ids ?? null;
+  let jamaat_ids = rows[0]?.jamaat_ids ?? null;
+  if (jamiat_ids === null && jamaat_ids === null) {
+    const [userRows] = await pool.execute(
+      'SELECT jamiat_ids, jamaat_ids FROM users WHERE id = ?',
+      [userId]
+    );
+    jamiat_ids = userRows[0]?.jamiat_ids ?? null;
+    jamaat_ids = userRows[0]?.jamaat_ids ?? null;
+  }
+  return { jamiat_ids, jamaat_ids };
+}
+
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -24,6 +57,9 @@ const authenticateToken = async (req, res, next) => {
     }
 
     req.user = users[0];
+    const scopes = await getCurrentRoleScopes(req.user.id, req.user.role || '');
+    req.user.jamiat_ids = scopes.jamiat_ids;
+    req.user.jamaat_ids = scopes.jamaat_ids;
     next();
   } catch (error) {
     return res.status(403).json({ error: 'Invalid or expired token' });
@@ -985,6 +1021,7 @@ const authorizeRolesOrPermission = (...roles) => {
 
 module.exports = {
   authenticateToken,
+  getCurrentRoleScopes,
   authorizeRoles,
   authorizeCaseAccess,
   authorizePermission,

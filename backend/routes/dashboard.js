@@ -38,10 +38,10 @@ router.get('/overview', authenticateToken, async (req, res) => {
         break;
       case 'dcm':
       case 'Deputy Counseling Manager':
-        dashboardData = await getDCMDashboard(userId, userRole);
+        dashboardData = await getDCMDashboard(userId, userRole, req.user);
         break;
       case 'ZI':
-        dashboardData = await getDCMDashboard(userId, userRole);
+        dashboardData = await getDCMDashboard(userId, userRole, req.user);
         break;
       case 'counselor':
         dashboardData = await getCounselorDashboard(userId);
@@ -82,15 +82,15 @@ router.get('/recent-activities', authenticateToken, async (req, res) => {
     
     if (!canAccessAll) {
       if (userRole === 'ZI' || userRole === 'Zonal Incharge') {
-        // ZI can see cases in their assigned jamiat/jamaat areas
+        const jamiatIdsStr = req.user.jamiat_ids || '';
+        const jamaatIdsStr = req.user.jamaat_ids || '';
         whereClause = `WHERE (c.roles = ? OR c.assigned_counselor_id = ? OR 
           EXISTS (
             SELECT 1 FROM applicants a 
-            JOIN users u ON u.id = ? 
             WHERE a.id = c.applicant_id 
-            AND (FIND_IN_SET(a.jamiat_id, u.jamiat_ids) > 0 OR FIND_IN_SET(a.jamaat_id, u.jamaat_ids) > 0)
+            AND (FIND_IN_SET(a.jamiat_id, ?) > 0 OR FIND_IN_SET(a.jamaat_id, ?) > 0)
           ))`;
-        queryParams = [userId, userId, userId];
+        queryParams = [userId, userId, jamiatIdsStr, jamaatIdsStr];
       } else {
         // Other roles (DCM, counselor) can only see assigned cases
         whereClause = 'WHERE (c.roles = ? OR c.assigned_counselor_id = ?)';
@@ -194,21 +194,20 @@ async function getAdminDashboard(userId) {
   };
 }
 
-async function getDCMDashboard(userId, userRole = 'dcm') {
-  // Build the WHERE clause based on role
+async function getDCMDashboard(userId, userRole = 'dcm', reqUser = null) {
   let whereClause = 'WHERE c.roles = ?';
   let queryParams = [userId];
-  
+
   if (userRole === 'ZI' || userRole === 'Zonal Incharge') {
-    // ZI can see cases in their assigned jamiat/jamaat areas
+    const jamiatIdsStr = (reqUser && reqUser.jamiat_ids) || '';
+    const jamaatIdsStr = (reqUser && reqUser.jamaat_ids) || '';
     whereClause = `WHERE (c.roles = ? OR c.assigned_counselor_id = ? OR 
       EXISTS (
         SELECT 1 FROM applicants a 
-        JOIN users u ON u.id = ? 
         WHERE a.id = c.applicant_id 
-        AND (FIND_IN_SET(a.jamiat_id, u.jamiat_ids) > 0 OR FIND_IN_SET(a.jamaat_id, u.jamaat_ids) > 0)
+        AND (FIND_IN_SET(a.jamiat_id, ?) > 0 OR FIND_IN_SET(a.jamaat_id, ?) > 0)
       ))`;
-    queryParams = [userId, userId, userId];
+    queryParams = [userId, userId, jamiatIdsStr, jamaatIdsStr];
   }
 
   const [assignedCases] = await pool.execute(`

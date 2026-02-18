@@ -10,6 +10,35 @@ const https = require('https');
 
 const router = express.Router();
 
+/** Resolve comma-separated jamiat_ids and jamaat_ids to arrays of { id, name, ... } (for list/single user responses). */
+async function resolveJamiatJamaatFromIds(jamiatIdsStr, jamaatIdsStr) {
+  const jamiatIds = (jamiatIdsStr || '')
+    .split(',')
+    .map(id => parseInt(id.trim(), 10))
+    .filter(id => !isNaN(id));
+  const jamaatIds = (jamaatIdsStr || '')
+    .split(',')
+    .map(id => parseInt(id.trim(), 10))
+    .filter(id => !isNaN(id));
+  let jamiat = [];
+  let jamaat = [];
+  if (jamiatIds.length > 0) {
+    const [rows] = await pool.execute(
+      `SELECT id, name, jamiat_id FROM jamiat WHERE id IN (${jamiatIds.map(() => '?').join(',')}) AND is_active = 1 ORDER BY name`,
+      jamiatIds
+    );
+    jamiat = rows;
+  }
+  if (jamaatIds.length > 0) {
+    const [rows] = await pool.execute(
+      `SELECT ja.id, ja.name, ja.jamaat_id, j.name as jamiat_name FROM jamaat ja JOIN jamiat j ON ja.jamiat_id = j.id WHERE ja.id IN (${jamaatIds.map(() => '?').join(',')}) AND ja.is_active = 1 ORDER BY j.name, ja.name`,
+      jamaatIds
+    );
+    jamaat = rows;
+  }
+  return { jamiat, jamaat };
+}
+
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -143,6 +172,7 @@ router.post('/', authenticateToken, authorizePermission('users', 'create'), asyn
       jamiat, 
       jamaat, 
       role, 
+      role_jamiat_jamaat,
       is_active = true, // Default to 1 (Active)
       password,
       photo 
@@ -211,29 +241,30 @@ router.post('/', authenticateToken, authorizePermission('users', 'create'), asyn
 
     const userId = result.insertId;
 
-    // Handle jamiat associations (comma-separated)
-    if (Array.isArray(jamiat)) {
-      const jamiatIds = jamiat.length > 0 ? jamiat.join(',') : null;
-      await pool.execute(
-        'UPDATE users SET jamiat_ids = ? WHERE id = ?',
-        [jamiatIds, userId]
-      );
-    }
+    const getScopeForRole = (roleName) => {
+      const perRole = role_jamiat_jamaat && role_jamiat_jamaat[roleName];
+      if (perRole && (perRole.jamiat || perRole.jamaat)) {
+        const jIds = Array.isArray(perRole.jamiat) && perRole.jamiat.length > 0 ? perRole.jamiat.join(',') : null;
+        const jaIds = Array.isArray(perRole.jamaat) && perRole.jamaat.length > 0 ? perRole.jamaat.join(',') : null;
+        return { jamiat_ids: jIds, jamaat_ids: jaIds };
+      }
+      const jIds = Array.isArray(jamiat) && jamiat.length > 0 ? jamiat.join(',') : null;
+      const jaIds = Array.isArray(jamaat) && jamaat.length > 0 ? jamaat.join(',') : null;
+      return { jamiat_ids: jIds, jamaat_ids: jaIds };
+    };
 
-    // Handle jamaat associations (comma-separated)
-    if (Array.isArray(jamaat)) {
-      const jamaatIds = jamaat.length > 0 ? jamaat.join(',') : null;
-      await pool.execute(
-        'UPDATE users SET jamaat_ids = ? WHERE id = ?',
-        [jamaatIds, userId]
-      );
-    }
+    const primaryScope = getScopeForRole(primaryRole);
 
-    // Create role assignments in user_roles table
+    await pool.execute(
+      'UPDATE users SET jamiat_ids = ?, jamaat_ids = ? WHERE id = ?',
+      [primaryScope.jamiat_ids, primaryScope.jamaat_ids, userId]
+    );
+
     for (const roleObj of roleIds) {
+      const scope = getScopeForRole(roleObj.name);
       await pool.execute(
-        'INSERT INTO user_roles (user_id, role_id, assigned_by, expires_at) VALUES (?, ?, ?, NULL)',
-        [userId, roleObj.id, req.user.id]
+        'INSERT INTO user_roles (user_id, role_id, assigned_by, expires_at, jamiat_ids, jamaat_ids) VALUES (?, ?, ?, NULL, ?, ?)',
+        [userId, roleObj.id, req.user.id, scope.jamiat_ids, scope.jamaat_ids]
       );
     }
 
@@ -321,70 +352,59 @@ router.get('/', authenticateToken, async (req, res) => {
       LIMIT ${safeLimit} OFFSET ${safeOffset}
     `;
     const [users] = await pool.execute(usersQuery, queryParams);
-
-    // Process jamiat and jamaat associations for each user
-    for (let user of users) {
-      // Parse jamiat associations
-      if (user.jamiat_ids) {
-        const jamiatIdArray = user.jamiat_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-        if (jamiatIdArray.length > 0) {
-          const [jamiatAssociations] = await pool.execute(`
-            SELECT id, name, jamiat_id
-            FROM jamiat
-            WHERE id IN (${jamiatIdArray.map(() => '?').join(',')}) AND is_active = 1
-            ORDER BY name
-          `, jamiatIdArray);
-          user.jamiat = jamiatAssociations;
-        } else {
-          user.jamiat = [];
-        }
-      } else {
-        user.jamiat = [];
-      }
-
-      // Parse jamaat associations
-      if (user.jamaat_ids) {
-        const jamaatIdArray = user.jamaat_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-        if (jamaatIdArray.length > 0) {
-          const [jamaatAssociations] = await pool.execute(`
-            SELECT ja.id, ja.name, ja.jamaat_id, j.name as jamiat_name
-            FROM jamaat ja
-            JOIN jamiat j ON ja.jamiat_id = j.id
-            WHERE ja.id IN (${jamaatIdArray.map(() => '?').join(',')}) AND ja.is_active = 1
-            ORDER BY j.name, ja.name
-          `, jamaatIdArray);
-          user.jamaat = jamaatAssociations;
-        } else {
-          user.jamaat = [];
-        }
-      } else {
-        user.jamaat = [];
-      }
-
-      // Remove the raw comma-separated fields from response
-      delete user.jamiat_ids;
-      delete user.jamaat_ids;
-    }
-
-    // Load assigned_roles for all users in this page
     const userIds = users.map(u => u.id);
-    let roleNamesByUserId = {};
+
+    // Load assigned_roles with per-role jamiat_ids/jamaat_ids from user_roles
+    let roleRowsByUserId = {};
     if (userIds.length > 0) {
       const placeholders = userIds.map(() => '?').join(',');
       const [assignedRows] = await pool.execute(
-        `SELECT ur.user_id, r.name FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id IN (${placeholders}) AND ur.is_active = 1 AND r.is_active = 1`,
+        `SELECT ur.user_id, ur.role_id, ur.jamiat_ids AS ur_jamiat_ids, ur.jamaat_ids AS ur_jamaat_ids, r.name
+         FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+         WHERE ur.user_id IN (${placeholders}) AND ur.is_active = 1 AND r.is_active = 1
+         ORDER BY r.name`,
         userIds
       );
       assignedRows.forEach(row => {
-        if (!roleNamesByUserId[row.user_id]) roleNamesByUserId[row.user_id] = [];
-        roleNamesByUserId[row.user_id].push(row.name);
+        if (!roleRowsByUserId[row.user_id]) roleRowsByUserId[row.user_id] = [];
+        roleRowsByUserId[row.user_id].push(row);
       });
     }
-    users.forEach(user => {
-      user.assigned_roles = (roleNamesByUserId[user.id] && roleNamesByUserId[user.id].length)
-        ? roleNamesByUserId[user.id]
-        : (user.role ? [user.role] : []);
-    });
+
+    // Build assigned_roles (with per-role jamiat/jamaat) and top-level jamiat/jamaat for each user
+    for (const user of users) {
+      const roleRows = roleRowsByUserId[user.id] || [];
+      const allJamiatById = new Map();
+      const allJamaatById = new Map();
+      const assignedRolesWithScopes = [];
+
+      for (const row of roleRows) {
+        const jamiatIdsStr = row.ur_jamiat_ids != null ? row.ur_jamiat_ids : user.jamiat_ids;
+        const jamaatIdsStr = row.ur_jamaat_ids != null ? row.ur_jamaat_ids : user.jamaat_ids;
+        const { jamiat: roleJamiat, jamaat: roleJamaat } = await resolveJamiatJamaatFromIds(jamiatIdsStr, jamaatIdsStr);
+        roleJamiat.forEach(j => allJamiatById.set(j.id, j));
+        roleJamaat.forEach(j => allJamaatById.set(j.id, j));
+        assignedRolesWithScopes.push({
+          role_id: row.role_id,
+          name: row.name,
+          jamiat: roleJamiat,
+          jamaat: roleJamaat
+        });
+      }
+
+      user.assigned_roles = assignedRolesWithScopes.length > 0
+        ? assignedRolesWithScopes
+        : (user.role ? [{ role_id: null, name: user.role, jamiat: [], jamaat: [] }] : []);
+      user.jamiat = Array.from(allJamiatById.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      user.jamaat = Array.from(allJamaatById.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      if (user.jamiat.length === 0 && user.jamaat.length === 0 && (user.jamiat_ids || user.jamaat_ids)) {
+        const fallback = await resolveJamiatJamaatFromIds(user.jamiat_ids, user.jamaat_ids);
+        user.jamiat = fallback.jamiat;
+        user.jamaat = fallback.jamaat;
+      }
+      delete user.jamiat_ids;
+      delete user.jamaat_ids;
+    }
 
     res.json({ users, total, page, limit: effectiveLimit, totalPages });
   } catch (error) {
@@ -492,55 +512,41 @@ router.get('/:userId', authenticateToken, authorizePermission('users', 'read'), 
 
     const user = users[0];
 
-    // Parse jamiat associations
-    if (user.jamiat_ids) {
-      const jamiatIdArray = user.jamiat_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-      if (jamiatIdArray.length > 0) {
-        const [jamiatAssociations] = await pool.execute(`
-          SELECT id, name, jamiat_id
-          FROM jamiat
-          WHERE id IN (${jamiatIdArray.map(() => '?').join(',')}) AND is_active = 1
-          ORDER BY name
-        `, jamiatIdArray);
-        user.jamiat = jamiatAssociations;
-      } else {
-        user.jamiat = [];
-      }
-    } else {
-      user.jamiat = [];
-    }
-
-    // Parse jamaat associations
-    if (user.jamaat_ids) {
-      const jamaatIdArray = user.jamaat_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-      if (jamaatIdArray.length > 0) {
-        const [jamaatAssociations] = await pool.execute(`
-          SELECT ja.id, ja.name, ja.jamaat_id, j.name as jamiat_name
-          FROM jamaat ja
-          JOIN jamiat j ON ja.jamiat_id = j.id
-          WHERE ja.id IN (${jamaatIdArray.map(() => '?').join(',')}) AND ja.is_active = 1
-          ORDER BY j.name, ja.name
-        `, jamaatIdArray);
-        user.jamaat = jamaatAssociations;
-      } else {
-        user.jamaat = [];
-      }
-    } else {
-      user.jamaat = [];
-    }
-
-    // Remove the raw comma-separated fields from response
-    delete user.jamiat_ids;
-    delete user.jamaat_ids;
-
-    // Load assigned_roles from user_roles
+    // Load assigned_roles from user_roles with per-role jamiat_ids/jamaat_ids
     const [assignedRolesRows] = await pool.execute(
-      `SELECT r.name FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = ? AND ur.is_active = 1 AND r.is_active = 1 ORDER BY r.name`,
+      `SELECT ur.role_id, ur.jamiat_ids AS ur_jamiat_ids, ur.jamaat_ids AS ur_jamaat_ids, r.name
+       FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+       WHERE ur.user_id = ? AND ur.is_active = 1 AND r.is_active = 1 ORDER BY r.name`,
       [userId]
     );
-    user.assigned_roles = assignedRolesRows.length > 0
-      ? assignedRolesRows.map(r => r.name)
-      : (user.role ? [user.role] : []);
+    const allJamiatById = new Map();
+    const allJamaatById = new Map();
+    const assignedRolesWithScopes = [];
+    for (const row of assignedRolesRows) {
+      const jamiatIdsStr = row.ur_jamiat_ids != null ? row.ur_jamiat_ids : user.jamiat_ids;
+      const jamaatIdsStr = row.ur_jamaat_ids != null ? row.ur_jamaat_ids : user.jamaat_ids;
+      const { jamiat: roleJamiat, jamaat: roleJamaat } = await resolveJamiatJamaatFromIds(jamiatIdsStr, jamaatIdsStr);
+      roleJamiat.forEach(j => allJamiatById.set(j.id, j));
+      roleJamaat.forEach(j => allJamaatById.set(j.id, j));
+      assignedRolesWithScopes.push({
+        role_id: row.role_id,
+        name: row.name,
+        jamiat: roleJamiat,
+        jamaat: roleJamaat
+      });
+    }
+    user.assigned_roles = assignedRolesWithScopes.length > 0
+      ? assignedRolesWithScopes
+      : (user.role ? [{ role_id: null, name: user.role, jamiat: [], jamaat: [] }] : []);
+    user.jamiat = Array.from(allJamiatById.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    user.jamaat = Array.from(allJamaatById.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    if (user.jamiat.length === 0 && user.jamaat.length === 0 && (user.jamiat_ids || user.jamaat_ids)) {
+      const fallback = await resolveJamiatJamaatFromIds(user.jamiat_ids, user.jamaat_ids);
+      user.jamiat = fallback.jamiat;
+      user.jamaat = fallback.jamaat;
+    }
+    delete user.jamiat_ids;
+    delete user.jamaat_ids;
 
     res.json({ user });
   } catch (error) {
@@ -553,7 +559,7 @@ router.get('/:userId', authenticateToken, authorizePermission('users', 'read'), 
 router.put('/:userId', authenticateToken, authorizePermission('users', 'update'), async (req, res) => {
   try {
     const { userId } = req.params;
-    const { full_name, username, email, phone, its_number, jamiat, jamaat, role, is_active, password, photo } = req.body;
+    const { full_name, username, email, phone, its_number, jamiat, jamaat, role, role_jamiat_jamaat, is_active, password, photo } = req.body;
 
     // Check if username is being changed and if it's already taken
     if (username) {
@@ -677,47 +683,49 @@ router.put('/:userId', authenticateToken, authorizePermission('users', 'update')
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Handle jamiat associations (comma-separated)
-    if (jamiat !== undefined) {
-      const jamiatIds = Array.isArray(jamiat) && jamiat.length > 0 ? jamiat.join(',') : null;
-      await pool.execute(
-        'UPDATE users SET jamiat_ids = ? WHERE id = ?',
-        [jamiatIds, userId]
-      );
-    }
+    // Helper: get jamiat_ids/jamaat_ids strings for a role (from role_jamiat_jamaat or legacy jamiat/jamaat)
+    const getScopeForRole = (roleName) => {
+      const perRole = role_jamiat_jamaat && role_jamiat_jamaat[roleName];
+      if (perRole && (perRole.jamiat || perRole.jamaat)) {
+        const jIds = Array.isArray(perRole.jamiat) && perRole.jamiat.length > 0 ? perRole.jamiat.join(',') : null;
+        const jaIds = Array.isArray(perRole.jamaat) && perRole.jamaat.length > 0 ? perRole.jamaat.join(',') : null;
+        return { jamiat_ids: jIds, jamaat_ids: jaIds };
+      }
+      const jIds = Array.isArray(jamiat) && jamiat.length > 0 ? jamiat.join(',') : null;
+      const jaIds = Array.isArray(jamaat) && jamaat.length > 0 ? jamaat.join(',') : null;
+      return { jamiat_ids: jIds, jamaat_ids: jaIds };
+    };
 
-    // Handle jamaat associations (comma-separated)
-    if (jamaat !== undefined) {
-      const jamaatIds = Array.isArray(jamaat) && jamaat.length > 0 ? jamaat.join(',') : null;
-      await pool.execute(
-        'UPDATE users SET jamaat_ids = ? WHERE id = ?',
-        [jamaatIds, userId]
-      );
-    }
-
-    // Handle role assignments in user_roles table if role was changed
+    // Handle role assignments in user_roles table if role was changed (with per-role jamiat/jamaat)
     if (roleArray !== undefined && roleIds.length > 0) {
       await pool.execute(
         'UPDATE user_roles SET is_active = 0 WHERE user_id = ? AND is_active = 1',
         [userId]
       );
       for (const roleObj of roleIds) {
+        const scope = getScopeForRole(roleObj.name);
         const [existing] = await pool.execute(
           'SELECT id FROM user_roles WHERE user_id = ? AND role_id = ?',
           [userId, roleObj.id]
         );
         if (existing.length > 0) {
           await pool.execute(
-            'UPDATE user_roles SET is_active = 1, assigned_by = ?, assigned_at = NOW(), expires_at = NULL WHERE user_id = ? AND role_id = ?',
-            [req.user.id, userId, roleObj.id]
+            'UPDATE user_roles SET is_active = 1, assigned_by = ?, assigned_at = NOW(), expires_at = NULL, jamiat_ids = ?, jamaat_ids = ? WHERE user_id = ? AND role_id = ?',
+            [req.user.id, scope.jamiat_ids, scope.jamaat_ids, userId, roleObj.id]
           );
         } else {
           await pool.execute(
-            'INSERT INTO user_roles (user_id, role_id, assigned_by, expires_at) VALUES (?, ?, ?, NULL)',
-            [userId, roleObj.id, req.user.id]
+            'INSERT INTO user_roles (user_id, role_id, assigned_by, expires_at, jamiat_ids, jamaat_ids) VALUES (?, ?, ?, NULL, ?, ?)',
+            [userId, roleObj.id, req.user.id, scope.jamiat_ids, scope.jamaat_ids]
           );
         }
       }
+      // Fallback: write primary role's scopes to users.jamiat_ids/jamaat_ids for getCurrentRoleScopes fallback
+      const primaryScope = getScopeForRole(roleIds[0].name);
+      await pool.execute(
+        'UPDATE users SET jamiat_ids = ?, jamaat_ids = ? WHERE id = ?',
+        [primaryScope.jamiat_ids, primaryScope.jamaat_ids, userId]
+      );
       // Verify sync: active user_roles count should match roleIds.length
       const [countRows] = await pool.execute(
         'SELECT COUNT(*) AS cnt FROM user_roles WHERE user_id = ? AND is_active = 1',
@@ -727,6 +735,15 @@ router.put('/:userId', authenticateToken, authorizePermission('users', 'update')
       if (activeCount !== roleIds.length) {
         console.warn(`[PUT user] user_roles sync mismatch for user_id=${userId}: expected ${roleIds.length} active, got ${activeCount}`);
       }
+    } else if (jamiat !== undefined || jamaat !== undefined) {
+      // Role not changed but jamiat/jamaat sent (legacy): update users table and all active user_roles
+      const jamiatIds = Array.isArray(jamiat) && jamiat.length > 0 ? jamiat.join(',') : null;
+      const jamaatIds = Array.isArray(jamaat) && jamaat.length > 0 ? jamaat.join(',') : null;
+      await pool.execute('UPDATE users SET jamiat_ids = ?, jamaat_ids = ? WHERE id = ?', [jamiatIds, jamaatIds, userId]);
+      await pool.execute(
+        'UPDATE user_roles SET jamiat_ids = ?, jamaat_ids = ? WHERE user_id = ? AND is_active = 1',
+        [jamiatIds, jamaatIds, userId]
+      );
     }
 
     res.json({ message: 'User updated successfully' });
@@ -1108,13 +1125,13 @@ router.post('/import-excel', authenticateToken, authorizePermission('users', 'cr
             );
             if (existingRole.length > 0) {
               await connection.execute(
-                'UPDATE user_roles SET is_active = 1, assigned_by = ?, assigned_at = NOW() WHERE user_id = ? AND role_id = ?',
-                [req.user.id, userId, roleId]
+                'UPDATE user_roles SET is_active = 1, assigned_by = ?, assigned_at = NOW(), jamiat_ids = ?, jamaat_ids = ? WHERE user_id = ? AND role_id = ?',
+                [req.user.id, finalJamiatIds, finalJamaatIds, userId, roleId]
               );
             } else {
               await connection.execute(
-                'INSERT INTO user_roles (user_id, role_id, assigned_by, expires_at) VALUES (?, ?, ?, NULL)',
-                [userId, roleId, req.user.id]
+                'INSERT INTO user_roles (user_id, role_id, assigned_by, expires_at, jamiat_ids, jamaat_ids) VALUES (?, ?, ?, NULL, ?, ?)',
+                [userId, roleId, req.user.id, finalJamiatIds, finalJamaatIds]
               );
             }
 
@@ -1139,8 +1156,8 @@ router.post('/import-excel', authenticateToken, authorizePermission('users', 'cr
 
             if (roleId) {
               await connection.execute(
-                'INSERT INTO user_roles (user_id, role_id, assigned_by, expires_at) VALUES (?, ?, ?, NULL)',
-                [userId, roleId, req.user.id]
+                'INSERT INTO user_roles (user_id, role_id, assigned_by, expires_at, jamiat_ids, jamaat_ids) VALUES (?, ?, ?, NULL, ?, ?)',
+                [userId, roleId, req.user.id, rowJamiatIdsString, rowJamaatIdsString]
               );
             }
 

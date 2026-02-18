@@ -54,18 +54,19 @@ router.get('/available-counselors', authenticateToken, async (req, res) => {
   try {
     const { caseId, jamiat_id, jamaat_id } = req.query;
 
-    // Query all active users with Counselor role directly
+    // Query active users with Counselor role; use role-wise scopes from user_roles (fallback to users)
     let query = `
       SELECT DISTINCT
         u.id,
         u.full_name,
         u.email,
         u.role,
-        u.jamiat_ids,
-        u.jamaat_ids
+        COALESCE(ur.jamiat_ids, u.jamiat_ids) AS jamiat_ids,
+        COALESCE(ur.jamaat_ids, u.jamaat_ids) AS jamaat_ids
       FROM users u
-      WHERE LOWER(u.role) = 'counselor'
-        AND u.is_active = TRUE
+      JOIN user_roles ur ON ur.user_id = u.id AND ur.is_active = 1
+      JOIN roles r ON r.id = ur.role_id AND LOWER(r.name) = 'counselor'
+      WHERE u.is_active = TRUE
     `;
 
     const queryParams = [];
@@ -83,14 +84,11 @@ router.get('/available-counselors', authenticateToken, async (req, res) => {
 
         console.log(`[available-counselors] Case ${caseId}: jamiat_id=${caseJamiatId}, jamaat_id=${caseJamaatId || 'NULL'}`);
 
-        // Filter by jamiat/jamaat if case has them
-        // If case has no location, show all counselors (no filter)
-        // If case has location, filter counselors by matching location OR counselors with no location restrictions
         if (caseJamiatId || caseJamaatId) {
           query += ` AND (
-            FIND_IN_SET(?, u.jamiat_ids) > 0 
-            OR FIND_IN_SET(?, u.jamaat_ids) > 0
-            OR (u.jamiat_ids IS NULL AND u.jamaat_ids IS NULL)
+            FIND_IN_SET(?, COALESCE(ur.jamiat_ids, u.jamiat_ids)) > 0 
+            OR FIND_IN_SET(?, COALESCE(ur.jamaat_ids, u.jamaat_ids)) > 0
+            OR (COALESCE(ur.jamiat_ids, u.jamiat_ids) IS NULL AND COALESCE(ur.jamaat_ids, u.jamaat_ids) IS NULL)
           )`;
           queryParams.push(caseJamiatId, caseJamaatId);
           console.log(`[available-counselors] Adding location filter: jamiat_id=${caseJamiatId}, jamaat_id=${caseJamaatId || 'NULL'}`);
@@ -101,11 +99,10 @@ router.get('/available-counselors', authenticateToken, async (req, res) => {
         console.log(`[available-counselors] Case ${caseId} not found`);
       }
     } else if (jamiat_id || jamaat_id) {
-      // Filter by provided jamiat/jamaat
       query += ` AND (
-        FIND_IN_SET(?, u.jamiat_ids) > 0 
-        OR FIND_IN_SET(?, u.jamaat_ids) > 0
-        OR (u.jamiat_ids IS NULL AND u.jamaat_ids IS NULL)
+        FIND_IN_SET(?, COALESCE(ur.jamiat_ids, u.jamiat_ids)) > 0 
+        OR FIND_IN_SET(?, COALESCE(ur.jamaat_ids, u.jamaat_ids)) > 0
+        OR (COALESCE(ur.jamiat_ids, u.jamiat_ids) IS NULL AND COALESCE(ur.jamaat_ids, u.jamaat_ids) IS NULL)
       )`;
       queryParams.push(jamiat_id || null, jamaat_id || null);
       console.log(`[available-counselors] Filtering by provided: jamiat_id=${jamiat_id || 'NULL'}, jamaat_id=${jamaat_id || 'NULL'}`);
@@ -210,20 +207,18 @@ router.get('/', authenticateToken, async (req, res) => {
       if (!canAccessAll) {
         // For roles that can't access all cases, filter by assignment or jamiat/jamaat
         if (userRole === 'ZI' || userRole === 'Zonal Incharge') {
-          // ZI can see cases in their assigned jamiat/jamaat areas
+          // ZI can see cases in their assigned jamiat/jamaat areas (from current role scopes on req.user)
+          const jamiatIdsStr = req.user.jamiat_ids || '';
+          const jamaatIdsStr = req.user.jamaat_ids || '';
           whereConditions.push(`
             (c.roles = ? OR c.assigned_counselor_id = ? OR 
              EXISTS (
                SELECT 1 FROM applicants a 
                WHERE a.id = c.applicant_id 
-               AND EXISTS (
-                 SELECT 1 FROM users u 
-                 WHERE u.id = ? 
-                 AND (FIND_IN_SET(a.jamiat_id, u.jamiat_ids) > 0 OR FIND_IN_SET(a.jamaat_id, u.jamaat_ids) > 0)
-               )
+               AND (FIND_IN_SET(a.jamiat_id, ?) > 0 OR FIND_IN_SET(a.jamaat_id, ?) > 0)
              ))
           `);
-          queryParams.push(userId, userId, userId);
+          queryParams.push(userId, userId, jamiatIdsStr, jamaatIdsStr);
         } else {
           // Other roles (counselor) can only see assigned cases
           whereConditions.push('(c.roles = ? OR c.assigned_counselor_id = ?)');
@@ -3565,13 +3560,14 @@ router.get('/:caseId/comments', authenticateToken, async (req, res) => {
     if (!canAccessAll) {
       // For roles that can't access all cases, check assignment
       if (userRole === 'ZI' || userRole === 'Zonal Incharge') {
-        // ZI can see cases in their assigned jamiat/jamaat areas
+        // ZI can see cases in their assigned jamiat/jamaat areas (from current role scopes on req.user)
+        const jamiatIdsStr = req.user.jamiat_ids || '';
+        const jamaatIdsStr = req.user.jamaat_ids || '';
         const [accessCheck] = await pool.execute(
           `SELECT 1 FROM applicants a 
-           JOIN users u ON u.id = ? 
            WHERE a.id = ? 
-           AND (FIND_IN_SET(a.jamiat_id, u.jamiat_ids) > 0 OR FIND_IN_SET(a.jamaat_id, u.jamaat_ids) > 0)`,
-          [userId, caseData.applicant_id]
+           AND (FIND_IN_SET(a.jamiat_id, ?) > 0 OR FIND_IN_SET(a.jamaat_id, ?) > 0)`,
+          [caseData.applicant_id, jamiatIdsStr, jamaatIdsStr]
         );
         if (accessCheck.length === 0) {
           return res.status(403).json({ error: 'You do not have access to this case' });

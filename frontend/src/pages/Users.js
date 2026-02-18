@@ -44,7 +44,8 @@ const Users = () => {
     jamiat: [],
     jamaat: [],
     role: [],
-    is_active: true, // 0 = Inactive, 1 = Active
+    roleJamiatJamaat: {}, // { [roleName]: { jamiat: number[], jamaat: number[] } }
+    is_active: true,
     password: '',
     confirmPassword: '',
     photo: ''
@@ -58,7 +59,8 @@ const Users = () => {
     jamiat: [],
     jamaat: [],
     role: [],
-    is_active: true, // 0 = Inactive, 1 = Active
+    roleJamiatJamaat: {},
+    is_active: true,
     password: '',
     confirmPassword: '',
     photo: ''
@@ -154,14 +156,98 @@ const Users = () => {
     const allSelected = allJamaatIds.every(id => editForm.jamaat.includes(id));
     
     if (allSelected) {
-      // Deselect all filtered jamaat
       const newJamaat = editForm.jamaat.filter(id => !allJamaatIds.includes(id));
       setEditForm(prev => ({ ...prev, jamaat: newJamaat }));
     } else {
-      // Select all filtered jamaat
       const newJamaat = [...new Set([...editForm.jamaat, ...allJamaatIds])];
       setEditForm(prev => ({ ...prev, jamaat: newJamaat }));
     }
+  };
+
+  // Sync roleJamiatJamaat when roles change in edit form (add empty for new roles, remove for removed)
+  const handleEditRoleChange = (selectedRoleNames) => {
+    setEditForm(prev => {
+      const nextRJJ = { ...prev.roleJamiatJamaat };
+      prev.role.forEach(r => { if (!selectedRoleNames.includes(r)) delete nextRJJ[r]; });
+      selectedRoleNames.forEach(r => { if (!(r in nextRJJ)) nextRJJ[r] = { jamiat: [], jamaat: [] }; });
+      return { ...prev, role: selectedRoleNames, roleJamiatJamaat: nextRJJ };
+    });
+  };
+
+  const handleEditRoleJamiatChange = (roleName, jamiatIds) => {
+    setEditForm(prev => {
+      const scopes = prev.roleJamiatJamaat[roleName] || { jamiat: [], jamaat: [] };
+      const validJamaat = (scopes.jamaat || []).filter(jaId => {
+        const j = jamaat.find(x => x.id === jaId);
+        return j && jamiatIds.includes(j.jamiat_id);
+      });
+      return {
+        ...prev,
+        roleJamiatJamaat: {
+          ...prev.roleJamiatJamaat,
+          [roleName]: { ...scopes, jamiat: jamiatIds, jamaat: validJamaat }
+        }
+      };
+    });
+  };
+
+  const handleEditRoleJamaatChange = (roleName, jamaatIds) => {
+    setEditForm(prev => ({
+      ...prev,
+      roleJamiatJamaat: {
+        ...prev.roleJamiatJamaat,
+        [roleName]: { ...(prev.roleJamiatJamaat[roleName] || { jamiat: [], jamaat: [] }), jamaat: jamaatIds }
+      }
+    }));
+  };
+
+  const getFilteredJamaatForEditRole = (roleName) => {
+    const jamiatIds = (editForm.roleJamiatJamaat[roleName] || {}).jamiat || [];
+    if (jamiatIds.length === 0) return jamaat;
+    return jamaat.filter(j => jamiatIds.includes(j.jamiat_id));
+  };
+
+  // Create form: sync roleJamiatJamaat when roles change
+  const handleCreateRoleChange = (selectedRoleNames) => {
+    setCreateForm(prev => {
+      const nextRJJ = { ...prev.roleJamiatJamaat };
+      prev.role.forEach(r => { if (!selectedRoleNames.includes(r)) delete nextRJJ[r]; });
+      selectedRoleNames.forEach(r => { if (!(r in nextRJJ)) nextRJJ[r] = { jamiat: [], jamaat: [] }; });
+      return { ...prev, role: selectedRoleNames, roleJamiatJamaat: nextRJJ };
+    });
+  };
+
+  const handleCreateRoleJamiatChange = (roleName, jamiatIds) => {
+    setCreateForm(prev => {
+      const scopes = prev.roleJamiatJamaat[roleName] || { jamiat: [], jamaat: [] };
+      const validJamaat = (scopes.jamaat || []).filter(jaId => {
+        const j = jamaat.find(x => x.id === jaId);
+        return j && jamiatIds.includes(j.jamiat_id);
+      });
+      return {
+        ...prev,
+        roleJamiatJamaat: {
+          ...prev.roleJamiatJamaat,
+          [roleName]: { ...scopes, jamiat: jamiatIds, jamaat: validJamaat }
+        }
+      };
+    });
+  };
+
+  const handleCreateRoleJamaatChange = (roleName, jamaatIds) => {
+    setCreateForm(prev => ({
+      ...prev,
+      roleJamiatJamaat: {
+        ...prev.roleJamiatJamaat,
+        [roleName]: { ...(prev.roleJamiatJamaat[roleName] || { jamiat: [], jamaat: [] }), jamaat: jamaatIds }
+      }
+    }));
+  };
+
+  const getFilteredJamaatForCreateRole = (roleName) => {
+    const jamiatIds = (createForm.roleJamiatJamaat[roleName] || {}).jamiat || [];
+    if (jamiatIds.length === 0) return jamaat;
+    return jamaat.filter(j => jamiatIds.includes(j.jamiat_id));
   };
 
   // Fetch users with filters and pagination
@@ -541,7 +627,32 @@ const Users = () => {
   // Open edit modal
   const openEditModal = (user) => {
     setSelectedUser(user);
-    const assignedRoles = (user.assigned_roles && user.assigned_roles.length) ? user.assigned_roles : (user.role ? [user.role] : []);
+    const rawRoles = (user.assigned_roles && user.assigned_roles.length) ? user.assigned_roles : (user.role ? [user.role] : []);
+    const roleNames = rawRoles.map(r => typeof r === 'string' ? r : r.name);
+    const roleJamiatJamaat = {};
+    rawRoles.forEach(r => {
+      const name = typeof r === 'string' ? r : r.name;
+      if (typeof r === 'object' && r.jamiat && r.jamaat) {
+        roleJamiatJamaat[name] = {
+          jamiat: (r.jamiat || []).map(j => j.id),
+          jamaat: (r.jamaat || []).map(j => j.id)
+        };
+      } else {
+        roleJamiatJamaat[name] = { jamiat: [], jamaat: [] };
+      }
+    });
+    roleNames.forEach(name => {
+      if (!roleJamiatJamaat[name]) roleJamiatJamaat[name] = { jamiat: [], jamaat: [] };
+    });
+    if (roleNames.length && (user.jamiat?.length || user.jamaat?.length)) {
+      const firstScopes = roleJamiatJamaat[roleNames[0]];
+      if (!firstScopes.jamiat?.length && !firstScopes.jamaat?.length) {
+        roleJamiatJamaat[roleNames[0]] = {
+          jamiat: (user.jamiat || []).map(j => j.id),
+          jamaat: (user.jamaat || []).map(j => j.id)
+        };
+      }
+    }
     setEditForm({
       its_number: user.its_number || '',
       full_name: user.full_name || '',
@@ -550,8 +661,9 @@ const Users = () => {
       phone: user.phone || '',
       jamiat: user.jamiat ? user.jamiat.map(j => j.id) : [],
       jamaat: user.jamaat ? user.jamaat.map(j => j.id) : [],
-      role: assignedRoles,
-      is_active: user.is_active === 1, // Convert 0/1 to boolean (0=inactive=false, 1=active=true)
+      role: roleNames,
+      roleJamiatJamaat,
+      is_active: user.is_active === 1,
       password: '',
       confirmPassword: '',
       photo: user.photo || ''
@@ -579,7 +691,8 @@ const Users = () => {
       jamiat: [],
       jamaat: [],
       role: [],
-      is_active: true, // 0 = Inactive, 1 = Active
+      roleJamiatJamaat: {},
+      is_active: true,
       password: '',
       confirmPassword: '',
       photo: ''
@@ -603,7 +716,8 @@ const Users = () => {
       jamiat: [],
       jamaat: [],
       role: [],
-      is_active: true, // 0 = Inactive, 1 = Active
+      roleJamiatJamaat: {},
+      is_active: true,
       password: '',
       confirmPassword: '',
       photo: ''
@@ -767,10 +881,9 @@ const Users = () => {
         email: createForm.email,
         phone: createForm.phone,
         its_number: createForm.its_number || undefined,
-        jamiat: createForm.jamiat,
-        jamaat: createForm.jamaat,
         role: createForm.role,
-        is_active: createForm.is_active ? 1 : 0, // Convert boolean to 0/1 (0=inactive, 1=active)
+        role_jamiat_jamaat: createForm.roleJamiatJamaat,
+        is_active: createForm.is_active ? 1 : 0,
         password: createForm.password || undefined,
         photo: createForm.photo || undefined
       };
@@ -823,10 +936,9 @@ const Users = () => {
         email: editForm.email,
         phone: editForm.phone,
         its_number: editForm.its_number || undefined,
-        jamiat: editForm.jamiat,
-        jamaat: editForm.jamaat,
         role: editForm.role,
-        is_active: editForm.is_active ? 1 : 0, // Convert boolean to 0/1 (0=inactive, 1=active)
+        role_jamiat_jamaat: editForm.roleJamiatJamaat,
+        is_active: editForm.is_active ? 1 : 0,
         password: editForm.password || undefined,
         photo: editForm.photo || undefined
       };
@@ -1466,32 +1578,41 @@ const Users = () => {
           />
           
           <MultiSelect
-            label="Jamiat"
-            options={jamiat.map(j => ({ value: j.id, label: j.name }))}
-            value={editForm.jamiat}
-            onChange={handleEditJamiatChange}
-            placeholder="Select Jamiat..."
-          />
-          
-          <MultiSelect
-            label="Jamaat"
-            options={getFilteredJamaatForEdit().map(j => ({ value: j.id, label: j.name }))}
-            value={editForm.jamaat}
-            onChange={(value) => setEditForm(prev => ({ ...prev, jamaat: value }))}
-            placeholder="Select Jamaat..."
-            showSelectAll={editForm.jamiat.length > 0}
-            selectAllLabel="Select All"
-            onSelectAll={handleSelectAllJamaatForEdit}
-          />
-          
-          <MultiSelect
             label="Role (required)"
             options={roles.map(r => ({ value: r.name, label: formatRoleName(r.name) }))}
             value={editForm.role}
-            onChange={(value) => setEditForm(prev => ({ ...prev, role: value }))}
+            onChange={handleEditRoleChange}
             placeholder="Select roles..."
             required
           />
+
+          {editForm.role.length > 0 && (
+            <div className="border-t pt-4 mt-4 space-y-4">
+              <h4 className="text-sm font-medium text-gray-700">Jamiat & Jamaat per role</h4>
+              {editForm.role.map((roleName) => {
+                const scopes = editForm.roleJamiatJamaat[roleName] || { jamiat: [], jamaat: [] };
+                return (
+                  <div key={roleName} className="rounded-lg border border-gray-200 p-4 bg-gray-50/50 space-y-3">
+                    <div className="text-sm font-medium text-gray-800">{formatRoleName(roleName)}</div>
+                    <MultiSelect
+                      label="Jamiat"
+                      options={jamiat.map(j => ({ value: j.id, label: j.name }))}
+                      value={scopes.jamiat || []}
+                      onChange={(value) => handleEditRoleJamiatChange(roleName, value)}
+                      placeholder="Select Jamiat..."
+                    />
+                    <MultiSelect
+                      label="Jamaat"
+                      options={getFilteredJamaatForEditRole(roleName).map(j => ({ value: j.id, label: j.name }))}
+                      value={scopes.jamaat || []}
+                      onChange={(value) => handleEditRoleJamaatChange(roleName, value)}
+                      placeholder="Select Jamaat..."
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
           
           <div className="space-y-4">
             <div className="border-t pt-4">
@@ -1641,32 +1762,41 @@ const Users = () => {
           />
           
           <MultiSelect
-            label="Jamiat"
-            options={jamiat.map(j => ({ value: j.id, label: j.name }))}
-            value={createForm.jamiat}
-            onChange={handleJamiatChange}
-            placeholder="Select Jamiat..."
-          />
-          
-          <MultiSelect
-            label="Jamaat"
-            options={getFilteredJamaat().map(j => ({ value: j.id, label: j.name }))}
-            value={createForm.jamaat}
-            onChange={(value) => setCreateForm(prev => ({ ...prev, jamaat: value }))}
-            placeholder="Select Jamaat..."
-            showSelectAll={createForm.jamiat.length > 0}
-            selectAllLabel="Select All"
-            onSelectAll={handleSelectAllJamaat}
-          />
-          
-          <MultiSelect
             label="Role (required)"
             options={roles.map(r => ({ value: r.name, label: formatRoleName(r.name) }))}
             value={createForm.role}
-            onChange={(value) => setCreateForm(prev => ({ ...prev, role: value }))}
+            onChange={handleCreateRoleChange}
             placeholder="Select roles..."
             required
           />
+
+          {createForm.role.length > 0 && (
+            <div className="border-t pt-4 mt-4 space-y-4">
+              <h4 className="text-sm font-medium text-gray-700">Jamiat & Jamaat per role</h4>
+              {createForm.role.map((roleName) => {
+                const scopes = createForm.roleJamiatJamaat[roleName] || { jamiat: [], jamaat: [] };
+                return (
+                  <div key={roleName} className="rounded-lg border border-gray-200 p-4 bg-gray-50/50 space-y-3">
+                    <div className="text-sm font-medium text-gray-800">{formatRoleName(roleName)}</div>
+                    <MultiSelect
+                      label="Jamiat"
+                      options={jamiat.map(j => ({ value: j.id, label: j.name }))}
+                      value={scopes.jamiat || []}
+                      onChange={(value) => handleCreateRoleJamiatChange(roleName, value)}
+                      placeholder="Select Jamiat..."
+                    />
+                    <MultiSelect
+                      label="Jamaat"
+                      options={getFilteredJamaatForCreateRole(roleName).map(j => ({ value: j.id, label: j.name }))}
+                      value={scopes.jamaat || []}
+                      onChange={(value) => handleCreateRoleJamaatChange(roleName, value)}
+                      placeholder="Select Jamaat..."
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
           
           <div className="space-y-4">
             <div className="border-t pt-4">
