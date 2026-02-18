@@ -116,7 +116,7 @@ function App() {
             <Route 
               path="/cases" 
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission={{ resource: 'cases', action: 'read' }}>
                   <Layout>
                     <Cases />
                   </Layout>
@@ -127,7 +127,7 @@ function App() {
             <Route 
               path="/cases/:caseId" 
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission={{ resource: 'cases', action: 'read' }}>
                   <Layout>
                     <CaseDetails />
                   </Layout>
@@ -138,7 +138,7 @@ function App() {
             <Route 
               path="/cases/:caseId/payment-schedule" 
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission={{ resource: 'cases', action: 'read' }}>
                   <Layout>
                     <PaymentSchedulePage />
                   </Layout>
@@ -149,7 +149,7 @@ function App() {
             <Route 
               path="/applicants" 
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredPermission={{ resource: 'applicants', action: 'read' }}>
                   <Layout>
                     <Applicants />
                   </Layout>

@@ -205,7 +205,7 @@ async function fetchApplicantDataFromAPI(itsNumber) {
 }
 
 // Get all applicants with pagination and search
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, authorizePermission('applicants', 'read'), async (req, res) => {
   try {
     const { 
       page = 1, 
@@ -290,7 +290,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get single applicant by ID
-router.get('/:applicantId', authenticateToken, async (req, res) => {
+router.get('/:applicantId', authenticateToken, authorizePermission('applicants', 'read'), async (req, res) => {
   try {
     const { applicantId } = req.params;
 

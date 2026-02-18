@@ -171,7 +171,7 @@ router.get('/counselor-permissions/:counselorId', authenticateToken, authorizePe
 });
 
 // Get all cases with filtering and pagination
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, authorizePermission('cases', 'read'), async (req, res) => {
   try {
     const { 
       page = 1, 

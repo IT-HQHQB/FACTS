@@ -247,11 +247,27 @@ const Layout = ({ children }) => {
   const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'Super Administrator';
 
   const getNavigationItems = () => {
-    const baseItems = [
-      { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', color: 'text-blue-500' },
-      { text: 'Cases', icon: <CasesIcon />, path: '/cases', color: 'text-purple-500' },
-      { text: 'Applicants', icon: <PersonIcon />, path: '/applicants', color: 'text-green-500' },
-    ];
+    const baseItems = [];
+
+    // Dashboard - show if super admin or has any main module permission (so Khidmatgar with only case_identification still sees it)
+    const hasDashboardAccess = isSuperAdmin ||
+      userHasPermission('dashboard', 'read') ||
+      userHasPermission('cases', 'read') ||
+      userHasPermission('applicants', 'read') ||
+      userHasPermission('case_identification', 'read');
+    if (hasDashboardAccess) {
+      baseItems.push({ text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', color: 'text-blue-500' });
+    }
+
+    // Cases - only visible when user has permission
+    if (isSuperAdmin || userHasPermission('cases', 'read')) {
+      baseItems.push({ text: 'Cases', icon: <CasesIcon />, path: '/cases', color: 'text-purple-500' });
+    }
+
+    // Applicants - only visible when user has permission
+    if (isSuperAdmin || userHasPermission('applicants', 'read')) {
+      baseItems.push({ text: 'Applicants', icon: <PersonIcon />, path: '/applicants', color: 'text-green-500' });
+    }
 
     // Case Identification - permission-controlled
     if (isSuperAdmin || userHasPermission('case_identification', 'read')) {
@@ -321,10 +337,10 @@ const Layout = ({ children }) => {
       });
     }
 
-    baseItems.push(
-      // { text: 'Notifications', icon: <NotificationsIcon />, path: '/notifications', color: 'text-blue-600' },
-      { text: 'Reports', icon: <ReportsIcon />, path: '/reports', color: 'text-green-600' }
-    );
+    // Reports - only visible when user has permission
+    if (isSuperAdmin || userHasPermission('reports', 'read')) {
+      baseItems.push({ text: 'Reports', icon: <ReportsIcon />, path: '/reports', color: 'text-green-600' });
+    }
 
     return baseItems;
   };

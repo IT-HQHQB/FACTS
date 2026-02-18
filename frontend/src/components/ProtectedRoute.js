@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getCounselingFormRoles, getAdminRoles } from '../utils/permissionUtils';
 
-const ProtectedRoute = ({ children, requireCounselingFormAccess = false, requireAdminAccess = false }) => {
+const ProtectedRoute = ({ children, requireCounselingFormAccess = false, requireAdminAccess = false, requiredPermission = null }) => {
   const { user } = useAuth();
   const [allowedRoles, setAllowedRoles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +64,22 @@ const ProtectedRoute = ({ children, requireCounselingFormAccess = false, require
         </div>
       </div>
     );
+  }
+
+  // If requiredPermission is set, check user has it (or is super admin)
+  if (requiredPermission && requiredPermission.resource && requiredPermission.action) {
+    const isSuperAdmin = user.role === 'super_admin' || user.role === 'Super Administrator';
+    if (isSuperAdmin) {
+      return children;
+    }
+    const resourcePermissions = user.permissions?.[requiredPermission.resource];
+    const hasPermission = resourcePermissions && (
+      resourcePermissions.includes(requiredPermission.action) ||
+      resourcePermissions.includes('all')
+    );
+    if (!hasPermission) {
+      return <Navigate to="/dashboard" replace state={{ message: 'You do not have permission to access this page.' }} />;
+    }
   }
 
   // If no specific permissions required, allow access
