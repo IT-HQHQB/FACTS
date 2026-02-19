@@ -1,6 +1,6 @@
 const express = require('express');
 const { pool } = require('../config/database');
-const { authenticateToken, authorizePermission } = require('../middleware/auth');
+const { authenticateToken, authorizePermission, getUserPermissions } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -45,7 +45,9 @@ router.get('/', authenticateToken, authorizePermission('case_identification', 'r
       eligible_in = ''
     } = req.query;
 
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const safePage = Math.max(1, parseInt(page, 10) || 1);
+    const safeLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const offset = (safePage - 1) * safeLimit;
 
     let whereConditions = [];
     let queryParams = [];
@@ -65,21 +67,65 @@ router.get('/', authenticateToken, authorizePermission('case_identification', 'r
       queryParams.push(eligible_in);
     }
 
+    // Scope by user's assigned jamiat/jamaat (super_admin and admin see all)
+    const currentUserId = Number(req.user.id) || req.user.id;
+    const roleLower = (req.user.role || '').toLowerCase();
+    const skipScopeFilter = roleLower === 'super_admin' || roleLower === 'super administrator' || roleLower === 'admin';
+    if (!skipScopeFilter) {
+      const permissions = await getUserPermissions(req.user.id);
+      const hasApprove = permissions.includes('case_identification:approve');
+
+      // "All" access: null, empty, or literal "all" means no scope filter (user sees all cases)
+      const isAllJamiat = (v) => !v || (typeof v === 'string' && v.trim().toLowerCase() === 'all');
+      const isAllJamaat = (v) => !v || (typeof v === 'string' && v.trim().toLowerCase() === 'all');
+
+      // Use explicit collation to avoid "Illegal mix of collations" (case_identifications vs jamiat/jamaat tables)
+      const collate = 'COLLATE utf8mb4_unicode_ci';
+      if (hasApprove) {
+        // Approve users: filter by assigned jamiat (amuze); skip filter if all jamiat access.
+        const jamiatIdsStr = (req.user.jamiat_ids || '').trim();
+        if (jamiatIdsStr && !isAllJamiat(jamiatIdsStr)) {
+          whereConditions.push(`ci.jamiat ${collate} IN (SELECT j.name ${collate} FROM jamiat j WHERE FIND_IN_SET(j.id, ?) > 0)`);
+          queryParams.push(jamiatIdsStr);
+        }
+      } else {
+        // Filling users: filter by assigned jamaat; skip filter if all jamaat access.
+        const jamaatIdsStr = (req.user.jamaat_ids || '').trim();
+        if (jamaatIdsStr && !isAllJamaat(jamaatIdsStr)) {
+          whereConditions.push(`ci.jamaat ${collate} IN (SELECT ja.name ${collate} FROM jamaat ja WHERE FIND_IN_SET(ja.id, ?) > 0)`);
+          queryParams.push(jamaatIdsStr);
+        }
+      }
+    }
+
     const whereClause = whereConditions.length > 0
       ? 'WHERE ' + whereConditions.join(' AND ')
       : '';
+
+    // Debug: log scope and params for list (remove after fixing empty list)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[case-identifications list]', {
+        userId: currentUserId,
+        role: req.user.role,
+        skipScope: !!skipScopeFilter,
+        jamiat_ids: req.user.jamiat_ids,
+        jamaat_ids: req.user.jamaat_ids,
+        whereLen: whereConditions.length,
+        paramCount: queryParams.length
+      });
+    }
 
     // Count total records
     const [countResult] = await pool.execute(
       `SELECT COUNT(*) as total FROM case_identifications ci ${whereClause}`,
       queryParams
     );
-    const total = countResult[0].total;
+    // Ensure number (MySQL2 may return BigInt for COUNT, which breaks JSON.stringify)
+    const total = Number(countResult[0].total) || 0;
 
     // Get records with case type name join
     // Note: LIMIT/OFFSET are interpolated directly (safe - they are parsed integers)
-    const safeLimit = parseInt(limit) || 20;
-    const safeOffset = offset || 0;
+    const safeOffset = Math.max(0, offset);
 
     const [records] = await pool.execute(
       `SELECT ci.*, 
@@ -98,13 +144,22 @@ router.get('/', authenticateToken, authorizePermission('case_identification', 'r
       queryParams
     );
 
+    // Sanitize records so BigInt fields (e.g. id) don't break JSON
+    const safeRecords = (records || []).map((r) => {
+      const row = { ...r };
+      for (const key of Object.keys(row)) {
+        if (typeof row[key] === 'bigint') row[key] = Number(row[key]);
+      }
+      return row;
+    });
+
     res.json({
-      records,
+      records: safeRecords,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: safePage,
+        limit: safeLimit,
         total,
-        totalPages: Math.ceil(total / parseInt(limit))
+        totalPages: safeLimit > 0 ? Math.ceil(total / safeLimit) : 0
       }
     });
   } catch (error) {
