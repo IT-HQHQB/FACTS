@@ -1044,6 +1044,24 @@ const Users = () => {
     setPage(1);
   };
 
+  // Build page numbers for pagination (e.g. [1, 2, 3, 4, 5, 6, 'ellipsis', 126])
+  const getPaginationPages = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages = new Set([1, totalPages]);
+    const windowStart = Math.max(1, page - 2);
+    const windowEnd = Math.min(totalPages, page + 2);
+    for (let i = windowStart; i <= windowEnd; i++) pages.add(i);
+    const sorted = Array.from(pages).sort((a, b) => a - b);
+    const result = [];
+    for (let i = 0; i < sorted.length; i++) {
+      if (i > 0 && sorted[i] - sorted[i - 1] > 1) result.push('ellipsis');
+      result.push(sorted[i]);
+    }
+    return result;
+  };
+
   // Format role name
   const formatRoleName = (role) => {
     return role.split('_').map(word => 
@@ -1235,21 +1253,6 @@ const Users = () => {
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-medium text-gray-900">Users List</h3>
             <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-500">
-                {totalUsers === 0 ? 'No users' : `Showing ${startItem}–${endItem} of ${totalUsers}`}
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">Rows per page:</span>
-                <select
-                  value={pageSize}
-                  onChange={handlePageSizeChange}
-                  className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                >
-                  {PAGE_SIZE_OPTIONS.map((size) => (
-                    <option key={size} value={size}>{size}</option>
-                  ))}
-                </select>
-              </div>
               <div className="flex items-center space-x-2">
                 <select
                   value={fetchContactRole}
@@ -1494,27 +1497,70 @@ const Users = () => {
           )}
 
           {totalUsers > 0 && !loading && (
-            <div className="flex items-center justify-between border-t border-gray-200 px-2 py-3 mt-4">
-              <div className="text-sm text-gray-600">
-                Page {page} of {totalPages}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-200 px-2 py-4 mt-4">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-700">Rows per page:</span>
+                  <select
+                    value={pageSize}
+                    onChange={handlePageSizeChange}
+                    className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <option key={size} value={size}>{size}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="text-sm text-gray-600">
+                  Showing {startItem} to {endItem} of {totalUsers} results
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
+              <div className="flex items-center gap-0.5 flex-wrap justify-center">
+                <button
+                  type="button"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
+                  className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                  aria-label="Previous page"
                 >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                {getPaginationPages().map((p, idx) =>
+                  p === 'ellipsis' ? (
+                    <span
+                      key={`ellipsis-${idx}`}
+                      className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 text-gray-500 text-sm"
+                    >
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPage(p)}
+                      className={`inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded text-sm font-medium border ${
+                        page === p
+                          ? 'bg-primary-50 border-primary-500 text-primary-700 ring-1 ring-primary-500'
+                          : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+                <button
+                  type="button"
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
+                  className="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                  aria-label="Next page"
                 >
-                  Next
-                </Button>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               </div>
             </div>
           )}

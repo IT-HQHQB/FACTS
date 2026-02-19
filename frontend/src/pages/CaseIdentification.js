@@ -380,8 +380,8 @@ const CaseIdentification = () => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Eligible In</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Family Members</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Earning Members</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Individual Income</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Family Income</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Individual Income (monthly)</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Family Income (monthly)</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -729,7 +729,7 @@ const CaseIdentification = () => {
                 {/* Individual Income */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Individual Income <span className="text-red-500">*</span>
+                    Individual Income (monthly) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -751,7 +751,7 @@ const CaseIdentification = () => {
                 {/* Family Income */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Family Income <span className="text-red-500">*</span>
+                    Family Income (monthly) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"

@@ -884,6 +884,7 @@ const Cases = () => {
 
   // Handler for opening counselor assignment modal
   const handleAssignCounselorClick = (caseId) => {
+    assignCounselorMutation.reset();
     setAssigningCounselorCaseId(caseId);
     setCounselorAssignModalOpen(true);
     setSelectedCounselorId('');
@@ -1643,7 +1644,7 @@ const Cases = () => {
                                 <Button
                                   variant="primary"
                                   size="sm"
-                                  onClick={() => navigate(`/counseling-form/${caseItem.id}`)}
+                                  onClick={() => navigate(`/counseling-form/${caseItem.id}?step=1`)}
                                   className="flex items-center space-x-1 text-xs"
                                 >
                                   <span>►</span>
@@ -3367,6 +3368,7 @@ const Cases = () => {
       <Modal
         isOpen={counselorAssignModalOpen}
         onClose={() => {
+          assignCounselorMutation.reset();
           setCounselorAssignModalOpen(false);
           setAssigningCounselorCaseId(null);
           setSelectedCounselorId('');
@@ -3447,6 +3449,7 @@ const Cases = () => {
             <Button
               variant="secondary"
               onClick={() => {
+                assignCounselorMutation.reset();
                 setCounselorAssignModalOpen(false);
                 setAssigningCounselorCaseId(null);
                 setSelectedCounselorId('');

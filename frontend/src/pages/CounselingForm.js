@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { useQuery, useMutation } from 'react-query';
 import axios from 'axios';
@@ -86,6 +86,7 @@ const handleDecimalInput = (e) => {
 const CounselingForm = () => {
   const { caseId } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -1697,6 +1698,14 @@ const CounselingForm = () => {
     if (formData?.form && !initialTabSet) {
       // Wait a bit for all form values to be set
       setTimeout(() => {
+        // When opened via Start button (?step=1), always open at Personal Details
+        if (searchParams.get('step') === '1') {
+          setActiveTab('personal');
+          setInitialTabSet(true);
+          setSearchParams({});
+          return;
+        }
+
         // Check which sections are completed based on form data directly
         const form = formData.form;
         const sectionMapping = {
@@ -1731,7 +1740,7 @@ const CounselingForm = () => {
         setInitialTabSet(true);
       }, 300);
     }
-  }, [formData, initialTabSet, workflowSteps]);
+  }, [formData, initialTabSet, workflowSteps, searchParams, setSearchParams]);
 
   // Load existing attachments when they're fetched
   useEffect(() => {
