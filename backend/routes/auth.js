@@ -13,10 +13,10 @@ const loginRateLimitSkipIps = (process.env.LOGIN_RATE_LIMIT_SKIP_IPS || '')
   .map((ip) => ip.trim())
   .filter(Boolean);
 
-// Max failed login attempts per IP per 15 min (env overrides defaults: 5 prod, 50 dev)
+// Max failed login attempts per IP per 15 min (env overrides defaults: 25 prod, 50 dev)
 const loginRateLimitMax = process.env.LOGIN_RATE_LIMIT_MAX
   ? parseInt(process.env.LOGIN_RATE_LIMIT_MAX, 10)
-  : (process.env.NODE_ENV === 'production' ? 5 : 50);
+  : (process.env.NODE_ENV === 'production' ? 25 : 50);
 
 // Login-specific rate limiting (more lenient than general API)
 const loginLimiter = rateLimit({
