@@ -383,6 +383,7 @@ const CaseIdentification = () => {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Individual Income (monthly)</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Family Income (monthly)</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
@@ -390,11 +391,11 @@ const CaseIdentification = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan="10" className="px-4 py-8 text-center text-gray-500">Loading...</td>
+                  <td colSpan="11" className="px-4 py-8 text-center text-gray-500">Loading...</td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan="10" className="px-4 py-8 text-center text-gray-500">No case identifications found</td>
+                  <td colSpan="11" className="px-4 py-8 text-center text-gray-500">No case identifications found</td>
                 </tr>
               ) : (
                 records.map((record) => (
@@ -422,6 +423,9 @@ const CaseIdentification = () => {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {getStatusBadge(record.status)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                      {record.created_by_full_name || record.created_by_name || '-'}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                       {new Date(record.created_at).toLocaleDateString()}
