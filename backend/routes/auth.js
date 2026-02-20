@@ -7,14 +7,26 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
+// IPs that skip login rate limiting (e.g. office static IP with many users)
+const loginRateLimitSkipIps = (process.env.LOGIN_RATE_LIMIT_SKIP_IPS || '')
+  .split(',')
+  .map((ip) => ip.trim())
+  .filter(Boolean);
+
+// Max failed login attempts per IP per 15 min (env overrides defaults: 5 prod, 50 dev)
+const loginRateLimitMax = process.env.LOGIN_RATE_LIMIT_MAX
+  ? parseInt(process.env.LOGIN_RATE_LIMIT_MAX, 10)
+  : (process.env.NODE_ENV === 'production' ? 5 : 50);
+
 // Login-specific rate limiting (more lenient than general API)
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 5 : 50, // 5 attempts in production, 50 in development
-  message: 'Too many login attempts from this IP, please try again later.',
+  max: loginRateLimitMax,
+  message: { error: 'Too many login attempts from this IP, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful logins
+  skip: (req, res) => loginRateLimitSkipIps.length > 0 && loginRateLimitSkipIps.includes(req.ip),
 });
 
 // Login endpoint
