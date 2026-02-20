@@ -76,6 +76,8 @@ const Cases = () => {
   const { hasPermission: canAssignCase } = usePermission('cases', 'assign_case');
   // Check if user has permission to assign counselors
   const { hasPermission: canAssignCounselor } = usePermission('cases', 'assign_counselor');
+  // Check if user has permission to change assignee (reassignment)
+  const { hasPermission: canChangeAssignee } = usePermission('cases', 'change_assignee');
   // Check if user has permission to view welfare checklist (for approve button and checklist)
   const { hasPermission: hasWelfareChecklistView } = usePermission('welfare_checklist', 'view');
   const { hasPermission: hasWelfareChecklistCreate } = usePermission('welfare_checklist', 'create');
@@ -152,14 +154,15 @@ const Cases = () => {
   
   // Assign case modal state
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assignModalMode, setAssignModalMode] = useState('assign'); // 'assign' | 'reassign'
   const [assigningCaseId, setAssigningCaseId] = useState(null);
   const [assignSelectedRoleId, setAssignSelectedRoleId] = useState('');
   const [assignSelectedCounselorId, setAssignSelectedCounselorId] = useState('');
   // Counselor assignment modal state
   const [counselorAssignModalOpen, setCounselorAssignModalOpen] = useState(false);
+  const [counselorModalMode, setCounselorModalMode] = useState('assign'); // 'assign' | 'reassign'
   const [assigningCounselorCaseId, setAssigningCounselorCaseId] = useState(null);
   const [selectedCounselorId, setSelectedCounselorId] = useState('');
-  const [counselorSearchTerm, setCounselorSearchTerm] = useState('');
   const [counselorAssignSuccess, setCounselorAssignSuccess] = useState('');
   const [welfareComments, setWelfareComments] = useState('');
   // Delete confirmation modal state
@@ -826,14 +829,18 @@ const Cases = () => {
     }
   );
 
-  // Assign case mutation - same as case creation: assign_roles is user ID, assigned_counselor_id is null
+  // Assign case mutation: assign_roles is DCM user ID; for reassign do not send assigned_counselor_id
   const assignCaseMutation = useMutation(
-    ({ caseId, assigned_roles }) =>
-      axios.put(`/api/cases/${caseId}`, { assigned_roles, assigned_counselor_id: null }),
+    ({ caseId, assigned_roles, isReassign }) => {
+      const body = { assigned_roles };
+      if (!isReassign) body.assigned_counselor_id = null;
+      return axios.put(`/api/cases/${caseId}`, body);
+    },
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['cases', page, filters]);
         setAssignModalOpen(false);
+        setAssignModalMode('assign');
         setAssigningCaseId(null);
         setAssignSelectedRoleId('');
         setAssignSelectedCounselorId('');
@@ -853,7 +860,6 @@ const Cases = () => {
         setCounselorAssignModalOpen(false);
         setAssigningCounselorCaseId(null);
         setSelectedCounselorId('');
-        setCounselorSearchTerm('');
         setCounselorAssignSuccess(isUnassign ? 'Counselor unassigned successfully!' : 'Counselor assigned successfully!');
         // Clear success message after 3 seconds
         setTimeout(() => {
@@ -867,28 +873,29 @@ const Cases = () => {
     }
   );
 
-  const handleAssignCaseClick = (caseId) => {
+  const handleAssignCaseClick = (caseId, mode = 'assign') => {
     setAssigningCaseId(caseId);
+    setAssignModalMode(mode);
     setAssignModalOpen(true);
   };
 
   const handleAssignCase = () => {
-    // assignSelectedCounselorId is now the DCM user ID (from "Assign To" dropdown)
     if (assignSelectedCounselorId && assigningCaseId) {
       assignCaseMutation.mutate({
         caseId: assigningCaseId,
-        assigned_roles: assignSelectedCounselorId, // This is the user ID of the DCM
+        assigned_roles: assignSelectedCounselorId,
+        isReassign: assignModalMode === 'reassign',
       });
     }
   };
 
-  // Handler for opening counselor assignment modal
-  const handleAssignCounselorClick = (caseId) => {
+  // Handler for opening counselor assignment modal (optional currentCounselorId to pre-fill when changing)
+  const handleAssignCounselorClick = (caseId, currentCounselorId = null) => {
     assignCounselorMutation.reset();
     setAssigningCounselorCaseId(caseId);
+    setCounselorModalMode(currentCounselorId ? 'reassign' : 'assign');
     setCounselorAssignModalOpen(true);
-    setSelectedCounselorId('');
-    setCounselorSearchTerm('');
+    setSelectedCounselorId(currentCounselorId ? String(currentCounselorId) : '');
   };
 
   // Handler for assigning counselor to case
@@ -1660,6 +1667,15 @@ const Cases = () => {
                                   <span>►</span>
                                   <span className="break-words whitespace-normal">Assign Case</span>
                                 </Button>
+                              ) : canChangeAssignee && caseItem.roles ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleAssignCaseClick(caseItem.id, 'reassign')}
+                                  className="flex items-center space-x-1 text-xs"
+                                >
+                                  <span className="break-words whitespace-normal">Change assignee</span>
+                                </Button>
                               ) : caseItem.status_name === 'draft' ? (
                                 <span className="text-xs text-gray-500 break-words whitespace-normal">Not applicable</span>
                               ) : caseItem.status_name === 'completed' || caseItem.status_name === 'closed' ? (
@@ -2165,11 +2181,11 @@ const Cases = () => {
                               <span className="text-xs font-medium">👤 Assign</span>
                             </Button>
                           )}
-                          {canAssignCounselor && caseItem.counselor_full_name && (
+                          {canChangeAssignee && caseItem.counselor_full_name && (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleAssignCounselorClick(caseItem.id)}
+                              onClick={() => handleAssignCounselorClick(caseItem.id, caseItem.assigned_counselor_id)}
                               className="flex items-center justify-center px-3 py-2 border-0 hover:bg-blue-50 text-gray-600 hover:text-blue-600"
                               title="Change Counselor"
                             >
@@ -3281,16 +3297,17 @@ const Cases = () => {
         </Modal.Footer>
       </Modal>
 
-      {/* Assign Case Modal */}
+      {/* Assign Case / Reassign Modal - Role + Assign To only */}
       <Modal
         isOpen={assignModalOpen}
         onClose={() => {
           setAssignModalOpen(false);
+          setAssignModalMode('assign');
           setAssigningCaseId(null);
           setAssignSelectedRoleId('');
           setAssignSelectedCounselorId('');
         }}
-        title="Assign Case"
+        title={assignModalMode === 'reassign' ? 'Reassign' : 'Assign Case'}
         size="xl"
       >
         <div className="space-y-4 min-h-[32rem]">
@@ -3299,7 +3316,7 @@ const Cases = () => {
             value={assignSelectedRoleId}
             onChange={(e) => {
               setAssignSelectedRoleId(e.target.value);
-              setAssignSelectedCounselorId(''); // Reset user when role changes
+              setAssignSelectedCounselorId('');
             }}
             required
           >
@@ -3336,7 +3353,9 @@ const Cases = () => {
           />
 
           <Alert severity="info">
-            Assigning a user will automatically change the case status to "Assigned" when both role and user are selected.
+            {assignModalMode === 'reassign'
+              ? 'Select a new assignee. The case status will remain "Assigned".'
+              : 'Assigning a user will automatically change the case status to "Assigned" when both role and user are selected.'}
           </Alert>
         </div>
 
@@ -3346,6 +3365,7 @@ const Cases = () => {
               variant="secondary"
               onClick={() => {
                 setAssignModalOpen(false);
+                setAssignModalMode('assign');
                 setAssigningCaseId(null);
                 setAssignSelectedRoleId('');
                 setAssignSelectedCounselorId('');
@@ -3358,13 +3378,13 @@ const Cases = () => {
               loading={assignCaseMutation.isLoading}
               disabled={!assignSelectedRoleId || !assignSelectedCounselorId || assignCaseMutation.isLoading}
             >
-              Assign Case
+              {assignModalMode === 'reassign' ? 'Reassign' : 'Assign Case'}
             </Button>
           </div>
         </Modal.Footer>
       </Modal>
 
-      {/* Assign Counselor Modal */}
+      {/* Assign / Reassign Counselor Modal - same layout as Assign/Reassign (field then info then footer) */}
       <Modal
         isOpen={counselorAssignModalOpen}
         onClose={() => {
@@ -3372,53 +3392,33 @@ const Cases = () => {
           setCounselorAssignModalOpen(false);
           setAssigningCounselorCaseId(null);
           setSelectedCounselorId('');
-          setCounselorSearchTerm('');
         }}
-        title="Assign Counselor"
-        size="md"
+        title={counselorModalMode === 'reassign' ? 'Reassign Counselor' : 'Assign Counselor'}
+        size="xl"
       >
-        <div className="space-y-4">
+        <div className="space-y-4 min-h-[32rem]">
+          <SearchableSelect
+            label="Select Counselor"
+            value={selectedCounselorId}
+            onChange={(val) => setSelectedCounselorId(val)}
+            placeholder="Unassigned"
+            required
+            options={[
+              { value: 'unassign', label: 'Unassign Counselor' },
+              ...(availableCounselorsData || [])
+                .map((c) => ({
+                  value: c.id,
+                  label: c.its_number
+                    ? `${c.full_name || c.username} - (${c.its_number})`
+                    : (c.full_name || c.username) + (c.email ? ` (${c.email})` : '')
+                }))
+                .sort((a, b) => (a.label || '').toLowerCase().localeCompare((b.label || '').toLowerCase()))
+            ]}
+          />
+
           <Alert severity="info">
-            Select a counselor from the available list. Counselors are filtered by the case's location (Jamiat/Jamaat) and must be assigned to the Counselor workflow stage.
+            Select a counselor from the available list. Counselors are filtered by the case's location (Jamiat/Jamaat).
           </Alert>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Search Counselor
-            </label>
-            <Input
-              type="text"
-              placeholder="Search by name or email..."
-              value={counselorSearchTerm}
-              onChange={(e) => setCounselorSearchTerm(e.target.value)}
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <Select
-              label="Select Counselor"
-              value={selectedCounselorId}
-              onChange={(e) => setSelectedCounselorId(e.target.value)}
-              required
-            >
-              <Select.Option value="unassign">Unassign Counselor</Select.Option>
-              {availableCounselorsData
-                ?.filter(counselor => {
-                  if (!counselorSearchTerm) return true;
-                  const search = counselorSearchTerm.toLowerCase();
-                  return (
-                    counselor.full_name?.toLowerCase().includes(search) ||
-                    counselor.email?.toLowerCase().includes(search)
-                  );
-                })
-                .map((counselor) => (
-                  <Select.Option key={counselor.id} value={counselor.id}>
-                    {counselor.full_name} {counselor.email && `(${counselor.email})`}
-                  </Select.Option>
-                ))}
-            </Select>
-          </div>
 
           {availableCounselorsData && availableCounselorsData.length === 0 && (
             <Alert severity="warning">
@@ -3436,12 +3436,6 @@ const Cases = () => {
               </div>
             </Alert>
           )}
-
-          {availableCounselorsData && availableCounselorsData.length > 0 && (
-            <div className="text-sm text-gray-600">
-              {availableCounselorsData.length} counselor(s) available
-            </div>
-          )}
         </div>
 
         <Modal.Footer>
@@ -3453,7 +3447,6 @@ const Cases = () => {
                 setCounselorAssignModalOpen(false);
                 setAssigningCounselorCaseId(null);
                 setSelectedCounselorId('');
-                setCounselorSearchTerm('');
               }}
             >
               Cancel
@@ -3463,11 +3456,13 @@ const Cases = () => {
               loading={assignCounselorMutation.isLoading}
               disabled={!selectedCounselorId || assignCounselorMutation.isLoading || assignCounselorMutation.isSuccess}
             >
-              {assignCounselorMutation.isLoading 
-                ? 'Assigning...' 
-                : selectedCounselorId === 'unassign' 
-                  ? 'Unassign' 
-                  : 'Assign Counselor'}
+              {assignCounselorMutation.isLoading
+                ? 'Assigning...'
+                : selectedCounselorId === 'unassign'
+                  ? 'Unassign'
+                  : counselorModalMode === 'reassign'
+                    ? 'Reassign Counselor'
+                    : 'Assign Counselor'}
             </Button>
           </div>
         </Modal.Footer>

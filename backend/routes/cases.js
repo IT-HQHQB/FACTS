@@ -59,7 +59,9 @@ router.get('/available-counselors', authenticateToken, async (req, res) => {
       SELECT DISTINCT
         u.id,
         u.full_name,
+        u.username,
         u.email,
+        u.its_number,
         u.role,
         COALESCE(ur.jamiat_ids, u.jamiat_ids) AS jamiat_ids,
         COALESCE(ur.jamaat_ids, u.jamaat_ids) AS jamaat_ids
@@ -1274,21 +1276,36 @@ router.put('/:caseId', authenticateToken, authorizeCaseAccess, async (req, res) 
     const finalCounselor = assigned_counselor_id !== undefined ? assigned_counselor_id : currentCounselor;
 
     // Check permissions for assignment operations
-    // Note: super_admin always has all permissions (handled by hasPermission)
-    // For backward compatibility, admin can still assign without explicit permission
+    // First assignment: assign_case / assign_counselor. Reassignment: change_assignee. Admin/super_admin bypass.
     if (assigned_roles !== undefined) {
-      const canAssignCase = await hasPermission(userRole, 'cases', 'assign_case');
-      if (!canAssignCase && userRole !== 'admin') {
-        return res.status(403).json({ error: 'You do not have permission to assign cases' });
+      const isFirstDcmAssignment = currentRoles == null || currentRoles === '';
+      if (isFirstDcmAssignment) {
+        const canAssignCase = await hasPermission(userRole, 'cases', 'assign_case');
+        if (!canAssignCase && userRole !== 'admin') {
+          return res.status(403).json({ error: 'You do not have permission to assign cases' });
+        }
+      } else {
+        const canChangeAssignee = await hasPermission(userRole, 'cases', 'change_assignee');
+        if (!canChangeAssignee && userRole !== 'admin' && userRole !== 'super_admin') {
+          return res.status(403).json({ error: 'You do not have permission to change assignee' });
+        }
       }
       updateFields.push('roles = ?');
       updateValues.push(assigned_roles);
     }
-    
+
     if (assigned_counselor_id !== undefined) {
-      const canAssignCounselor = await hasPermission(userRole, 'cases', 'assign_counselor');
-      if (!canAssignCounselor && userRole !== 'admin') {
-        return res.status(403).json({ error: 'You do not have permission to assign counselors' });
+      const isFirstCounselorAssignment = currentCounselor == null;
+      if (isFirstCounselorAssignment) {
+        const canAssignCounselor = await hasPermission(userRole, 'cases', 'assign_counselor');
+        if (!canAssignCounselor && userRole !== 'admin') {
+          return res.status(403).json({ error: 'You do not have permission to assign counselors' });
+        }
+      } else {
+        const canChangeAssignee = await hasPermission(userRole, 'cases', 'change_assignee');
+        if (!canChangeAssignee && userRole !== 'admin' && userRole !== 'super_admin') {
+          return res.status(403).json({ error: 'You do not have permission to change assignee' });
+        }
       }
       updateFields.push('assigned_counselor_id = ?');
       updateValues.push(assigned_counselor_id);
@@ -1396,6 +1413,42 @@ router.put('/:caseId', authenticateToken, authorizeCaseAccess, async (req, res) 
         req.user,
         req.body.comments || ''
       );
+    }
+
+    // Log assignee change in workflow_history when DCM or counselor was changed
+    const assigneeChanged = (assigned_roles !== undefined && finalRoles !== currentRoles) ||
+      (assigned_counselor_id !== undefined && finalCounselor !== currentCounselor);
+    if (assigneeChanged) {
+      try {
+        const [caseData] = await pool.execute(
+          'SELECT workflow_history FROM cases WHERE id = ?',
+          [caseId]
+        );
+        let workflowHistory = [];
+        if (caseData.length > 0 && caseData[0].workflow_history) {
+          try {
+            workflowHistory = JSON.parse(caseData[0].workflow_history);
+          } catch (e) {
+            workflowHistory = [];
+          }
+        }
+        workflowHistory.push({
+          action: 'assignee_changed',
+          entered_at: new Date().toISOString(),
+          entered_by: userId,
+          entered_by_name: req.user.full_name || req.user.username,
+          previous_roles: currentRoles,
+          previous_counselor_id: currentCounselor,
+          new_roles: finalRoles,
+          new_counselor_id: finalCounselor
+        });
+        await pool.execute(
+          'UPDATE cases SET workflow_history = ? WHERE id = ?',
+          [JSON.stringify(workflowHistory), caseId]
+        );
+      } catch (historyErr) {
+        console.error('Error appending assignee_changed to workflow history:', historyErr);
+      }
     }
 
     res.json({ message: 'Case updated successfully' });

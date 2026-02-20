@@ -125,9 +125,9 @@ const SearchableSelect = ({
           </svg>
         </div>
 
-        {/* Dropdown menu */}
+        {/* Dropdown menu - z-[200] so it appears above modals (z-[100]/z-[101]) */}
         {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-[28rem] overflow-hidden">
+          <div className="absolute z-[200] w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-[28rem] overflow-hidden">
             {/* Search input */}
             <div className="p-2 border-b border-gray-200">
               <input

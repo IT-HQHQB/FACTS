@@ -29,7 +29,7 @@ const Modal = ({
       {/* Modal container */}
       <div className="flex items-start justify-center min-h-screen pt-16 pb-8 px-4 relative z-[101]">
         {/* Modal panel */}
-        <div className={`relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all w-full mt-4 ${sizeClasses[size]} ${className}`}>
+        <div className={`relative bg-white rounded-lg text-left overflow-visible shadow-xl transform transition-all w-full mt-4 ${sizeClasses[size]} ${className}`}>
           {/* Header */}
           {title && (
             <div className="bg-white border-b border-gray-200 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
