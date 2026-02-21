@@ -456,6 +456,13 @@ const CaseDetails = () => {
     }
   );
 
+  // Fetch closure details when case is closed
+  const { data: closureData } = useQuery(
+    ['case-closure', caseId],
+    () => axios.get(`/api/cases/${caseId}/closure`).then(res => res.data),
+    { enabled: !!caseId && caseData?.case?.status_name === 'closed' }
+  );
+
   // Fetch users for assignment (high limit so all users for the role appear in Assign To dropdown)
   const { data: usersData } = useQuery(
     ['users', selectedRoleId],
@@ -562,6 +569,8 @@ const CaseDetails = () => {
       executive_approved: 'success',
       executive_rejected: 'error',
       finance_disbursement: 'success',
+      completed: 'success',
+      closed: 'default',
     };
     return statusColors[status] || 'default';
   };
@@ -620,6 +629,25 @@ const CaseDetails = () => {
 
   const formatStatus = (status) => {
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const handleDownloadClosureDocument = async (docId, fileName) => {
+    try {
+      const res = await axios.get(`/api/cases/${caseId}/closure/documents/${docId}`, {
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName || 'document');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download failed:', err);
+      alert(err?.response?.data?.error || 'Failed to download document');
+    }
   };
 
   if (isLoading) {
@@ -715,7 +743,7 @@ const CaseDetails = () => {
                     <p className="text-sm text-gray-900">
                       {caseItem.dcm_full_name || caseItem.counselor_full_name || 'Unassigned'}
                     </p>
-                    {(canAssignCase || canAssignCounselor || canChangeAssignee) && (
+                    {(canAssignCase || canAssignCounselor || canChangeAssignee) && caseItem.status_name !== 'closed' && (
                       <>
                         {canAssignCase && isUnassigned && (
                           <Button
@@ -782,6 +810,53 @@ const CaseDetails = () => {
               </div>
             </Card.Content>
           </Card>
+
+          {/* Closure details - when case is closed */}
+          {caseItem.status_name === 'closed' && (
+            <Card>
+              <Card.Header>
+                <h3 className="text-lg font-semibold text-gray-900">Closure details</h3>
+              </Card.Header>
+              <Card.Content>
+                {closureData?.closure ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">Reason for closure</label>
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{closureData.closure.reason}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                      <span>Closed by: <strong>{closureData.closure.closed_by_name}</strong></span>
+                      <span>Date: <strong>{closureData.closure.created_at ? new Date(closureData.closure.created_at).toLocaleString() : '—'}</strong></span>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-2">Supporting documents</label>
+                      {(closureData.closure.documents && closureData.closure.documents.length > 0) ? (
+                        <ul className="space-y-2">
+                          {closureData.closure.documents.map((doc) => (
+                            <li key={doc.id} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
+                              <span className="text-sm text-gray-700 truncate flex-1">{doc.file_name}</span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownloadClosureDocument(doc.id, doc.file_name)}
+                                className="ml-2 flex-shrink-0"
+                              >
+                                Download
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-500">No documents on file.</p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Loading closure details...</p>
+                )}
+              </Card.Content>
+            </Card>
+          )}
 
           {/* Description */}
           <Card>

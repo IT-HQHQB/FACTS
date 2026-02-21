@@ -56,28 +56,38 @@ function calculateBusinessHours(startDate, endDate) {
  * @param {object} workflowStage - Workflow stage object with SLA configuration
  * @returns {object} - SLA status information
  */
+const DEFAULT_SLA = { status: 'on_time', hoursRemaining: null, hoursElapsed: 0, hoursOverdue: 0 };
+
 async function calculateSLAStatus(caseId, workflowStage) {
   try {
-    // Get case data
-    const [cases] = await pool.execute(
-      'SELECT current_stage_entered_at, current_workflow_stage_id FROM cases WHERE id = ?',
-      [caseId]
-    );
+    // Get case data (current_stage_entered_at may not exist in older DBs)
+    let cases;
+    try {
+      [cases] = await pool.execute(
+        'SELECT current_stage_entered_at, current_workflow_stage_id FROM cases WHERE id = ?',
+        [caseId]
+      );
+    } catch (colError) {
+      if (colError.code === 'ER_BAD_FIELD_ERROR' && colError.message && colError.message.includes('current_stage_entered_at')) {
+        return DEFAULT_SLA;
+      }
+      throw colError;
+    }
 
     if (cases.length === 0) {
-      return { status: 'on_time', hoursRemaining: null, hoursElapsed: 0, hoursOverdue: 0 };
+      return DEFAULT_SLA;
     }
 
     const caseData = cases[0];
 
     // If no SLA configured for this stage, return on_time
     if (!workflowStage || !workflowStage.sla_value || !workflowStage.sla_unit) {
-      return { status: 'on_time', hoursRemaining: null, hoursElapsed: 0, hoursOverdue: 0 };
+      return DEFAULT_SLA;
     }
 
-    // If case hasn't entered the stage yet, return on_time
+    // If case hasn't entered the stage yet (or column missing), return on_time
     if (!caseData.current_stage_entered_at) {
-      return { status: 'on_time', hoursRemaining: null, hoursElapsed: 0, hoursOverdue: 0 };
+      return DEFAULT_SLA;
     }
 
     const enteredAt = new Date(caseData.current_stage_entered_at);

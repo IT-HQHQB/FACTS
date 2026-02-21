@@ -500,7 +500,10 @@ router.get('/', authenticateToken, authorizeCasesList, async (req, res) => {
     const casesWithPermissions = await Promise.all(
       cases.map(async (caseItem) => {
         // Auto-fix: Check if status matches workflow stage's associated_statuses
-        if (caseItem.current_workflow_stage_id && caseItem.status) {
+        // Never auto-fix terminal statuses (closed/completed) - they must stay as-is
+        const terminalStatuses = ['closed', 'completed'];
+        const effectiveStatus = caseItem.status_name ?? caseItem.status;
+        if (caseItem.current_workflow_stage_id && effectiveStatus && !terminalStatuses.includes(effectiveStatus)) {
           try {
             const [stageData] = await pool.execute(
               'SELECT associated_statuses FROM workflow_stages WHERE id = ? AND is_active = TRUE',
@@ -516,7 +519,7 @@ router.get('/', authenticateToken, authorizeCasesList, async (req, res) => {
               }
 
               // If current status doesn't match any associated status, update it
-              if (associatedStatuses.length > 0 && !associatedStatuses.includes(caseItem.status)) {
+              if (associatedStatuses.length > 0 && !associatedStatuses.includes(effectiveStatus)) {
                 let correctStatus = associatedStatuses[0];
                 
                 // Check if roles are assigned before setting status to 'assigned'
@@ -729,9 +732,11 @@ router.get('/:caseId', authenticateToken, authorizeCaseAccess, async (req, res) 
     // Use ISO formatted dates from SQL query to preserve exact date/time
     const caseData = cases[0];
 
-    // Auto-fix: Check if status matches workflow stage's associated_statuses
-    // IMPORTANT: Never downgrade a case that has already reached finance_disbursement.
-    if (caseData.current_workflow_stage_id && caseData.status && caseData.status !== 'finance_disbursement') {
+        // Auto-fix: Check if status matches workflow stage's associated_statuses
+        // IMPORTANT: Never auto-fix terminal statuses (closed/completed) or finance_disbursement.
+        const terminalStatuses = ['closed', 'completed'];
+        const effectiveStatus = caseData.status_name ?? caseData.status;
+        if (caseData.current_workflow_stage_id && effectiveStatus && !terminalStatuses.includes(effectiveStatus) && effectiveStatus !== 'finance_disbursement') {
       try {
         const [stageData] = await pool.execute(
           'SELECT associated_statuses FROM workflow_stages WHERE id = ? AND is_active = TRUE',
@@ -747,7 +752,7 @@ router.get('/:caseId', authenticateToken, authorizeCaseAccess, async (req, res) 
           }
 
           // If current status doesn't match any associated status, update it
-          if (associatedStatuses.length > 0 && !associatedStatuses.includes(caseData.status)) {
+          if (associatedStatuses.length > 0 && !associatedStatuses.includes(effectiveStatus)) {
             let correctStatus = associatedStatuses[0];
             
             // Check if roles are assigned before setting status to 'assigned'
@@ -4026,15 +4031,22 @@ router.get('/status-diagnostics', authenticateToken, authorizeRoles(['admin', 's
   }
 });
 
-// Close a case with reason and optional supporting document
-router.post('/:caseId/close', authenticateToken, authorizePermission('cases', 'close_case'), closureUpload.single('document'), async (req, res) => {
+// Close a case with reason and at least one supporting document
+router.post('/:caseId/close', authenticateToken, authorizePermission('cases', 'close_case'), closureUpload.array('documents', 10), async (req, res) => {
   try {
     const { caseId } = req.params;
     const { reason } = req.body;
     const userId = req.user.id;
 
+    // Debug: log what we received (req.body is set by multer for multipart fields)
+    console.log('[close-case] caseId:', caseId, 'reason:', reason ? `${reason.substring(0, 50)}...` : reason, 'files count:', req.files?.length ?? 0);
+
     if (!reason || !reason.trim()) {
       return res.status(400).json({ error: 'Reason for closure is required' });
+    }
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'At least one supporting document is required' });
     }
 
     // Get current case details
@@ -4055,24 +4067,22 @@ router.post('/:caseId/close', authenticateToken, authorizePermission('cases', 'c
 
     const previousStatus = currentCase.status;
 
-    // Prepare document data if file uploaded
-    let documentPath = null;
-    let documentName = null;
-    let documentType = null;
-    let documentSize = null;
+    // Insert closure record (no document columns; documents go to case_closure_documents)
+    const [insertResult] = await pool.execute(`
+      INSERT INTO case_closures (case_id, reason, closed_by)
+      VALUES (?, ?, ?)
+    `, [caseId, reason.trim(), userId]);
 
-    if (req.file) {
-      documentPath = `case_closures/${caseId}/${req.file.filename}`;
-      documentName = req.file.originalname;
-      documentType = req.file.mimetype;
-      documentSize = req.file.size;
+    const caseClosureId = insertResult.insertId;
+
+    // Insert each document into case_closure_documents
+    for (const file of req.files) {
+      const documentPath = `case_closures/${caseId}/${file.filename}`;
+      await pool.execute(`
+        INSERT INTO case_closure_documents (case_closure_id, file_path, file_name, file_type, file_size)
+        VALUES (?, ?, ?, ?, ?)
+      `, [caseClosureId, documentPath, file.originalname, file.mimetype, file.size]);
     }
-
-    // Insert closure record
-    await pool.execute(`
-      INSERT INTO case_closures (case_id, reason, document_path, document_name, document_type, document_size, closed_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [caseId, reason.trim(), documentPath, documentName, documentType, documentSize, userId]);
 
     // Update case status to closed
     await pool.execute(
@@ -4104,13 +4114,46 @@ router.post('/:caseId/close', authenticateToken, authorizePermission('cases', 'c
   }
 });
 
-// Get case closure details
+// Download a single case closure document by id (must be before /:caseId/closure)
+router.get('/:caseId/closure/documents/:documentId', authenticateToken, async (req, res) => {
+  try {
+    const { caseId, documentId } = req.params;
+
+    const [rows] = await pool.execute(
+      `SELECT ccd.file_path, ccd.file_name, ccd.file_type
+       FROM case_closure_documents ccd
+       JOIN case_closures cc ON cc.id = ccd.case_closure_id
+       WHERE cc.case_id = ? AND ccd.id = ?`,
+      [caseId, documentId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    const doc = rows[0];
+    const filePath = path.join(__dirname, '../uploads', doc.file_path);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Document file not found on server' });
+    }
+
+    res.setHeader('Content-Type', doc.file_type || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${doc.file_name}"`);
+    res.sendFile(filePath);
+  } catch (error) {
+    console.error('Download closure document error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get case closure details with documents list
 router.get('/:caseId/closure', authenticateToken, async (req, res) => {
   try {
     const { caseId } = req.params;
 
-    const [closure] = await pool.execute(`
-      SELECT cc.*, u.full_name as closed_by_name
+    const [closureRows] = await pool.execute(`
+      SELECT cc.id, cc.case_id, cc.reason, cc.closed_by, cc.created_at, u.full_name as closed_by_name
       FROM case_closures cc
       JOIN users u ON cc.closed_by = u.id
       WHERE cc.case_id = ?
@@ -4118,24 +4161,34 @@ router.get('/:caseId/closure', authenticateToken, async (req, res) => {
       LIMIT 1
     `, [caseId]);
 
-    if (closure.length === 0) {
+    if (closureRows.length === 0) {
       return res.status(404).json({ error: 'No closure record found for this case' });
     }
 
-    res.json({ closure: closure[0] });
+    const closure = closureRows[0];
+
+    const [docRows] = await pool.execute(
+      `SELECT id, file_name, file_type, file_size, created_at
+       FROM case_closure_documents
+       WHERE case_closure_id = ?
+       ORDER BY created_at`,
+      [closure.id]
+    );
+
+    res.json({ closure: { ...closure, documents: docRows } });
   } catch (error) {
     console.error('Get case closure error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Download case closure document
+// Legacy: download single document (when only one doc stored on case_closures)
 router.get('/:caseId/closure/document', authenticateToken, async (req, res) => {
   try {
     const { caseId } = req.params;
 
     const [closure] = await pool.execute(
-      'SELECT document_path, document_name, document_type FROM case_closures WHERE case_id = ? AND document_path IS NOT NULL ORDER BY created_at DESC LIMIT 1',
+      'SELECT document_path, document_name, document_type FROM case_closures WHERE case_id = ? AND document_path IS NOT NULL AND document_path != "" ORDER BY created_at DESC LIMIT 1',
       [caseId]
     );
 
@@ -4149,7 +4202,7 @@ router.get('/:caseId/closure/document', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Document file not found on server' });
     }
 
-    res.setHeader('Content-Type', closure[0].document_type);
+    res.setHeader('Content-Type', closure[0].document_type || 'application/octet-stream');
     res.setHeader('Content-Disposition', `attachment; filename="${closure[0].document_name}"`);
     res.sendFile(filePath);
   } catch (error) {

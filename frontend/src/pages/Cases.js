@@ -173,8 +173,12 @@ const Cases = () => {
   const [closureModalOpen, setClosureModalOpen] = useState(false);
   const [closureTarget, setClosureTarget] = useState(null);
   const [closureReason, setClosureReason] = useState('');
-  const [closureDocument, setClosureDocument] = useState(null);
+  const [closureDocuments, setClosureDocuments] = useState([]);
   const [closureError, setClosureError] = useState('');
+
+  // View closure modal (for closed cases)
+  const [viewClosureModalOpen, setViewClosureModalOpen] = useState(false);
+  const [viewClosureCaseId, setViewClosureCaseId] = useState(null);
 
   // Executive department modals
   const [executiveApprovalModalOpen, setExecutiveApprovalModalOpen] = useState(false);
@@ -477,29 +481,29 @@ const Cases = () => {
 
   // Case closure mutation
   const closeCaseMutation = useMutation(
-    ({ caseId, reason, document }) => {
+    ({ caseId, reason, documents }) => {
       const formData = new FormData();
       formData.append('reason', reason);
-      if (document) {
-        formData.append('document', document);
-      }
-      return axios.post(`/api/cases/${caseId}/close`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      (documents || []).forEach((file) => {
+        formData.append('documents', file);
       });
+      // Do not set Content-Type so the browser sends multipart/form-data with boundary
+      return axios.post(`/api/cases/${caseId}/close`, formData);
     },
     {
       onSuccess: () => {
         setClosureModalOpen(false);
         setClosureTarget(null);
         setClosureReason('');
-        setClosureDocument(null);
+        setClosureDocuments([]);
         setClosureError('');
         refetch();
         queryClient.invalidateQueries(['cases']);
       },
       onError: (error) => {
         console.error('Case closure error:', error);
-        setClosureError(error?.response?.data?.error || 'Failed to close case');
+        const msg = error?.response?.data?.error || error?.message || 'Failed to close case';
+        setClosureError(msg);
       }
     }
   );
@@ -507,22 +511,78 @@ const Cases = () => {
   const handleCloseCase = (caseId, caseNumber) => {
     setClosureTarget({ id: caseId, caseNumber });
     setClosureReason('');
-    setClosureDocument(null);
+    setClosureDocuments([]);
     setClosureError('');
     setClosureModalOpen(true);
   };
 
   const handleCloseCaseSubmit = () => {
+    setClosureError('');
     if (!closureReason.trim()) {
       setClosureError('Please provide a reason for closure');
+      return;
+    }
+    if (!closureDocuments.length) {
+      setClosureError('At least one supporting document is required');
       return;
     }
     if (closureTarget) {
       closeCaseMutation.mutate({
         caseId: closureTarget.id,
         reason: closureReason,
-        document: closureDocument
+        documents: closureDocuments
       });
+    }
+  };
+
+  const addClosureDocuments = (files) => {
+    if (!files || !files.length) return;
+    const maxSize = 10 * 1024 * 1024;
+    const allowed = [];
+    for (let i = 0; i < files.length; i++) {
+      if (files[i].size > maxSize) {
+        setClosureError(`File "${files[i].name}" is too large. Maximum size is 10MB.`);
+        continue;
+      }
+      allowed.push(files[i]);
+    }
+    if (allowed.length) setClosureError('');
+    setClosureDocuments((prev) => [...prev, ...allowed].slice(0, 10));
+  };
+
+  const removeClosureDocument = (index) => {
+    setClosureDocuments((prev) => prev.filter((_, i) => i !== index));
+    setClosureError('');
+  };
+
+  // Fetch closure details for View Closure modal
+  const { data: viewClosureData, isLoading: viewClosureLoading } = useQuery(
+    ['case-closure', viewClosureCaseId],
+    () => axios.get(`/api/cases/${viewClosureCaseId}/closure`).then((res) => res.data),
+    { enabled: !!viewClosureCaseId && viewClosureModalOpen }
+  );
+
+  const handleViewClosure = (caseId) => {
+    setViewClosureCaseId(caseId);
+    setViewClosureModalOpen(true);
+  };
+
+  const handleDownloadClosureDocument = async (caseId, documentId, fileName) => {
+    try {
+      const res = await axios.get(`/api/cases/${caseId}/closure/documents/${documentId}`, {
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName || 'document');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download failed:', err);
+      alert(err?.response?.data?.error || 'Failed to download document');
     }
   };
 
@@ -1563,7 +1623,7 @@ const Cases = () => {
                       <Table.Header className="font-semibold text-gray-900 w-48 !px-1">Case Stage</Table.Header>
                       <Table.Header className="font-semibold text-gray-900 w-32 !px-1">SLA Status</Table.Header>
                       <Table.Header align="center" className="font-semibold text-gray-900 w-24 !px-1 !text-center [&>div]:!justify-center">Created Date</Table.Header>
-                      <Table.Header align="center" className="font-semibold text-gray-900 w-28 !px-2 !text-center [&>div]:!justify-center">Actions</Table.Header>
+                      <Table.Header align="center" className="font-semibold text-gray-900 min-w-[140px] !px-2 !text-center [&>div]:!justify-center">Actions</Table.Header>
                     </Table.Row>
                   </Table.Head>
                   <Table.Body>
@@ -1657,7 +1717,7 @@ const Cases = () => {
                                   <span>►</span>
                                   <span className="break-words whitespace-normal">Start</span>
                                 </Button>
-                              ) : canAssignCase && (caseItem.status_name === 'draft' || !caseItem.roles_full_name || !caseItem.roles || caseItem.roles === null || caseItem.roles === '' || (Array.isArray(caseItem.roles) && caseItem.roles.length === 0)) ? (
+                              ) : canAssignCase && (caseItem.status_name !== 'closed' && caseItem.status_name !== 'completed') && (caseItem.status_name === 'draft' || !caseItem.roles_full_name || !caseItem.roles || caseItem.roles === null || caseItem.roles === '' || (Array.isArray(caseItem.roles) && caseItem.roles.length === 0)) ? (
                                 <Button
                                   variant="primary"
                                   size="sm"
@@ -1667,7 +1727,7 @@ const Cases = () => {
                                   <span>►</span>
                                   <span className="break-words whitespace-normal">Assign Case</span>
                                 </Button>
-                              ) : canChangeAssignee && caseItem.roles ? (
+                              ) : canChangeAssignee && (caseItem.status_name !== 'closed' && caseItem.status_name !== 'completed') && caseItem.roles ? (
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -1700,7 +1760,9 @@ const Cases = () => {
                       </Table.Cell>
                       <Table.Cell className="overflow-hidden !px-1">
                         <div className="flex flex-col items-start space-y-2 break-words whitespace-normal">
-                          {caseItem.current_workflow_stage_name ? (
+                          {caseItem.status_name === 'closed' || caseItem.status_name === 'completed' ? (
+                            <div className="text-sm text-gray-900 font-medium">Closed</div>
+                          ) : caseItem.current_workflow_stage_name ? (
                             <div className="text-sm text-gray-900 font-medium">
                               {caseItem.current_workflow_stage_name}
                             </div>
@@ -1738,19 +1800,23 @@ const Cases = () => {
                         </div>
                       </Table.Cell>
                       <Table.Cell className="overflow-hidden !px-1">
-                        <CaseSLAStatus 
-                          slaInfo={caseItem.slaInfo}
-                          slaValue={caseItem.sla_value}
-                          slaUnit={caseItem.sla_unit}
-                        />
+                        {caseItem.status_name === 'closed' || caseItem.status_name === 'completed' ? (
+                          <div className="text-sm text-gray-500 font-medium">Closed</div>
+                        ) : (
+                          <CaseSLAStatus 
+                            slaInfo={caseItem.slaInfo}
+                            slaValue={caseItem.sla_value}
+                            slaUnit={caseItem.sla_unit}
+                          />
+                        )}
                       </Table.Cell>
                       <Table.Cell align="center" className="overflow-hidden !px-1 !text-center">
                         <div className="text-sm text-gray-900 break-words whitespace-normal text-center w-full">
                           {formatDate(caseItem.created_at)}
                         </div>
                       </Table.Cell>
-                      <Table.Cell align="center" className="overflow-hidden !px-2 !text-center">
-                        <div className="flex items-center justify-center space-x-1 flex-wrap gap-1 w-full">
+                      <Table.Cell align="center" className="!px-2 !text-center">
+                        <div className="flex items-center justify-center space-x-1 flex-wrap gap-1 w-full min-w-0">
                           <Button
                             variant="outline"
                             size="sm"
@@ -1760,7 +1826,9 @@ const Cases = () => {
                           >
                             <ViewIcon />
                           </Button>
-                          
+
+                          {caseItem.status_name !== 'closed' && caseItem.status_name !== 'completed' && (
+                          <>
                           {/* Payment Schedule Button - Show only at finance disbursement stage when user has payment management permission */}
                           {(caseItem.status_name === 'finance_disbursement' ||
                             caseItem.current_workflow_stage_name === 'Finance Disbursement') &&
@@ -1888,121 +1956,6 @@ const Cases = () => {
                                   loading={deleteCaseMutation.isLoading}
                                 >
                                   Delete
-                                </Button>
-                              </div>
-                            </Modal.Footer>
-                          </Modal>
-
-                          {/* Case Closure Modal */}
-                          <Modal
-                            isOpen={closureModalOpen}
-                            onClose={() => {
-                              setClosureModalOpen(false);
-                              setClosureTarget(null);
-                              setClosureReason('');
-                              setClosureDocument(null);
-                              setClosureError('');
-                            }}
-                            title="Close Case"
-                            size="md"
-                          >
-                            <div className="space-y-4">
-                              {closureError && (
-                                <Alert severity="error">
-                                  <p className="break-words whitespace-normal">{closureError}</p>
-                                </Alert>
-                              )}
-                              <Alert severity="warning">
-                                <p className="break-words whitespace-normal">
-                                  You are about to close case <strong>{closureTarget?.caseNumber || ''}</strong>. This will change the case status to <strong>Closed</strong>.
-                                </p>
-                              </Alert>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Reason for Closure <span className="text-red-500">*</span>
-                                </label>
-                                <textarea
-                                  value={closureReason}
-                                  onChange={(e) => setClosureReason(e.target.value)}
-                                  rows={4}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
-                                  placeholder="Please provide a reason for closing this case..."
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Supporting Document <span className="text-gray-400">(Optional)</span>
-                                </label>
-                                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-primary-400 transition-colors">
-                                  <div className="space-y-1 text-center">
-                                    <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
-                                    <div className="flex text-sm text-gray-600 justify-center">
-                                      <label className="relative cursor-pointer rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none">
-                                        <span>{closureDocument ? 'Change file' : 'Upload a file'}</span>
-                                        <input
-                                          type="file"
-                                          className="sr-only"
-                                          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                                          onChange={(e) => {
-                                            const file = e.target.files[0];
-                                            if (file) {
-                                              if (file.size > 10 * 1024 * 1024) {
-                                                setClosureError('File size must be less than 10MB');
-                                                return;
-                                              }
-                                              setClosureDocument(file);
-                                              setClosureError('');
-                                            }
-                                          }}
-                                        />
-                                      </label>
-                                    </div>
-                                    <p className="text-xs text-gray-500">PDF, DOC, DOCX, XLS, XLSX, JPG, PNG up to 10MB</p>
-                                  </div>
-                                </div>
-                                {closureDocument && (
-                                  <div className="mt-2 flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
-                                    <div className="flex items-center space-x-2">
-                                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                      </svg>
-                                      <span className="text-sm text-gray-700 truncate max-w-xs">{closureDocument.name}</span>
-                                      <span className="text-xs text-gray-500">({(closureDocument.size / 1024).toFixed(1)} KB)</span>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => setClosureDocument(null)}
-                                      className="text-red-500 hover:text-red-700 text-sm font-medium"
-                                    >
-                                      Remove
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <Modal.Footer>
-                              <div className="flex space-x-3">
-                                <Button
-                                  variant="secondary"
-                                  onClick={() => {
-                                    setClosureModalOpen(false);
-                                    setClosureTarget(null);
-                                    setClosureReason('');
-                                    setClosureDocument(null);
-                                    setClosureError('');
-                                  }}
-                                >
-                                  Cancel
-                                </Button>
-                                <Button
-                                  variant="danger"
-                                  onClick={handleCloseCaseSubmit}
-                                  loading={closeCaseMutation.isLoading}
-                                  disabled={!closureReason.trim()}
-                                >
-                                  Close Case
                                 </Button>
                               </div>
                             </Modal.Footer>
@@ -2228,6 +2181,21 @@ const Cases = () => {
                               title="Delete Case"
                             >
                               <DeleteIcon />
+                            </Button>
+                          )}
+
+                          </>
+                          )}
+
+                          {caseItem.status_name === 'closed' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewClosure(caseItem.id)}
+                              className="flex items-center justify-center shrink-0 px-3 py-2 border-0 hover:bg-gray-100 text-gray-600 hover:text-gray-800"
+                              title="Closure document"
+                            >
+                              <span className="text-xs font-medium whitespace-nowrap">📋 Closure document</span>
                             </Button>
                           )}
                         </div>
@@ -3156,6 +3124,175 @@ const Cases = () => {
             {workflowActionMutation.isLoading 
               ? (workflowActionType === 'approve' ? 'Approving...' : 'Rejecting...')
               : (workflowActionType === 'approve' ? 'Approve Case' : 'Reject Case')}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Case Closure Modal - single instance outside table */}
+      <Modal
+        isOpen={closureModalOpen}
+        onClose={() => {
+          setClosureModalOpen(false);
+          setClosureTarget(null);
+          setClosureReason('');
+          setClosureDocuments([]);
+          setClosureError('');
+        }}
+        title="Close Case"
+        size="md"
+      >
+        <div className="space-y-4">
+          {closureError && (
+            <Alert severity="error" className="border-2 border-red-500" role="alert">
+              <p className="break-words whitespace-normal font-medium">{closureError}</p>
+              <p className="text-sm mt-1">Check that you entered a reason and attached at least one document, then try again.</p>
+            </Alert>
+          )}
+          <Alert severity="warning">
+            <p className="break-words whitespace-normal">
+              You are about to close case <strong>{closureTarget?.caseNumber || ''}</strong>. This will change the case status to <strong>Closed</strong>.
+            </p>
+          </Alert>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Reason for Closure <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={closureReason}
+              onChange={(e) => setClosureReason(e.target.value)}
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+              placeholder="Please provide a reason for closing this case..."
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Supporting Documents <span className="text-red-500">*</span>
+            </label>
+            <p className="text-xs text-gray-500 mb-1">At least one document required. PDF, DOC, DOCX, XLS, XLSX, JPG, PNG up to 10MB each (max 10 files).</p>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-primary-400 transition-colors">
+              <div className="space-y-1 text-center">
+                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <label className="relative cursor-pointer rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none text-sm">
+                  <span>Upload files</span>
+                  <input
+                    type="file"
+                    className="sr-only"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                    multiple
+                    onChange={(e) => {
+                      addClosureDocuments(e.target.files ? Array.from(e.target.files) : []);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+            {closureDocuments.length > 0 && (
+              <ul className="mt-2 space-y-2">
+                {closureDocuments.map((file, index) => (
+                  <li key={index} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <svg className="w-5 h-5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-sm text-gray-700 truncate">{file.name}</span>
+                      <span className="text-xs text-gray-500 flex-shrink-0">({(file.size / 1024).toFixed(1)} KB)</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeClosureDocument(index)}
+                      className="text-red-500 hover:text-red-700 text-sm font-medium flex-shrink-0 ml-2"
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+        <Modal.Footer>
+          <div className="flex space-x-3">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setClosureModalOpen(false);
+                setClosureTarget(null);
+                setClosureReason('');
+                setClosureDocuments([]);
+                setClosureError('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleCloseCaseSubmit}
+              loading={closeCaseMutation.isLoading}
+              disabled={!closureReason.trim() || closureDocuments.length === 0}
+            >
+              Close Case
+            </Button>
+          </div>
+        </Modal.Footer>
+      </Modal>
+
+      {/* View Closure Modal - for closed cases */}
+      <Modal
+        isOpen={viewClosureModalOpen}
+        onClose={() => {
+          setViewClosureModalOpen(false);
+          setViewClosureCaseId(null);
+        }}
+        title="Case closure details"
+        size="md"
+      >
+        <div className="space-y-4">
+          {viewClosureLoading && <p className="text-gray-500">Loading...</p>}
+          {viewClosureData?.closure && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Reason for closure</label>
+                <p className="text-sm text-gray-800 whitespace-pre-wrap">{viewClosureData.closure.reason}</p>
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                <span>Closed by: <strong>{viewClosureData.closure.closed_by_name}</strong></span>
+                <span>Date: <strong>{viewClosureData.closure.created_at ? new Date(viewClosureData.closure.created_at).toLocaleString() : '—'}</strong></span>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Supporting documents</label>
+                {(viewClosureData.closure.documents && viewClosureData.closure.documents.length > 0) ? (
+                  <ul className="space-y-2">
+                    {viewClosureData.closure.documents.map((doc) => (
+                      <li key={doc.id} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
+                        <span className="text-sm text-gray-700 truncate flex-1">{doc.file_name}</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownloadClosureDocument(viewClosureCaseId, doc.id, doc.file_name)}
+                          className="ml-2 flex-shrink-0"
+                        >
+                          Download
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-gray-500">No documents on file.</p>
+                )}
+              </div>
+            </>
+          )}
+          {!viewClosureLoading && !viewClosureData?.closure && (
+            <p className="text-gray-500">No closure record found.</p>
+          )}
+        </div>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => { setViewClosureModalOpen(false); setViewClosureCaseId(null); }}>
+            Close
           </Button>
         </Modal.Footer>
       </Modal>
