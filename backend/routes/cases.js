@@ -5,6 +5,7 @@ const fs = require('fs');
 const { pool } = require('../config/database');
 const { authenticateToken, authorizeRoles, authorizeCaseAccess, canCreateCaseInStage, canFillCaseInStage, authorizePermission } = require('../middleware/auth');
 const { hasPermission, hasCaseAssignedOnly, canAccessAllCases } = require('../utils/permissionUtils');
+const { getActiveCasesForIts } = require('../utils/activeCasePerIts');
 const notificationService = require('../services/notificationService');
 const { v4: uuidv4 } = require('uuid');
 
@@ -200,7 +201,8 @@ router.get('/', authenticateToken, authorizeCasesList, async (req, res) => {
       search,
       jamiat_id,
       jamaat_id,
-      current_workflow_stage_id
+      current_workflow_stage_id,
+      is_duplicate
     } = req.query;
 
     const pageNum = parseInt(page, 10) || 1;
@@ -280,6 +282,18 @@ router.get('/', authenticateToken, authorizeCasesList, async (req, res) => {
     if (current_workflow_stage_id && current_workflow_stage_id.toString().trim() !== '') {
       whereConditions.push('c.current_workflow_stage_id = ?');
       queryParams.push(current_workflow_stage_id);
+    }
+
+    let isDuplicateColumnExists = false;
+    try {
+      const [colRows] = await pool.execute(`
+        SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cases' AND COLUMN_NAME = 'is_duplicate'
+      `);
+      isDuplicateColumnExists = colRows.length > 0;
+    } catch (e) { /* ignore */ }
+    if (isDuplicateColumnExists && (is_duplicate === '1' || is_duplicate === 'true')) {
+      whereConditions.push('COALESCE(c.is_duplicate, 0) = 1');
     }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
@@ -603,6 +617,27 @@ router.get('/', authenticateToken, authorizeCasesList, async (req, res) => {
       error: 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  }
+});
+
+// Read-only pre-check: does this ITS already have an active case? (for case registration UI)
+router.get('/its/:itsNumber/active', authenticateToken, async (req, res) => {
+  try {
+    const itsNumber = req.params.itsNumber;
+    if (!itsNumber || String(itsNumber).trim() === '') {
+      return res.status(400).json({ error: 'ITS number is required' });
+    }
+    const activeCases = await getActiveCasesForIts(itsNumber);
+    if (activeCases.length === 0) {
+      return res.json({ hasActiveCase: false, activeCases: [] });
+    }
+    res.json({
+      hasActiveCase: true,
+      activeCases: activeCases.map((c) => ({ id: c.id, case_number: c.case_number, status: c.status }))
+    });
+  } catch (err) {
+    console.error('ITS active case check error:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1136,6 +1171,26 @@ router.post('/', authenticateToken, authorizePermission('cases', 'create'), asyn
         ['draft']
       );
       finalStatusId = defaultStatus[0]?.id;
+    }
+
+    // Resolve ITS number for active-case-per-ITS check
+    let itsNumberForCheck = null;
+    if (applicant_data && applicant_data.its_number) {
+      itsNumberForCheck = applicant_data.its_number;
+    } else if (finalApplicantId) {
+      const [appRows] = await pool.execute('SELECT its_number FROM applicants WHERE id = ?', [finalApplicantId]);
+      if (appRows.length > 0) itsNumberForCheck = appRows[0].its_number;
+    }
+    if (itsNumberForCheck) {
+      const activeCases = await getActiveCasesForIts(itsNumberForCheck);
+      if (activeCases.length > 0) {
+        const existingCase = activeCases[0];
+        return res.status(409).json({
+          error: 'An active case already exists for this ITS number; please close it before creating a new case.',
+          existingCaseNumber: existingCase.case_number,
+          existingCaseId: existingCase.id
+        });
+      }
     }
 
     // Create case - use internal IDs if they were looked up, otherwise use external IDs from request

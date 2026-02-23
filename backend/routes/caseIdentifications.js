@@ -381,6 +381,19 @@ router.put('/:id/review', authenticateToken, authorizePermission('case_identific
       }
 
       // ── 2. Create case ──
+      // Enforce one active case per ITS: do not create a second case
+      const { getActiveCasesForIts } = require('../utils/activeCasePerIts');
+      const activeCasesForIts = await getActiveCasesForIts(record.its_number, connection);
+      if (activeCasesForIts.length > 0) {
+        await connection.rollback();
+        connection.release();
+        return res.status(409).json({
+          error: 'An active case already exists for this ITS number; cannot create another case.',
+          existingCaseNumber: activeCasesForIts[0].case_number,
+          existingCaseId: activeCasesForIts[0].id
+        });
+      }
+
       const caseTypeId = record.eligible_in;
 
       // Get case type name

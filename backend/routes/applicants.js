@@ -452,6 +452,7 @@ router.post('/', authenticateToken, authorizePermission('applicants', 'create'),
     // If case_data is provided, create case automatically
     let caseId = null;
     let caseNumber = null;
+    let skippedCaseReason = null;
     if (req.body.case_data) {
       const caseData = req.body.case_data;
       const { case_type_id, description, notes, status_id, roles, assigned_counselor_id, assigned_role, workflow_stage_id } = caseData;
@@ -465,6 +466,13 @@ router.post('/', authenticateToken, authorizePermission('applicants', 'create'),
           if (!canCreateCase) {
             console.log(`[Create Applicant] User ${req.user.id} (${req.user.role}) does not have cases:create permission, skipping case creation`);
           } else {
+            // Enforce one active case per ITS: do not create case if this ITS already has an active case
+            const { getActiveCasesForIts } = require('../utils/activeCasePerIts');
+            const activeCases = await getActiveCasesForIts(its_number);
+            if (activeCases.length > 0) {
+              console.log(`[Create Applicant] Skipping case creation for ITS ${its_number}: active case(s) already exist (e.g. ${activeCases[0].case_number})`);
+              skippedCaseReason = 'An active case already exists for this ITS number; case was not created.';
+            } else {
             // Get the first workflow stage (draft stage) if not provided
             let stageId = workflow_stage_id;
             if (!stageId) {
@@ -531,6 +539,7 @@ router.post('/', authenticateToken, authorizePermission('applicants', 'create'),
 
               console.log(`[Create Applicant] Auto-created case with ID: ${caseId}, Number: ${caseNumber}`);
             }
+            }
           }
         } catch (caseError) {
           console.error('Error creating case from applicant endpoint:', caseError);
@@ -548,6 +557,9 @@ router.post('/', authenticateToken, authorizePermission('applicants', 'create'),
       response.caseId = caseId;
       response.caseNumber = caseNumber;
       response.message = 'Applicant and case created successfully';
+    }
+    if (skippedCaseReason) {
+      response.skippedCaseReason = skippedCaseReason;
     }
 
     res.status(201).json(response);
@@ -987,6 +999,15 @@ router.post('/bulk-import', authenticateToken, authorizePermission('applicants',
         }
 
         try {
+          // Enforce one active case per ITS: skip if this ITS already has an active case (e.g. from another source)
+          const { getActiveCasesForIts } = require('../utils/activeCasePerIts');
+          const activeCases = await getActiveCasesForIts(trimmedItsNumber, connection);
+          if (activeCases.length > 0) {
+            skipped++;
+            errors.push({ its_number: trimmedItsNumber, error: 'Active case already exists for this ITS', existingCaseNumber: activeCases[0].case_number });
+            continue;
+          }
+
           // Insert applicant with only ITS number
           const [applicantResult] = await connection.execute(`
             INSERT INTO applicants (its_number, full_name, age, gender, phone, email, photo, address, jamiat_name, jamaat_name, jamiat_id, jamaat_id)
@@ -1328,6 +1349,15 @@ router.post('/import-excel', authenticateToken, authorizePermission('applicants'
         }
 
         try {
+          // Enforce one active case per ITS: skip if this ITS already has an active case
+          const { getActiveCasesForIts } = require('../utils/activeCasePerIts');
+          const activeCasesExcel = await getActiveCasesForIts(itsNumber, connection);
+          if (activeCasesExcel.length > 0) {
+            skipped++;
+            errors.push({ its_number: itsNumber, error: 'Active case already exists for this ITS', existingCaseNumber: activeCasesExcel[0].case_number });
+            continue;
+          }
+
           // Insert applicant with only ITS number
           const [applicantResult] = await connection.execute(`
             INSERT INTO applicants (its_number, full_name, age, gender, phone, email, photo, address, jamiat_name, jamaat_name, jamiat_id, jamaat_id)
