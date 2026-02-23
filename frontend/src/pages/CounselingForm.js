@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { useQuery, useMutation } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import axios from 'axios';
 import { 
   Button, 
@@ -98,7 +98,8 @@ const CounselingForm = () => {
   
   // Check if user has permission to view/add comments
   const { hasPermission: canComment } = usePermission('counseling_forms', 'comment');
-  
+  const queryClient = useQueryClient();
+
   // Define workflow steps and tabs (used in multiple places)
   const tabs = [
     { id: 'personal', label: 'Personal Details', icon: '👤' },
@@ -572,7 +573,7 @@ const CounselingForm = () => {
   };
 
   const updateQhGroupField = (groupId, fieldName, value) => {
-    setQhGroups(qhGroups.map(group => 
+    setQhGroups(prev => prev.map(group =>
       group.id === groupId ? { ...group, [fieldName]: value } : group
     ));
   };
@@ -1991,6 +1992,7 @@ const CounselingForm = () => {
 
       // Upload files for each attachment type
       const uploadPromises = [];
+      const uploadTasks = []; // { type: 'single'|'multiple', fieldKey, currentFiles (for multi) }
       const deletePromises = [];
 
       // Function to queue files for deletion
@@ -2032,19 +2034,13 @@ const CounselingForm = () => {
 
       // Handle work place photo files (multiple)
       if (attachmentsData.work_place_photo_files?.length > 0) {
-        // Only upload new files (files without id property)
         const newFiles = attachmentsData.work_place_photo_files.filter(file => !file.id);
         if (newFiles.length > 0) {
           const formData_work = new FormData();
-          newFiles.forEach(file => {
-            formData_work.append('files', file);
-          });
+          newFiles.forEach(file => formData_work.append('files', file));
           formData_work.append('stage', 'work_place_photo');
-          uploadPromises.push(
-            axios.post(`/api/attachments/upload-multiple/${caseId}`, formData_work, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-            })
-          );
+          uploadPromises.push(axios.post(`/api/attachments/upload-multiple/${caseId}`, formData_work, { headers: { 'Content-Type': 'multipart/form-data' } }));
+          uploadTasks.push({ type: 'multiple', fieldKey: 'work_place_photo_files', currentFiles: attachmentsData.work_place_photo_files });
         }
       }
 
@@ -2053,28 +2049,19 @@ const CounselingForm = () => {
         const formData_quotation = new FormData();
         formData_quotation.append('file', attachmentsData.quotation_file);
         formData_quotation.append('stage', 'quotation');
-        uploadPromises.push(
-          axios.post(`/api/attachments/upload/${caseId}`, formData_quotation, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          })
-        );
+        uploadPromises.push(axios.post(`/api/attachments/upload/${caseId}`, formData_quotation, { headers: { 'Content-Type': 'multipart/form-data' } }));
+        uploadTasks.push({ type: 'single', fieldKey: 'quotation_file' });
       }
 
       // Handle product brochure files (multiple)
       if (attachmentsData.product_brochure_files?.length > 0) {
-        // Only upload new files (files without id property)
         const newFiles = attachmentsData.product_brochure_files.filter(file => !file.id);
         if (newFiles.length > 0) {
           const formData_brochure = new FormData();
-          newFiles.forEach(file => {
-            formData_brochure.append('files', file);
-          });
+          newFiles.forEach(file => formData_brochure.append('files', file));
           formData_brochure.append('stage', 'product_brochure');
-          uploadPromises.push(
-            axios.post(`/api/attachments/upload-multiple/${caseId}`, formData_brochure, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-            })
-          );
+          uploadPromises.push(axios.post(`/api/attachments/upload-multiple/${caseId}`, formData_brochure, { headers: { 'Content-Type': 'multipart/form-data' } }));
+          uploadTasks.push({ type: 'multiple', fieldKey: 'product_brochure_files', currentFiles: attachmentsData.product_brochure_files });
         }
       }
 
@@ -2083,11 +2070,8 @@ const CounselingForm = () => {
         const formData_tax = new FormData();
         formData_tax.append('file', attachmentsData.income_tax_return_file);
         formData_tax.append('stage', 'income_tax_return');
-        uploadPromises.push(
-          axios.post(`/api/attachments/upload/${caseId}`, formData_tax, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          })
-        );
+        uploadPromises.push(axios.post(`/api/attachments/upload/${caseId}`, formData_tax, { headers: { 'Content-Type': 'multipart/form-data' } }));
+        uploadTasks.push({ type: 'single', fieldKey: 'income_tax_return_file' });
       }
 
       // Handle financial statements file (single)
@@ -2095,11 +2079,8 @@ const CounselingForm = () => {
         const formData_financial = new FormData();
         formData_financial.append('file', attachmentsData.financial_statements_file);
         formData_financial.append('stage', 'financial_statements');
-        uploadPromises.push(
-          axios.post(`/api/attachments/upload/${caseId}`, formData_financial, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          })
-        );
+        uploadPromises.push(axios.post(`/api/attachments/upload/${caseId}`, formData_financial, { headers: { 'Content-Type': 'multipart/form-data' } }));
+        uploadTasks.push({ type: 'single', fieldKey: 'financial_statements_file' });
       }
 
       // Handle cancelled cheque file (single)
@@ -2107,11 +2088,8 @@ const CounselingForm = () => {
         const formData_cheque = new FormData();
         formData_cheque.append('file', attachmentsData.cancelled_cheque_file);
         formData_cheque.append('stage', 'cancelled_cheque');
-        uploadPromises.push(
-          axios.post(`/api/attachments/upload/${caseId}`, formData_cheque, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          })
-        );
+        uploadPromises.push(axios.post(`/api/attachments/upload/${caseId}`, formData_cheque, { headers: { 'Content-Type': 'multipart/form-data' } }));
+        uploadTasks.push({ type: 'single', fieldKey: 'cancelled_cheque_file' });
       }
 
       // Handle PAN card file (single)
@@ -2119,11 +2097,8 @@ const CounselingForm = () => {
         const formData_pan = new FormData();
         formData_pan.append('file', attachmentsData.pan_card_file);
         formData_pan.append('stage', 'pan_card');
-        uploadPromises.push(
-          axios.post(`/api/attachments/upload/${caseId}`, formData_pan, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          })
-        );
+        uploadPromises.push(axios.post(`/api/attachments/upload/${caseId}`, formData_pan, { headers: { 'Content-Type': 'multipart/form-data' } }));
+        uploadTasks.push({ type: 'single', fieldKey: 'pan_card_file' });
       }
 
       // Handle Aadhar card file (single)
@@ -2131,41 +2106,45 @@ const CounselingForm = () => {
         const formData_aadhar = new FormData();
         formData_aadhar.append('file', attachmentsData.aadhar_card_file);
         formData_aadhar.append('stage', 'aadhar_card');
-        uploadPromises.push(
-          axios.post(`/api/attachments/upload/${caseId}`, formData_aadhar, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          })
-        );
+        uploadPromises.push(axios.post(`/api/attachments/upload/${caseId}`, formData_aadhar, { headers: { 'Content-Type': 'multipart/form-data' } }));
+        uploadTasks.push({ type: 'single', fieldKey: 'aadhar_card_file' });
       }
 
       // Handle other documents files (multiple)
-        if (attachmentsData.other_documents_files?.length > 0) {
-          // Only upload new files (files without id property)
-          const newFiles = attachmentsData.other_documents_files.filter(file => !file.id);
+      if (attachmentsData.other_documents_files?.length > 0) {
+        const newFiles = attachmentsData.other_documents_files.filter(file => !file.id);
         if (newFiles.length > 0) {
           const formData_other = new FormData();
-          newFiles.forEach(file => {
-            formData_other.append('files', file);
-          });
+          newFiles.forEach(file => formData_other.append('files', file));
           formData_other.append('stage', 'other_documents');
-          uploadPromises.push(
-            axios.post(`/api/attachments/upload-multiple/${caseId}`, formData_other, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-            })
-          );
+          uploadPromises.push(axios.post(`/api/attachments/upload-multiple/${caseId}`, formData_other, { headers: { 'Content-Type': 'multipart/form-data' } }));
+          uploadTasks.push({ type: 'multiple', fieldKey: 'other_documents_files', currentFiles: attachmentsData.other_documents_files });
         }
       }
 
-      // Wait for all file operations (uploads and deletions) to complete
-      const allPromises = [...uploadPromises, ...deletePromises];
-      
-      if (allPromises.length > 0) {
-        await Promise.all(allPromises);
-        
-        // Show success message if files were deleted
-        if (deletePromises.length > 0) {
-          setSuccess(`${deletePromises.length} file(s) deleted successfully`);
-        }
+      // Run deletes first, then uploads so we can use upload responses to update form state
+      if (deletePromises.length > 0) {
+        await Promise.all(deletePromises);
+        setSuccess(`${deletePromises.length} file(s) deleted successfully`);
+      }
+      if (uploadPromises.length > 0) {
+        const uploadResults = await Promise.all(uploadPromises);
+        uploadTasks.forEach((task, i) => {
+          const res = uploadResults[i]?.data;
+          if (!res) return;
+          if (task.type === 'multiple' && res.files?.length) {
+            const currentFiles = task.currentFiles || [];
+            let fileIndex = 0;
+            const newArray = currentFiles.map(f => {
+              if (f.id) return f;
+              const uploaded = res.files[fileIndex++];
+              return uploaded ? { id: uploaded.attachmentId, name: uploaded.fileName, size: uploaded.fileSize, type: uploaded.fileType, path: uploaded.filePath } : f;
+            });
+            setValue(`attachments.${task.fieldKey}`, newArray);
+          } else if (task.type === 'single' && res.attachmentId) {
+            setValue(`attachments.${task.fieldKey}`, { id: res.attachmentId, name: res.fileName, size: res.fileSize, type: res.fileType, path: res.filePath });
+          }
+        });
       }
 
       // Now save the attachment flags (checkboxes)
@@ -2182,9 +2161,7 @@ const CounselingForm = () => {
       };
 
       await saveSectionMutation.mutateAsync({ section: 'attachments', data: attachmentFlags });
-      
-      // Note: The attachments query will automatically refresh when the component re-renders
-      // or when the user navigates back to the page, showing the updated file list
+      queryClient.invalidateQueries(['attachments', caseId]);
     } catch (error) {
       console.error('Error saving attachments:', error);
       throw error;
@@ -4525,36 +4502,56 @@ const CounselingForm = () => {
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={qh1?.year1 || ''}
                                     onChange={(e) => updateQhGroupField(qh1.id, 'year1', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={qh1?.year2 || ''}
                                     onChange={(e) => updateQhGroupField(qh1.id, 'year2', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={qh1?.year3 || ''}
                                     onChange={(e) => updateQhGroupField(qh1.id, 'year3', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={qh1?.year4 || ''}
                                     onChange={(e) => updateQhGroupField(qh1.id, 'year4', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={qh1?.year5 || ''}
                                     onChange={(e) => updateQhGroupField(qh1.id, 'year5', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
@@ -4572,36 +4569,56 @@ const CounselingForm = () => {
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={qh2?.year1 || ''}
                                     onChange={(e) => updateQhGroupField(qh2.id, 'year1', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={qh2?.year2 || ''}
                                     onChange={(e) => updateQhGroupField(qh2.id, 'year2', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={qh2?.year3 || ''}
                                     onChange={(e) => updateQhGroupField(qh2.id, 'year3', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={qh2?.year4 || ''}
                                     onChange={(e) => updateQhGroupField(qh2.id, 'year4', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={qh2?.year5 || ''}
                                     onChange={(e) => updateQhGroupField(qh2.id, 'year5', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
@@ -4619,36 +4636,56 @@ const CounselingForm = () => {
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={qh3?.year1 || ''}
                                     onChange={(e) => updateQhGroupField(qh3.id, 'year1', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={qh3?.year2 || ''}
                                     onChange={(e) => updateQhGroupField(qh3.id, 'year2', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={qh3?.year3 || ''}
                                     onChange={(e) => updateQhGroupField(qh3.id, 'year3', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={qh3?.year4 || ''}
                                     onChange={(e) => updateQhGroupField(qh3.id, 'year4', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={qh3?.year5 || ''}
                                     onChange={(e) => updateQhGroupField(qh3.id, 'year5', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
@@ -4666,36 +4703,56 @@ const CounselingForm = () => {
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={localQh?.year1 || ''}
                                     onChange={(e) => updateQhGroupField(localQh.id, 'year1', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={localQh?.year2 || ''}
                                     onChange={(e) => updateQhGroupField(localQh.id, 'year2', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={localQh?.year3 || ''}
                                     onChange={(e) => updateQhGroupField(localQh.id, 'year3', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={localQh?.year4 || ''}
                                     onChange={(e) => updateQhGroupField(localQh.id, 'year4', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
                                 <td className="bg-white border border-gray-300 px-4 py-4 align-top">
                                   <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="any"
                                     value={localQh?.year5 || ''}
                                     onChange={(e) => updateQhGroupField(localQh.id, 'year5', e.target.value)}
+                                    onKeyPress={handleDecimalInput}
                                     className="w-full"
                                   />
                                 </td>
@@ -7417,33 +7474,51 @@ const CounselingForm = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                               {file.id && (
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    try {
-                                      const response = await axios.get(`/api/attachments/download/${file.id}`, {
-                                        responseType: 'blob'
-                                      });
-                                      
-                                      // Get the content type from the response headers
-                                      const contentType = response.headers['content-type'] || 'application/octet-stream';
-                                      
-                                      // Create blob with the correct MIME type
-                                      const blob = new Blob([response.data], { type: contentType });
-                                      const url = window.URL.createObjectURL(blob);
-                                      window.open(url, '_blank');
-                                      
-                                      // Clean up the URL object after a delay
-                                      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                                    } catch (error) {
-                                      console.error('Error downloading file:', error);
-                                      setError('Failed to download file');
-                                    }
-                                  }}
-                                  className="text-blue-600 hover:text-blue-800 text-sm"
-                                >
-                                  View
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const response = await axios.get(`/api/attachments/download/${file.id}`, {
+                                          responseType: 'blob'
+                                        });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        window.open(url, '_blank');
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (error) {
+                                        console.error('Error downloading file:', error);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    View
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const response = await axios.get(`/api/attachments/download/${file.id}`, { responseType: 'blob' });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = file.name || 'download';
+                                        a.click();
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (err) {
+                                        console.error('Error downloading file:', err);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    Download
+                                  </button>
+                                </>
                               )}
                               <button
                                 type="button"
@@ -7564,34 +7639,53 @@ const CounselingForm = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                               {watch('attachments.quotation_file').id && (
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    try {
-                                      const fileId = watch('attachments.quotation_file').id;
-                                      const response = await axios.get(`/api/attachments/download/${fileId}`, {
-                                        responseType: 'blob'
-                                      });
-                                      
-                                      // Get the content type from the response headers
-                                      const contentType = response.headers['content-type'] || 'application/octet-stream';
-                                      
-                                      // Create blob with the correct MIME type
-                                      const blob = new Blob([response.data], { type: contentType });
-                                      const url = window.URL.createObjectURL(blob);
-                                      window.open(url, '_blank');
-                                      
-                                      // Clean up the URL object after a delay
-                                      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                                    } catch (error) {
-                                      console.error('Error downloading file:', error);
-                                      setError('Failed to download file');
-                                    }
-                                  }}
-                                  className="text-blue-600 hover:text-blue-800 text-sm"
-                                >
-                                  View
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const fileId = watch('attachments.quotation_file').id;
+                                        const response = await axios.get(`/api/attachments/download/${fileId}`, {
+                                          responseType: 'blob'
+                                        });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        window.open(url, '_blank');
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (error) {
+                                        console.error('Error downloading file:', error);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    View
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const quo = watch('attachments.quotation_file');
+                                        const response = await axios.get(`/api/attachments/download/${quo.id}`, { responseType: 'blob' });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = quo.name || 'download';
+                                        a.click();
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (err) {
+                                        console.error('Error downloading file:', err);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    Download
+                                  </button>
+                                </>
                               )}
                               <button
                                 type="button"
@@ -7661,33 +7755,51 @@ const CounselingForm = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                               {file.id && (
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    try {
-                                      const response = await axios.get(`/api/attachments/download/${file.id}`, {
-                                        responseType: 'blob'
-                                      });
-                                      
-                                      // Get the content type from the response headers
-                                      const contentType = response.headers['content-type'] || 'application/octet-stream';
-                                      
-                                      // Create blob with the correct MIME type
-                                      const blob = new Blob([response.data], { type: contentType });
-                                      const url = window.URL.createObjectURL(blob);
-                                      window.open(url, '_blank');
-                                      
-                                      // Clean up the URL object after a delay
-                                      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                                    } catch (error) {
-                                      console.error('Error downloading file:', error);
-                                      setError('Failed to download file');
-                                    }
-                                  }}
-                                  className="text-blue-600 hover:text-blue-800 text-sm"
-                                >
-                                  View
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const response = await axios.get(`/api/attachments/download/${file.id}`, {
+                                          responseType: 'blob'
+                                        });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        window.open(url, '_blank');
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (error) {
+                                        console.error('Error downloading file:', error);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    View
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const response = await axios.get(`/api/attachments/download/${file.id}`, { responseType: 'blob' });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = file.name || 'download';
+                                        a.click();
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (err) {
+                                        console.error('Error downloading file:', err);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    Download
+                                  </button>
+                                </>
                               )}
                               <button
                                 type="button"
@@ -7812,34 +7924,51 @@ const CounselingForm = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                               {watch('attachments.income_tax_return_file').id && (
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    try {
-                                      const fileId = watch('attachments.income_tax_return_file').id;
-                                      const response = await axios.get(`/api/attachments/download/${fileId}`, {
-                                        responseType: 'blob'
-                                      });
-                                      
-                                      // Get the content type from the response headers
-                                      const contentType = response.headers['content-type'] || 'application/octet-stream';
-                                      
-                                      // Create blob with the correct MIME type
-                                      const blob = new Blob([response.data], { type: contentType });
-                                      const url = window.URL.createObjectURL(blob);
-                                      window.open(url, '_blank');
-                                      
-                                      // Clean up the URL object after a delay
-                                      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                                    } catch (error) {
-                                      console.error('Error downloading file:', error);
-                                      setError('Failed to download file');
-                                    }
-                                  }}
-                                  className="text-blue-600 hover:text-blue-800 text-sm"
-                                >
-                                  View
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const fileId = watch('attachments.income_tax_return_file').id;
+                                        const response = await axios.get(`/api/attachments/download/${fileId}`, { responseType: 'blob' });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        window.open(url, '_blank');
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (error) {
+                                        console.error('Error downloading file:', error);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    View
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const f = watch('attachments.income_tax_return_file');
+                                        const response = await axios.get(`/api/attachments/download/${f.id}`, { responseType: 'blob' });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = f.name || 'download';
+                                        a.click();
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (err) {
+                                        console.error('Error downloading file:', err);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    Download
+                                  </button>
+                                </>
                               )}
                               <button
                                 type="button"
@@ -7896,34 +8025,51 @@ const CounselingForm = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                               {watch('attachments.financial_statements_file').id && (
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    try {
-                                      const fileId = watch('attachments.financial_statements_file').id;
-                                      const response = await axios.get(`/api/attachments/download/${fileId}`, {
-                                        responseType: 'blob'
-                                      });
-                                      
-                                      // Get the content type from the response headers
-                                      const contentType = response.headers['content-type'] || 'application/octet-stream';
-                                      
-                                      // Create blob with the correct MIME type
-                                      const blob = new Blob([response.data], { type: contentType });
-                                      const url = window.URL.createObjectURL(blob);
-                                      window.open(url, '_blank');
-                                      
-                                      // Clean up the URL object after a delay
-                                      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                                    } catch (error) {
-                                      console.error('Error downloading file:', error);
-                                      setError('Failed to download file');
-                                    }
-                                  }}
-                                  className="text-blue-600 hover:text-blue-800 text-sm"
-                                >
-                                  View
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const fileId = watch('attachments.financial_statements_file').id;
+                                        const response = await axios.get(`/api/attachments/download/${fileId}`, { responseType: 'blob' });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        window.open(url, '_blank');
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (error) {
+                                        console.error('Error downloading file:', error);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    View
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const f = watch('attachments.financial_statements_file');
+                                        const response = await axios.get(`/api/attachments/download/${f.id}`, { responseType: 'blob' });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = f.name || 'download';
+                                        a.click();
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (err) {
+                                        console.error('Error downloading file:', err);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    Download
+                                  </button>
+                                </>
                               )}
                               <button
                                 type="button"
@@ -7980,34 +8126,51 @@ const CounselingForm = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                               {watch('attachments.cancelled_cheque_file').id && (
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    try {
-                                      const fileId = watch('attachments.cancelled_cheque_file').id;
-                                      const response = await axios.get(`/api/attachments/download/${fileId}`, {
-                                        responseType: 'blob'
-                                      });
-                                      
-                                      // Get the content type from the response headers
-                                      const contentType = response.headers['content-type'] || 'application/octet-stream';
-                                      
-                                      // Create blob with the correct MIME type
-                                      const blob = new Blob([response.data], { type: contentType });
-                                      const url = window.URL.createObjectURL(blob);
-                                      window.open(url, '_blank');
-                                      
-                                      // Clean up the URL object after a delay
-                                      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                                    } catch (error) {
-                                      console.error('Error downloading file:', error);
-                                      setError('Failed to download file');
-                                    }
-                                  }}
-                                  className="text-blue-600 hover:text-blue-800 text-sm"
-                                >
-                                  View
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const fileId = watch('attachments.cancelled_cheque_file').id;
+                                        const response = await axios.get(`/api/attachments/download/${fileId}`, { responseType: 'blob' });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        window.open(url, '_blank');
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (error) {
+                                        console.error('Error downloading file:', error);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    View
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const f = watch('attachments.cancelled_cheque_file');
+                                        const response = await axios.get(`/api/attachments/download/${f.id}`, { responseType: 'blob' });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = f.name || 'download';
+                                        a.click();
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (err) {
+                                        console.error('Error downloading file:', err);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    Download
+                                  </button>
+                                </>
                               )}
                               <button
                                 type="button"
@@ -8064,34 +8227,51 @@ const CounselingForm = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                               {watch('attachments.pan_card_file').id && (
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    try {
-                                      const fileId = watch('attachments.pan_card_file').id;
-                                      const response = await axios.get(`/api/attachments/download/${fileId}`, {
-                                        responseType: 'blob'
-                                      });
-                                      
-                                      // Get the content type from the response headers
-                                      const contentType = response.headers['content-type'] || 'application/octet-stream';
-                                      
-                                      // Create blob with the correct MIME type
-                                      const blob = new Blob([response.data], { type: contentType });
-                                      const url = window.URL.createObjectURL(blob);
-                                      window.open(url, '_blank');
-                                      
-                                      // Clean up the URL object after a delay
-                                      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                                    } catch (error) {
-                                      console.error('Error downloading file:', error);
-                                      setError('Failed to download file');
-                                    }
-                                  }}
-                                  className="text-blue-600 hover:text-blue-800 text-sm"
-                                >
-                                  View
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const fileId = watch('attachments.pan_card_file').id;
+                                        const response = await axios.get(`/api/attachments/download/${fileId}`, { responseType: 'blob' });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        window.open(url, '_blank');
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (error) {
+                                        console.error('Error downloading file:', error);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    View
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const f = watch('attachments.pan_card_file');
+                                        const response = await axios.get(`/api/attachments/download/${f.id}`, { responseType: 'blob' });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = f.name || 'download';
+                                        a.click();
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (err) {
+                                        console.error('Error downloading file:', err);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    Download
+                                  </button>
+                                </>
                               )}
                               <button
                                 type="button"
@@ -8148,34 +8328,51 @@ const CounselingForm = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                               {watch('attachments.aadhar_card_file').id && (
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    try {
-                                      const fileId = watch('attachments.aadhar_card_file').id;
-                                      const response = await axios.get(`/api/attachments/download/${fileId}`, {
-                                        responseType: 'blob'
-                                      });
-                                      
-                                      // Get the content type from the response headers
-                                      const contentType = response.headers['content-type'] || 'application/octet-stream';
-                                      
-                                      // Create blob with the correct MIME type
-                                      const blob = new Blob([response.data], { type: contentType });
-                                      const url = window.URL.createObjectURL(blob);
-                                      window.open(url, '_blank');
-                                      
-                                      // Clean up the URL object after a delay
-                                      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                                    } catch (error) {
-                                      console.error('Error downloading file:', error);
-                                      setError('Failed to download file');
-                                    }
-                                  }}
-                                  className="text-blue-600 hover:text-blue-800 text-sm"
-                                >
-                                  View
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const fileId = watch('attachments.aadhar_card_file').id;
+                                        const response = await axios.get(`/api/attachments/download/${fileId}`, { responseType: 'blob' });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        window.open(url, '_blank');
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (error) {
+                                        console.error('Error downloading file:', error);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    View
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const f = watch('attachments.aadhar_card_file');
+                                        const response = await axios.get(`/api/attachments/download/${f.id}`, { responseType: 'blob' });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = f.name || 'download';
+                                        a.click();
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (err) {
+                                        console.error('Error downloading file:', err);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    Download
+                                  </button>
+                                </>
                               )}
                               <button
                                 type="button"
@@ -8232,33 +8429,51 @@ const CounselingForm = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                               {file.id && (
-                                <button
-                                  type="button"
-                                  onClick={async () => {
-                                    try {
-                                      const response = await axios.get(`/api/attachments/download/${file.id}`, {
-                                        responseType: 'blob'
-                                      });
-                                      
-                                      // Get the content type from the response headers
-                                      const contentType = response.headers['content-type'] || 'application/octet-stream';
-                                      
-                                      // Create blob with the correct MIME type
-                                      const blob = new Blob([response.data], { type: contentType });
-                                      const url = window.URL.createObjectURL(blob);
-                                      window.open(url, '_blank');
-                                      
-                                      // Clean up the URL object after a delay
-                                      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                                    } catch (error) {
-                                      console.error('Error downloading file:', error);
-                                      setError('Failed to download file');
-                                    }
-                                  }}
-                                  className="text-blue-600 hover:text-blue-800 text-sm"
-                                >
-                                  View
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const response = await axios.get(`/api/attachments/download/${file.id}`, {
+                                          responseType: 'blob'
+                                        });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        window.open(url, '_blank');
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (error) {
+                                        console.error('Error downloading file:', error);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    View
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        const response = await axios.get(`/api/attachments/download/${file.id}`, { responseType: 'blob' });
+                                        const contentType = response.headers['content-type'] || 'application/octet-stream';
+                                        const blob = new Blob([response.data], { type: contentType });
+                                        const url = window.URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = file.name || 'download';
+                                        a.click();
+                                        setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                                      } catch (err) {
+                                        console.error('Error downloading file:', err);
+                                        setError('Failed to download file');
+                                      }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    Download
+                                  </button>
+                                </>
                               )}
                               <button
                                 type="button"
