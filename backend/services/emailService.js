@@ -95,7 +95,7 @@ class EmailService {
               <p><strong>Case Number:</strong> ${caseData.case_number}</p>
               <p><strong>Applicant:</strong> ${caseData.applicant_first_name} ${caseData.applicant_last_name}</p>
               <p><strong>ITS Number:</strong> ${caseData.its_number}</p>
-              <p><strong>Case Type:</strong> ${caseData.case_type.toUpperCase()}</p>
+              <p><strong>Case Type:</strong> ${(caseData.case_type_name || caseData.case_type || '').toString().toUpperCase()}</p>
             </div>
             
             <div class="status-change">
@@ -131,7 +131,7 @@ class EmailService {
       Case Number: ${caseData.case_number}
       Applicant: ${caseData.applicant_first_name} ${caseData.applicant_last_name}
       ITS Number: ${caseData.its_number}
-      Case Type: ${caseData.case_type.toUpperCase()}
+      Case Type: ${(caseData.case_type_name || caseData.case_type || '').toString().toUpperCase()}
       
       Status Change:
       From: ${statusLabels[fromStatus] || 'N/A'}
@@ -182,7 +182,7 @@ class EmailService {
               <p><strong>Case Number:</strong> ${caseData.case_number}</p>
               <p><strong>Applicant:</strong> ${caseData.applicant_first_name} ${caseData.applicant_last_name}</p>
               <p><strong>ITS Number:</strong> ${caseData.its_number}</p>
-              <p><strong>Case Type:</strong> ${caseData.case_type.toUpperCase()}</p>
+              <p><strong>Case Type:</strong> ${(caseData.case_type_name || caseData.case_type || '').toString().toUpperCase()}</p>
               <p><strong>Assigned by:</strong> ${assignedBy.first_name} ${assignedBy.last_name}</p>
             </div>
             
@@ -212,7 +212,7 @@ class EmailService {
       Case Number: ${caseData.case_number}
       Applicant: ${caseData.applicant_first_name} ${caseData.applicant_last_name}
       ITS Number: ${caseData.its_number}
-      Case Type: ${caseData.case_type.toUpperCase()}
+      Case Type: ${(caseData.case_type_name || caseData.case_type || '').toString().toUpperCase()}
       Assigned by: ${assignedBy.first_name} ${assignedBy.last_name}
       
       Please log in to the system to begin working on this case.
@@ -259,7 +259,7 @@ class EmailService {
               <p><strong>Case Number:</strong> ${caseData.case_number}</p>
               <p><strong>Applicant:</strong> ${caseData.applicant_first_name} ${caseData.applicant_last_name}</p>
               <p><strong>ITS Number:</strong> ${caseData.its_number}</p>
-              <p><strong>Case Type:</strong> ${caseData.case_type.toUpperCase()}</p>
+              <p><strong>Case Type:</strong> ${(caseData.case_type_name || caseData.case_type || '').toString().toUpperCase()}</p>
             </div>
             
             <p>The case is now ready for review. Please log in to the system to proceed with the next steps.</p>
@@ -288,7 +288,7 @@ class EmailService {
       Case Number: ${caseData.case_number}
       Applicant: ${caseData.applicant_first_name} ${caseData.applicant_last_name}
       ITS Number: ${caseData.its_number}
-      Case Type: ${caseData.case_type.toUpperCase()}
+      Case Type: ${(caseData.case_type_name || caseData.case_type || '').toString().toUpperCase()}
       
       The case is now ready for review. Please log in to the system to proceed.
       ${process.env.FRONTEND_URL}/cases/${caseData.id}

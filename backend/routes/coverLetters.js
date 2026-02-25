@@ -14,10 +14,11 @@ router.post('/generate/:caseId', authenticateToken, authorizeCaseAccess, async (
   try {
     const { caseId } = req.params;
 
-    // Get case and applicant details
+    // Get case and applicant details (case type from case_types JOIN for new case types)
     const [cases] = await pool.execute(`
       SELECT 
         c.*,
+        ct.name AS case_type_name,
         a.first_name, a.last_name, a.father_name, a.mother_name,
         a.date_of_birth, a.gender, a.marital_status, a.phone, a.email,
         a.address, a.mauze, a.city, a.state, a.postal_code, a.its_number,
@@ -25,6 +26,7 @@ router.post('/generate/:caseId', authenticateToken, authorizeCaseAccess, async (
         counselor.first_name as counselor_first_name, counselor.last_name as counselor_last_name
       FROM cases c
       JOIN applicants a ON c.applicant_id = a.id
+      LEFT JOIN case_types ct ON c.case_type_id = ct.id
       LEFT JOIN users dcm ON c.roles = dcm.id
       LEFT JOIN users counselor ON c.assigned_counselor_id = counselor.id
       WHERE c.id = ?
@@ -189,9 +191,10 @@ function generateCoverLetterContent(doc, caseData, formData) {
      .text('COVER LETTER', 50, 100, { align: 'center' });
 
   // Case Information
+  const caseTypeLabel = (caseData.case_type_name || caseData.case_type || '').toString().toUpperCase();
   doc.fontSize(12)
      .text(`Case Number: ${caseData.case_number}`, 50, 150)
-     .text(`Case Type: ${caseData.case_type.toUpperCase()}`, 50, 170)
+     .text(`Case Type: ${caseTypeLabel}`, 50, 170)
      .text(`Date: ${new Date().toLocaleDateString()}`, 50, 190);
 
   // Applicant Information

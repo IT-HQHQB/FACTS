@@ -196,6 +196,7 @@ router.get('/', authenticateToken, authorizeCasesList, async (req, res) => {
       limit = 10, 
       status, 
       case_type, 
+      case_type_id,
       assigned_roles, 
       assigned_counselor_id,
       search,
@@ -248,8 +249,12 @@ router.get('/', authenticateToken, authorizeCasesList, async (req, res) => {
       queryParams.push(status.trim());
     }
 
-    if (case_type && typeof case_type === 'string' && case_type.trim() !== '') {
-      whereConditions.push('c.case_type = ?');
+    // Filter by case type: use case_type_id (preferred) or case_type (name via JOIN)
+    if (case_type_id && !isNaN(parseInt(case_type_id, 10))) {
+      whereConditions.push('c.case_type_id = ?');
+      queryParams.push(parseInt(case_type_id, 10));
+    } else if (case_type && typeof case_type === 'string' && case_type.trim() !== '') {
+      whereConditions.push('ct.name = ?');
       queryParams.push(case_type.trim());
     }
 
@@ -299,10 +304,12 @@ router.get('/', authenticateToken, authorizeCasesList, async (req, res) => {
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
     // Get total count (use a copy of queryParams since we'll add LIMIT/OFFSET later)
+    // Include case_types JOIN when filtering by case type name (ct)
     const countQuery = `
       SELECT COUNT(*) as total 
       FROM cases c 
       JOIN applicants a ON c.applicant_id = a.id 
+      LEFT JOIN case_types ct ON c.case_type_id = ct.id
       LEFT JOIN counseling_forms cf ON c.id = cf.case_id
       ${whereClause}
     `;

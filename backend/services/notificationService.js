@@ -17,15 +17,17 @@ class NotificationService {
 
   async sendCaseStatusNotification(caseId, fromStatus, toStatus, changedBy, comments = '') {
     try {
-      // Get case details
+      // Get case details (include case_type_name from case_types for new case types)
       const [cases] = await pool.execute(`
         SELECT 
           c.*,
+          ct.name AS case_type_name,
           a.first_name as applicant_first_name,
           a.last_name as applicant_last_name,
           a.its_number
         FROM cases c
         JOIN applicants a ON c.applicant_id = a.id
+        LEFT JOIN case_types ct ON c.case_type_id = ct.id
         WHERE c.id = ?
       `, [caseId]);
 
@@ -92,15 +94,17 @@ class NotificationService {
 
   async sendCaseAssignmentNotification(caseId, assignedDcmId, assignedCounselorId, assignedBy) {
     try {
-      // Get case details
+      // Get case details (include case_type_name from case_types for new case types)
       const [cases] = await pool.execute(`
         SELECT 
           c.*,
+          ct.name AS case_type_name,
           a.first_name as applicant_first_name,
           a.last_name as applicant_last_name,
           a.its_number
         FROM cases c
         JOIN applicants a ON c.applicant_id = a.id
+        LEFT JOIN case_types ct ON c.case_type_id = ct.id
         WHERE c.id = ?
       `, [caseId]);
 
@@ -148,15 +152,17 @@ class NotificationService {
 
   async sendFormCompletionNotification(caseId) {
     try {
-      // Get case details
+      // Get case details (include case_type_name from case_types for new case types)
       const [cases] = await pool.execute(`
         SELECT 
           c.*,
+          ct.name AS case_type_name,
           a.first_name as applicant_first_name,
           a.last_name as applicant_last_name,
           a.its_number
         FROM cases c
         JOIN applicants a ON c.applicant_id = a.id
+        LEFT JOIN case_types ct ON c.case_type_id = ct.id
         WHERE c.id = ?
       `, [caseId]);
 
@@ -204,15 +210,17 @@ class NotificationService {
 
   async sendCoverLetterGeneratedNotification(caseId, generatedBy) {
     try {
-      // Get case details
+      // Get case details (include case_type_name from case_types for new case types)
       const [cases] = await pool.execute(`
         SELECT 
           c.*,
+          ct.name AS case_type_name,
           a.first_name as applicant_first_name,
           a.last_name as applicant_last_name,
           a.its_number
         FROM cases c
         JOIN applicants a ON c.applicant_id = a.id
+        LEFT JOIN case_types ct ON c.case_type_id = ct.id
         WHERE c.id = ?
       `, [caseId]);
 

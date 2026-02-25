@@ -26,14 +26,15 @@ router.get('/', authenticateToken, async (req, res) => {
     );
     const total = countResult[0].total;
 
-    // Get notifications
+    // Get notifications (case type from case_types JOIN so new case types display correctly)
     const [notifications] = await pool.execute(`
       SELECT 
         n.*,
         c.case_number,
-        c.case_type
+        COALESCE(ct.name, c.case_type) AS case_type
       FROM notifications n
       LEFT JOIN cases c ON n.case_id = c.id
+      LEFT JOIN case_types ct ON c.case_type_id = ct.id
       ${whereClause}
       ORDER BY n.created_at DESC
       LIMIT ? OFFSET ?

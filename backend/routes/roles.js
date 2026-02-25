@@ -488,6 +488,8 @@ router.get('/permissions/available', authenticateToken, authorizeRoles('super_ad
       },
       // Payment management permissions
       { resource: 'payment_management', actions: ['create', 'read', 'update', 'delete'] },
+      // Fund utilization (quarterly reassessment reports)
+      { resource: 'fund_utilization', actions: ['create', 'read', 'update', 'delete'] },
       // Cover letter permissions
       { resource: 'cover_letters', actions: ['create', 'read', 'update', 'delete'] },
       // Cover letter form permissions

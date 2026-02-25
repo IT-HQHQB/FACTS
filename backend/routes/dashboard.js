@@ -104,11 +104,12 @@ router.get('/recent-activities', authenticateToken, async (req, res) => {
       SELECT 
         sh.*,
         c.case_number,
-        c.case_type,
+        COALESCE(ct.name, c.case_type) AS case_type,
         a.full_name as applicant_full_name,
         u.full_name as changed_by_name
       FROM status_history sh
       JOIN cases c ON sh.case_id = c.id
+      LEFT JOIN case_types ct ON c.case_type_id = ct.id
       JOIN applicants a ON c.applicant_id = a.id
       JOIN users u ON sh.changed_by = u.id
       ${whereClause}
