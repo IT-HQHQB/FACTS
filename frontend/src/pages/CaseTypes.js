@@ -42,10 +42,10 @@ const CaseTypes = () => {
 
   const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm();
 
-  // Fetch case types
+  // Fetch case types (include inactive so management page shows disabled ones)
   const { data: caseTypesData, isLoading, error: fetchError } = useQuery(
-    'caseTypes',
-    () => axios.get('/api/case-types').then(res => res.data),
+    ['caseTypes', 'all'],
+    () => axios.get('/api/case-types', { params: { include_inactive: 1 } }).then(res => res.data),
     {
       select: (data) => data.caseTypes || [],
     }

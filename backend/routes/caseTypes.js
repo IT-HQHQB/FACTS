@@ -4,14 +4,15 @@ const { authenticateToken, authorizeRoles, authorizePermission } = require('../m
 
 const router = express.Router();
 
-// Get all case types
+// Get all case types (optional include_inactive=1 returns inactive as well)
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const [caseTypes] = await pool.execute(`
-      SELECT * FROM case_types 
-      WHERE is_active = TRUE 
-      ORDER BY sort_order ASC, name ASC
-    `);
+    const includeInactive = req.query.include_inactive === '1' || req.query.include_inactive === 'true';
+    const [caseTypes] = await pool.execute(
+      includeInactive
+        ? `SELECT * FROM case_types ORDER BY sort_order ASC, name ASC`
+        : `SELECT * FROM case_types WHERE is_active = TRUE ORDER BY sort_order ASC, name ASC`
+    );
 
     res.json({ caseTypes });
   } catch (error) {
