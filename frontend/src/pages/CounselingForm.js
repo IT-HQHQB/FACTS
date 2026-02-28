@@ -1358,15 +1358,6 @@ const CounselingForm = () => {
             '2nd_and_3rd_year': [{ id: Date.now() + Math.random() + 1, action_text: '' }],
             '4th_and_5th_year': [{ id: Date.now() + Math.random() + 2, action_text: '' }]
           });
-          // Reset to default timeline assistance items with one fixed action per period
-          setTimelineAssistanceItems({
-            immediate: [{ id: Date.now() + Math.random() + 10, purpose_cost: '', enayat: '', qardan: '', months: '' }],
-            after_1st_yr: [{ id: Date.now() + Math.random() + 11, purpose_cost: '', enayat: '', qardan: '', months: '' }],
-            after_2nd_yr: [{ id: Date.now() + Math.random() + 12, purpose_cost: '', enayat: '', qardan: '', months: '' }],
-            after_3rd_yr: [{ id: Date.now() + Math.random() + 13, purpose_cost: '', enayat: '', qardan: '', months: '' }],
-            after_4th_yr: [{ id: Date.now() + Math.random() + 14, purpose_cost: '', enayat: '', qardan: '', months: '' }],
-            '5th_yr': [{ id: Date.now() + Math.random() + 15, purpose_cost: '', enayat: '', qardan: '', months: '' }]
-          });
         }
       } else {
         // If no financial assistance data exists, still show default timeline item
