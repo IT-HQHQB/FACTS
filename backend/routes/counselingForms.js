@@ -109,8 +109,8 @@ const updateCaseStatusBasedOnProgress = async (caseId) => {
     if (form.is_complete && caseData.status === 'in_counseling') {
       // Form is complete, but status hasn't been updated - update based on workflow stage
       const [welfareStages] = await pool.execute(
-        'SELECT id, associated_statuses FROM workflow_stages WHERE stage_key = ? AND is_active = TRUE AND (case_type_id = ? OR (case_type_id IS NULL AND ? IS NULL)) ORDER BY CASE WHEN case_type_id IS NULL THEN 1 ELSE 0 END LIMIT 1',
-        ['welfare_review', caseTypeId, caseTypeId]
+        'SELECT id, associated_statuses FROM workflow_stages WHERE stage_key = ? AND is_active = TRUE AND (case_type_id = ? OR case_type_id IS NULL) ORDER BY CASE WHEN case_type_id IS NULL THEN 1 ELSE 0 END LIMIT 1',
+        ['welfare_review', caseTypeId]
       );
 
       if (welfareStages.length > 0) {
@@ -148,8 +148,8 @@ const updateCaseStatusBasedOnProgress = async (caseId) => {
       // Update workflow stage if transitioning to in_counseling (moves to Counselor stage)
       if (statusName === 'in_counseling') {
         const [stages] = await pool.execute(
-          'SELECT id, stage_name FROM workflow_stages WHERE stage_key = ? AND is_active = TRUE AND (case_type_id = ? OR (case_type_id IS NULL AND ? IS NULL)) ORDER BY CASE WHEN case_type_id IS NULL THEN 1 ELSE 0 END LIMIT 1',
-          ['counselor', caseTypeId, caseTypeId]
+          'SELECT id, stage_name FROM workflow_stages WHERE stage_key = ? AND is_active = TRUE AND (case_type_id = ? OR case_type_id IS NULL) ORDER BY CASE WHEN case_type_id IS NULL THEN 1 ELSE 0 END LIMIT 1',
+          ['counselor', caseTypeId]
         );
         
         if (stages.length > 0) {
@@ -1930,8 +1930,8 @@ router.put('/:formId/complete', authenticateToken, async (req, res) => {
 
       // Update workflow stage (move to welfare review)
       const [stages] = await connection.execute(
-        'SELECT id, stage_name, associated_statuses FROM workflow_stages WHERE stage_key = ? AND is_active = TRUE AND (case_type_id = ? OR (case_type_id IS NULL AND ? IS NULL)) ORDER BY CASE WHEN case_type_id IS NULL THEN 1 ELSE 0 END LIMIT 1',
-        ['welfare_review', caseTypeId, caseTypeId]
+        'SELECT id, stage_name, associated_statuses FROM workflow_stages WHERE stage_key = ? AND is_active = TRUE AND (case_type_id = ? OR case_type_id IS NULL) ORDER BY CASE WHEN case_type_id IS NULL THEN 1 ELSE 0 END LIMIT 1',
+        ['welfare_review', caseTypeId]
       );
       
       let newStatus = 'submitted_to_welfare'; // Default fallback
