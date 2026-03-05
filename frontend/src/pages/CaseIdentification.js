@@ -25,6 +25,7 @@ const CaseIdentification = () => {
   // Permission checks
   const { hasPermission: canCreate } = usePermission('case_identification', 'create');
   const { hasPermission: canApprove } = usePermission('case_identification', 'approve');
+  const { hasPermission: canEdit } = usePermission('case_identification', 'edit');
 
   // Listing state
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,6 +50,18 @@ const CaseIdentification = () => {
   const [reviewRemarks, setReviewRemarks] = useState('');
   const [reviewError, setReviewError] = useState('');
   const [reviewSuccess, setReviewSuccess] = useState('');
+
+  // Edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editRecord, setEditRecord] = useState(null);
+  const [editEligibleIn, setEditEligibleIn] = useState('');
+  const [editTotalFamilyMembers, setEditTotalFamilyMembers] = useState('');
+  const [editEarningFamilyMembers, setEditEarningFamilyMembers] = useState('');
+  const [editIndividualIncome, setEditIndividualIncome] = useState('');
+  const [editFamilyIncome, setEditFamilyIncome] = useState('');
+  const [editRemarks, setEditRemarks] = useState('');
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState('');
 
   // Form
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm();
@@ -209,6 +222,52 @@ const CaseIdentification = () => {
     }
   );
 
+
+  // Edit Mutation
+
+  const editIncomeMutation = useMutation(
+    ({ id, eligible_in, total_family_members, earning_family_members, individual_income, family_income, remarks }) =>
+      axios.put(`/api/case-identifications/${id}/edit`, { eligible_in, total_family_members, earning_family_members, individual_income, family_income, remarks }),
+    {
+      onSuccess: (response) => {
+        const data = response.data;
+        setEditSuccess(data.message || 'Assessment updated successfully!');
+        setEditError('');
+        queryClient.invalidateQueries('caseIdentifications');
+        setTimeout(() => {
+          setEditModalOpen(false);
+          setEditRecord(null);
+          setEditEligibleIn('');
+          setEditTotalFamilyMembers('');
+          setEditEarningFamilyMembers('');
+          setEditIndividualIncome('');
+          setEditFamilyIncome('');
+          setEditRemarks('');
+          setEditSuccess('');
+        }, 1500);
+      },
+      onError: (error) => {
+        setEditError(error.response?.data?.error || 'Failed to update assessment');
+        setEditSuccess('');
+      }
+    }
+  );
+
+  // Revert to Pending Mutation
+
+  const revertToPendingMutation = useMutation(
+    ({ id }) =>
+      axios.put(`/api/case-identifications/${id}/revert-to-pending`),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('caseIdentifications');
+      },
+      onError: (error) => {
+        window.alert(error.response?.data?.error || 'Failed to revert to pending');
+      }
+    }
+  );
+
   // ─── Handlers ───────────────────────────────────────────────────────────
 
   const openCreateModal = () => {
@@ -275,6 +334,43 @@ const CaseIdentification = () => {
       status: reviewAction,
       review_remarks: reviewRemarks || null
     });
+  };
+
+
+  const openEditModal = (record) => {
+    setEditRecord(record);
+    setEditEligibleIn(record.eligible_in ?? '');
+    setEditTotalFamilyMembers(record.total_family_members ?? '');
+    setEditEarningFamilyMembers(record.earning_family_members ?? '');
+    setEditIndividualIncome(record.individual_income ?? '');
+    setEditFamilyIncome(record.family_income ?? '');
+    setEditRemarks(record.remarks || '');
+    setEditError('');
+    setEditSuccess('');
+    setEditModalOpen(true);
+  };
+
+  const handleConfirmEditIncome = () => {
+    if (!editRecord || editIncomeMutation.isLoading) return;
+    editIncomeMutation.mutate({
+      id: editRecord.id,
+      eligible_in: editEligibleIn,
+      total_family_members: parseInt(editTotalFamilyMembers),
+      earning_family_members: parseInt(editEarningFamilyMembers),
+      individual_income: parseInt(editIndividualIncome),
+      family_income: parseInt(editFamilyIncome),
+      remarks: editRemarks
+    });
+  };
+
+  const handleRevertToPending = (record) => {
+    if (revertToPendingMutation.isLoading) return;
+    const confirmed = window.confirm(
+      'Are you sure you want to revert this case to pending status? This will allow it to be reviewed again.'
+    );
+    if (confirmed) {
+      revertToPendingMutation.mutate({ id: record.id });
+    }
   };
 
   // ─── Status Badge Helper ────────────────────────────────────────────────
@@ -449,6 +545,25 @@ const CaseIdentification = () => {
                             </button>
                           </>
                         )}
+                        {/* Edit button - for pending and ineligible cases with edit permission */}
+                        {(record.status === 'pending' || record.status === 'ineligible') && canEdit && (
+                          <button
+                            onClick={() => openEditModal(record)}
+                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {/* Revert to Pending button - only for ineligible cases with edit permission */}
+                        {record.status === 'ineligible' && canEdit && (
+                          <button
+                            onClick={() => handleRevertToPending(record)}
+                            disabled={revertToPendingMutation.isLoading}
+                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-yellow-500"
+                          >
+                            {revertToPendingMutation.isLoading ? 'Reverting...' : 'Revert to Pending'}
+                          </button>
+                        )}
                         {/* Link to case for eligible records */}
                         {record.status === 'eligible' && record.case_id && (
                           <button
@@ -458,7 +573,7 @@ const CaseIdentification = () => {
                             View Case
                           </button>
                         )}
-                        {record.status === 'ineligible' && (
+                        {record.status === 'ineligible' && !canEdit && (
                           <span className="text-xs text-gray-400 italic">Ineligible</span>
                         )}
                       </div>
@@ -873,6 +988,138 @@ const CaseIdentification = () => {
                 : reviewAction === 'eligible'
                   ? 'Confirm Eligible'
                   : 'Confirm Ineligible'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ─── Edit Assessment Modal ──────────────────────────────────────────── */}
+      <Modal
+        isOpen={editModalOpen}
+        onClose={() => { setEditModalOpen(false); setEditRecord(null); setEditEligibleIn(''); setEditTotalFamilyMembers(''); setEditEarningFamilyMembers(''); setEditIndividualIncome(''); setEditFamilyIncome(''); setEditRemarks(''); setEditError(''); setEditSuccess(''); }}
+        title="Edit Assessment"
+        size="lg"
+      >
+        <div className="space-y-4">
+          {editError && <Alert variant="error">{editError}</Alert>}
+          {editSuccess && <Alert variant="success">{editSuccess}</Alert>}
+
+          {editRecord && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div><span className="font-medium text-gray-600">ITS:</span> {editRecord.its_number}</div>
+                <div><span className="font-medium text-gray-600">Name:</span> {editRecord.full_name || '-'}</div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Eligible In */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Eligible In <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={editEligibleIn}
+                onChange={(e) => setEditEligibleIn(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              >
+                <option value="">Select case type...</option>
+                {caseTypes?.map(ct => (
+                  <option key={ct.id} value={ct.id}>{ct.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Total Family Members */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Total Family Members <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={editTotalFamilyMembers}
+                onChange={(e) => setEditTotalFamilyMembers(e.target.value)}
+                min="0"
+                max="25"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                placeholder="Enter number (max 25)"
+              />
+            </div>
+
+            {/* Earning Family Members */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Earning Family Members <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={editEarningFamilyMembers}
+                onChange={(e) => setEditEarningFamilyMembers(e.target.value)}
+                min="0"
+                max="20"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                placeholder="Enter number (max 20)"
+              />
+            </div>
+
+            {/* Individual Income */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Individual Income (monthly) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={editIndividualIncome}
+                onChange={(e) => setEditIndividualIncome(e.target.value)}
+                min="0"
+                max="9999999"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                placeholder="Enter amount (max 9999999)"
+              />
+            </div>
+
+            {/* Family Income */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Family Income (monthly) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={editFamilyIncome}
+                onChange={(e) => setEditFamilyIncome(e.target.value)}
+                min="0"
+                max="9999999"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                placeholder="Enter amount (max 9999999)"
+              />
+            </div>
+          </div>
+
+          {/* Remarks */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Remarks (Optional)</label>
+            <textarea
+              value={editRemarks}
+              onChange={(e) => setEditRemarks(e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              placeholder="Enter any additional remarks..."
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              variant="secondary"
+              onClick={() => { setEditModalOpen(false); setEditRecord(null); setEditEligibleIn(''); setEditTotalFamilyMembers(''); setEditEarningFamilyMembers(''); setEditIndividualIncome(''); setEditFamilyIncome(''); setEditRemarks(''); setEditError(''); setEditSuccess(''); }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmEditIncome}
+              disabled={editIncomeMutation.isLoading}
+            >
+              {editIncomeMutation.isLoading ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </div>

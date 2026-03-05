@@ -507,7 +507,7 @@ router.get('/permissions/available', authenticateToken, authorizeRoles('super_ad
       // Master data permissions (Jamiat Master, Case Types, Relations, etc.)
       { resource: 'master', actions: ['read', 'create', 'update', 'delete'] },
       // Case Identification permissions
-      { resource: 'case_identification', actions: ['create', 'read', 'update', 'delete', 'approve'] },
+      { resource: 'case_identification', actions: ['create', 'read', 'update', 'delete', 'approve', 'edit'] },
     ];
     
     res.json({ permissions });

@@ -510,4 +510,193 @@ router.put('/:id/review', authenticateToken, authorizePermission('case_identific
   }
 });
 
+
+// ─── Edit case identification fields ─────────────────────────────────────────
+router.put('/:id/edit', authenticateToken, authorizePermission('case_identification', 'edit'), async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { individual_income, family_income, eligible_in, total_family_members, earning_family_members, remarks } = req.body;
+
+    // At least one field must be provided
+    if (individual_income == null && family_income == null && eligible_in == null && total_family_members == null && earning_family_members == null && remarks === undefined) {
+      return res.status(400).json({ error: 'At least one field must be provided' });
+    }
+
+    // Validate individual_income if provided
+    if (individual_income != null) {
+      const parsedIndividual = parseInt(individual_income, 10);
+      if (isNaN(parsedIndividual) || parsedIndividual < 0 || parsedIndividual > 9999999) {
+        return res.status(400).json({ error: 'Individual income must be between 0 and 9999999' });
+      }
+    }
+
+    // Validate family_income if provided
+    if (family_income != null) {
+      const parsedFamily = parseInt(family_income, 10);
+      if (isNaN(parsedFamily) || parsedFamily < 0 || parsedFamily > 9999999) {
+        return res.status(400).json({ error: 'Family income must be between 0 and 9999999' });
+      }
+    }
+
+    // Validate total_family_members if provided
+    if (total_family_members != null) {
+      const parsedTotalFamily = parseInt(total_family_members, 10);
+      if (isNaN(parsedTotalFamily) || parsedTotalFamily < 0 || parsedTotalFamily > 25) {
+        return res.status(400).json({ error: 'Total family members must be between 0 and 25' });
+      }
+    }
+
+    // Validate earning_family_members if provided
+    if (earning_family_members != null) {
+      const parsedEarningFamily = parseInt(earning_family_members, 10);
+      if (isNaN(parsedEarningFamily) || parsedEarningFamily < 0 || parsedEarningFamily > 20) {
+        return res.status(400).json({ error: 'Earning family members must be between 0 and 20' });
+      }
+    }
+
+    // Validate eligible_in (case type) if provided
+    if (eligible_in != null) {
+      const [caseType] = await pool.execute(
+        'SELECT id FROM case_types WHERE id = ? AND is_active = 1',
+        [eligible_in]
+      );
+      if (caseType.length === 0) {
+        return res.status(400).json({ error: 'Invalid case type selected' });
+      }
+    }
+
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    // Get current values
+    const [records] = await connection.execute(
+      'SELECT id, status, individual_income, family_income, eligible_in, total_family_members, earning_family_members, remarks FROM case_identifications WHERE id = ?',
+      [id]
+    );
+
+    if (records.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ error: 'Case identification not found' });
+    }
+
+    const record = records[0];
+
+    // Only allow editing for pending or ineligible cases
+    if (record.status !== 'pending' && record.status !== 'ineligible') {
+      await connection.rollback();
+      return res.status(400).json({ error: 'Fields can only be edited for cases with pending or ineligible status' });
+    }
+
+    // Build dynamic UPDATE query - only set fields that were provided
+    const setClauses = [];
+    const setParams = [];
+
+    if (individual_income != null) {
+      setClauses.push('individual_income = ?');
+      setParams.push(parseInt(individual_income, 10));
+    }
+    if (family_income != null) {
+      setClauses.push('family_income = ?');
+      setParams.push(parseInt(family_income, 10));
+    }
+    if (eligible_in != null) {
+      setClauses.push('eligible_in = ?');
+      setParams.push(parseInt(eligible_in, 10));
+    }
+    if (total_family_members != null) {
+      setClauses.push('total_family_members = ?');
+      setParams.push(parseInt(total_family_members, 10));
+    }
+    if (earning_family_members != null) {
+      setClauses.push('earning_family_members = ?');
+      setParams.push(parseInt(earning_family_members, 10));
+    }
+    if (remarks !== undefined) {
+      setClauses.push('remarks = ?');
+      setParams.push(remarks || null);
+    }
+
+    // Update case identification
+    setParams.push(id);
+    await connection.execute(
+      `UPDATE case_identifications SET ${setClauses.join(', ')} WHERE id = ?`,
+      setParams
+    );
+
+    // Audit log for income changes only
+    const incomeChanged = individual_income != null || family_income != null;
+    if (incomeChanged) {
+      const oldIndividualIncome = record.individual_income;
+      const oldFamilyIncome = record.family_income;
+      const newIndividualIncome = individual_income != null ? parseInt(individual_income, 10) : oldIndividualIncome;
+      const newFamilyIncome = family_income != null ? parseInt(family_income, 10) : oldFamilyIncome;
+
+      await connection.execute(
+        `INSERT INTO case_identification_income_logs
+          (case_identification_id, old_individual_income, new_individual_income, old_family_income, new_family_income, changed_by)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [id, oldIndividualIncome, newIndividualIncome, oldFamilyIncome, newFamilyIncome, req.user.id]
+      );
+    }
+
+    await connection.commit();
+
+    res.json({
+      message: 'Case identification updated successfully'
+    });
+  } catch (error) {
+    if (connection) {
+      try {
+        await connection.rollback();
+      } catch (rollbackErr) {
+        console.error('Rollback error:', rollbackErr);
+      }
+    }
+    console.error('Error editing case identification:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+});
+
+// ─── Revert ineligible case identification back to pending ──────────────────
+router.put('/:id/revert-to-pending', authenticateToken, authorizePermission('case_identification', 'edit'), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get the case identification record
+    const [records] = await pool.execute(
+      'SELECT id, status FROM case_identifications WHERE id = ?',
+      [id]
+    );
+
+    if (records.length === 0) {
+      return res.status(404).json({ error: 'Case identification not found' });
+    }
+
+    const record = records[0];
+
+    if (record.status !== 'ineligible') {
+      return res.status(400).json({ error: 'Only ineligible cases can be reverted to pending' });
+    }
+
+    // Revert to pending and clear review fields
+    await pool.execute(
+      'UPDATE case_identifications SET status = ?, reviewed_by = NULL, reviewed_at = NULL, review_remarks = NULL WHERE id = ?',
+      ['pending', id]
+    );
+
+    res.json({
+      message: 'Case reverted to pending status',
+      status: 'pending'
+    });
+  } catch (error) {
+    console.error('Error reverting case identification to pending:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
