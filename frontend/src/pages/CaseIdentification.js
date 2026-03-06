@@ -519,6 +519,20 @@ const CaseIdentification = () => {
         </div>
       </Card>
 
+      {/* Count and Info */}
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-xl font-semibold text-gray-900">
+          Cases ({pagination.total ?? 0})
+        </h3>
+        {pagination.total > 0 && (
+          <p className="text-sm text-gray-500">
+            Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+            {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+            {pagination.total} results
+          </p>
+        )}
+      </div>
+
       {/* Table */}
       <Card>
         <div className="overflow-x-auto">
@@ -639,22 +653,18 @@ const CaseIdentification = () => {
           </table>
         </div>
 
-        {/* Pagination */}
-        {pagination.totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
-            <div className="text-sm text-gray-500">
-              Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
-              {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-              {pagination.total} results
-            </div>
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              onPageChange={setPage}
-            />
-          </div>
-        )}
       </Card>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={setPage}
+          />
+        </div>
+      )}
 
       {/* ─── Create Modal ───────────────────────────────────────────────── */}
       <Modal
