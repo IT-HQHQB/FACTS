@@ -42,7 +42,9 @@ router.get('/', authenticateToken, authorizePermission('case_identification', 'r
       limit = 20,
       search = '',
       status = '',
-      eligible_in = ''
+      eligible_in = '',
+      jamiat = '',
+      jamaat = ''
     } = req.query;
 
     const safePage = Math.max(1, parseInt(page, 10) || 1);
@@ -65,6 +67,16 @@ router.get('/', authenticateToken, authorizePermission('case_identification', 'r
     if (eligible_in) {
       whereConditions.push('ci.eligible_in = ?');
       queryParams.push(eligible_in);
+    }
+
+    if (jamiat) {
+      whereConditions.push('ci.jamiat = ?');
+      queryParams.push(jamiat);
+    }
+
+    if (jamaat) {
+      whereConditions.push('ci.jamaat = ?');
+      queryParams.push(jamaat);
     }
 
     // Scope by user's assigned jamiat/jamaat (super_admin and admin see all)

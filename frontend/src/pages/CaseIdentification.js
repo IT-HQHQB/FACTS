@@ -14,7 +14,8 @@ import {
   Input,
   Modal,
   Select,
-  Pagination
+  Pagination,
+  SearchableSelect
 } from '../components/ui';
 
 const CaseIdentification = () => {
@@ -33,6 +34,8 @@ const CaseIdentification = () => {
   const [limit] = useState(20);
   const [statusFilter, setStatusFilter] = useState('');
   const [eligibleInFilter, setEligibleInFilter] = useState('');
+  const [jamiatFilter, setJamiatFilter] = useState('');
+  const [jamaatFilter, setJamaatFilter] = useState('');
 
   // Create modal state
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -72,7 +75,7 @@ const CaseIdentification = () => {
 
   // Fetch case identifications list
   const { data: listData, isLoading, refetch } = useQuery(
-    ['caseIdentifications', page, searchTerm, statusFilter, eligibleInFilter, limit],
+    ['caseIdentifications', page, searchTerm, statusFilter, eligibleInFilter, jamiatFilter, jamaatFilter, limit],
     () => axios.get('/api/case-identifications', {
       params: {
         page,
@@ -80,6 +83,8 @@ const CaseIdentification = () => {
         ...(searchTerm && { search: searchTerm }),
         ...(statusFilter && { status: statusFilter }),
         ...(eligibleInFilter && { eligible_in: eligibleInFilter }),
+        ...(jamiatFilter && { jamiat: jamiatFilter }),
+        ...(jamaatFilter && { jamaat: jamaatFilter }),
       }
     }).then(res => res.data),
     { keepPreviousData: true }
@@ -92,10 +97,29 @@ const CaseIdentification = () => {
     { select: (data) => data.caseTypes || [] }
   );
 
+  // Fetch jamiat list for filter (sorted alphabetically)
+  const { data: jamiatList } = useQuery(
+    'jamiatList',
+    () => axios.get('/api/jamiat').then(res => res.data),
+    { select: (data) => (data.jamiat || []).sort((a, b) => a.name.localeCompare(b.name)) }
+  );
+
+  // Fetch jamaat list filtered by selected jamiat (sorted alphabetically)
+  const { data: jamaatList } = useQuery(
+    ['jamaatList', jamiatFilter],
+    () => {
+      const selectedJamiat = jamiatList?.find(j => j.name === jamiatFilter);
+      return axios.get('/api/jamaat', {
+        params: selectedJamiat ? { jamiat_id: selectedJamiat.id } : {}
+      }).then(res => res.data);
+    },
+    { select: (data) => (data.jamaat || []).sort((a, b) => a.name.localeCompare(b.name)), enabled: true }
+  );
+
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, statusFilter, eligibleInFilter]);
+  }, [searchTerm, statusFilter, eligibleInFilter, jamiatFilter, jamaatFilter]);
 
   // ─── ITS Auto-Fetch ─────────────────────────────────────────────────────
 
@@ -411,7 +435,7 @@ const CaseIdentification = () => {
       {/* Filters */}
       <Card className="mb-6">
         <div className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
               <input
@@ -448,6 +472,34 @@ const CaseIdentification = () => {
                 ))}
               </select>
             </div>
+            <div>
+              <SearchableSelect
+                label="Jamiat"
+                placeholder="All Jamiat"
+                options={[
+                  { value: '', label: 'All Jamiat' },
+                  ...(jamiatList?.map(j => ({ value: j.name, label: j.name })) || [])
+                ]}
+                value={jamiatFilter}
+                onChange={(val) => {
+                  setJamiatFilter(val);
+                  setJamaatFilter('');
+                }}
+              />
+            </div>
+            <div>
+              <SearchableSelect
+                label="Jamaat"
+                placeholder={jamiatFilter ? "All Jamaat" : "Please select Jamiat first"}
+                options={jamiatFilter ? [
+                  { value: '', label: 'All Jamaat' },
+                  ...(jamaatList?.map(j => ({ value: j.name, label: j.name })) || [])
+                ] : []}
+                value={jamaatFilter}
+                onChange={(val) => setJamaatFilter(val)}
+                disabled={!jamiatFilter}
+              />
+            </div>
             <div className="flex items-end">
               <Button
                 variant="secondary"
@@ -455,6 +507,8 @@ const CaseIdentification = () => {
                   setSearchTerm('');
                   setStatusFilter('');
                   setEligibleInFilter('');
+                  setJamiatFilter('');
+                  setJamaatFilter('');
                 }}
                 className="w-full"
               >
