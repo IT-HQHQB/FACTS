@@ -773,6 +773,10 @@ router.get('/:caseId', authenticateToken, authorizeCaseAccess, async (req, res) 
 
     // Use ISO formatted dates from SQL query to preserve exact date/time
     const caseData = cases[0];
+    // Mauze = jamaat (applicants.jamaat_name); use as mauze for Fund Utilization auto-fill when mauze column is absent
+    if (caseData && (caseData.mauze == null || caseData.mauze === '') && caseData.jamaat_name != null) {
+      caseData.mauze = caseData.jamaat_name;
+    }
 
         // Auto-fix: Check if status matches workflow stage's associated_statuses
         // IMPORTANT: Never auto-fix terminal statuses (closed/completed) or finance_disbursement.
