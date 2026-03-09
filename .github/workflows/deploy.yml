@@ -8,6 +8,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q '^frontend/'; then
+            echo "frontend=true" >> $GITHUB_OUTPUT
+          else
+            echo "frontend=false" >> $GITHUB_OUTPUT
+          fi
+          if git diff --name-only HEAD~1 HEAD | grep -q '^backend/'; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+          else
+            echo "backend=false" >> $GITHUB_OUTPUT
+          fi
 
       - uses: actions/setup-node@v4
         with:
@@ -18,19 +34,23 @@ jobs:
 
       # Install backend dependencies
       - name: Install backend dependencies
+        if: steps.changes.outputs.backend == 'true'
         run: cd backend && npm ci
 
-      # Install frontend dependencies and build React app
+      # Install frontend dependencies and build React app (only if frontend changed)
       - name: Install frontend dependencies
+        if: steps.changes.outputs.frontend == 'true'
         run: cd frontend && npm ci
 
       - name: Build frontend
+        if: steps.changes.outputs.frontend == 'true'
         run: cd frontend && npm run build
         env:
           CI: false
 
-      # Copy project to EC2
-      - name: Copy files to EC2
+      # Copy project to EC2 (both frontend and backend changed)
+      - name: Copy files to EC2 (frontend + backend)
+        if: steps.changes.outputs.frontend == 'true' && steps.changes.outputs.backend == 'true'
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -40,8 +60,33 @@ jobs:
           target: "/var/www/FACTS"
           overwrite: true
 
-      # Restart application on EC2
+      # Copy project to EC2 (only frontend changed)
+      - name: Copy files to EC2 (frontend only)
+        if: steps.changes.outputs.frontend == 'true' && steps.changes.outputs.backend != 'true'
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "frontend/build/"
+          target: "/var/www/FACTS"
+          overwrite: true
+
+      # Copy project to EC2 (only backend changed)
+      - name: Copy files to EC2 (backend only)
+        if: steps.changes.outputs.backend == 'true' && steps.changes.outputs.frontend != 'true'
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "backend/,package.json,package-lock.json,database/migrations/"
+          target: "/var/www/FACTS"
+          overwrite: true
+
+      # Restart backend on EC2 (only if backend changed)
       - name: Restart app on EC2
+        if: steps.changes.outputs.backend == 'true'
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
