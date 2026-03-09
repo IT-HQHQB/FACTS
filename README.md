@@ -15,7 +15,7 @@ A comprehensive case management and welfare tracking system designed for Baasete
 - [Running the Application](#running-the-application)
 - [Default Credentials](#default-credentials)
 - [Modules](#modules)
-- [API Reference](#api-reference)
+- [API Reference](#api-reference) | [Full Request/Response Schemas](./API_SCHEMAS.md)
 - [User Roles and Permissions](#user-roles-and-permissions)
 - [Workflow Process](#workflow-process)
 - [Database Schema](#database-schema)
