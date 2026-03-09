@@ -1,0 +1,54 @@
+name: Deploy to EC2
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Install root dependencies
+      - run: npm ci
+
+      # Install backend dependencies
+      - name: Install backend dependencies
+        run: cd backend && npm ci
+
+      # Install frontend dependencies and build React app
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: Build frontend
+        run: cd frontend && npm run build
+        env:
+          CI: false
+
+      # Copy project to EC2
+      - name: Copy files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "backend/,frontend/build/,package.json,package-lock.json,database/migrations/"
+          target: "/var/www/FACTS"
+          overwrite: true
+
+      # Restart application on EC2
+      - name: Restart app on EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /var/www/FACTS
+            cd backend && npm ci --omit=dev
+            cd ..
+            pm2 restart facts-backend --update-env || pm2 start backend/index.js --name facts-backend
