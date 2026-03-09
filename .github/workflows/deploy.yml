@@ -54,4 +54,4 @@ jobs:
             cd /var/www/FACTS
             cd backend && npm ci --omit=dev
             cd ..
-            pm2 restart facts-backend --update-env || pm2 start backend/index.js --name facts-backend
+            pm2 restart backend --update-env || pm2 start backend/index.js --name backend
