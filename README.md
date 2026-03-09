@@ -350,7 +350,7 @@ Core module for managing welfare cases through their entire lifecycle. Cases are
 **Key capabilities:**
 - Case CRUD with case number generation (e.g., BS-0001)
 - Case assignment to DCM and counselor
-- Multi-stage workflow (Draft, Welfare Review, ZI Approval, Executive Approval, Finance)
+- Multi-stage workflow (Draft, Counseling, Welfare Review, ZI Approval, KG Review, Operations Lead, Cover Letter, Executive Approval, Manzoori, Financial Disbursement)
 - Workflow actions: approve, reject, rework, resubmit
 - Case comments and workflow stage comments
 - SLA tracking per stage
@@ -726,22 +726,29 @@ Permissions are defined as `resource:action` pairs. Example:
          │
          ▼
 ┌─────────────────┐    ┌──────────────┐    ┌──────────────┐
-│ Draft Stage      │───→│ Counseling   │───→│ Cover Letter │
-│ (DCM assigns)   │    │ Form Fill    │    │ Generation   │
+│ Draft Stage      │───→│ Counseling   │───→│ Welfare      │
+│ (DCM assigns)   │    │ Form Fill    │    │ Review       │
 └─────────────────┘    └──────────────┘    └──────────────┘
                                                   │
          ┌────────────────────────────────────────┘
          ▼
 ┌─────────────────┐    ┌──────────────┐    ┌──────────────┐
-│ Welfare Review   │───→│ ZI Approval  │───→│ Executive    │
-│ (Checklist +     │    │              │    │ Approval     │
-│  Approve/Reject) │    │              │    │ (Multi-level)│
+│ ZI Approval      │───→│ KG Review    │───→│ Operations   │
+│                  │    │              │    │ Lead         │
 └─────────────────┘    └──────────────┘    └──────────────┘
                                                   │
          ┌────────────────────────────────────────┘
          ▼
 ┌─────────────────┐    ┌──────────────┐    ┌──────────────┐
-│ Finance          │───→│ Payment      │───→│ Fund         │
+│ Cover Letter     │───→│ Executive    │───→│ Manzoori     │
+│ Generation       │    │ Approval     │    │ (Sanction)   │
+│                  │    │ (Multi-level)│    │              │
+└─────────────────┘    └──────────────┘    └──────────────┘
+                                                  │
+         ┌────────────────────────────────────────┘
+         ▼
+┌─────────────────┐    ┌──────────────┐    ┌──────────────┐
+│ Financial        │───→│ Payment      │───→│ Fund         │
 │ Disbursement     │    │ Schedule     │    │ Utilization  │
 │                  │    │ Tracking     │    │ (Quarterly)  │
 └─────────────────┘    └──────────────┘    └──────────────┘
