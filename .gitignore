@@ -1,6 +1,3 @@
-API_SCHEMAS.md
-baaseteen_cms.md
-README (1).md
 AFSM_LMS_SRS.html
 generate_pdf.js
 package.json
@@ -9,3 +6,7 @@ package-lock.json
 node_modules
 
 fix_diagram.py
+AFSM_LMS_BRD.html
+AFSM_LMS_BRD.pdf
+generate_brd_pdf.js
+merge_brd.py

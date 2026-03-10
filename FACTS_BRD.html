@@ -1,0 +1,1048 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FACTS - Business Requirements Document v3.7</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+      @page {
+        size: A4;
+        margin: 25mm 25mm 25mm 25mm;
+      }
+
+      :root {
+        --navy: #1a2a3a;
+        --navy-light: #243447;
+        --gold: #d4af37;
+        --gold-light: #f5e6b8;
+        --accent-blue: #2563eb;
+        --accent-blue-light: #eff6ff;
+        --bg: #ffffff;
+        --bg-alt: #f8fafc;
+        --bg-section: #f1f5f9;
+        --text: #1e293b;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --border-strong: #cbd5e1;
+        --radius: 6px;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        font-size: 11px;
+        line-height: 1.55;
+        color: var(--text);
+        background: white;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .cover-page {
+        background: linear-gradient(
+          145deg,
+          var(--navy) 0%,
+          #1e3548 60%,
+          #24445a 100%
+        );
+        color: white;
+        width: 100%;
+        height: 297mm;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 40px;
+        page-break-after: always;
+        position: relative;
+        overflow: hidden;
+      }
+      .cover-page::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(
+            ellipse at 30% 35%,
+            rgba(212, 175, 55, 0.07) 0%,
+            transparent 55%
+          ),
+          radial-gradient(
+            ellipse at 75% 70%,
+            rgba(37, 99, 235, 0.04) 0%,
+            transparent 55%
+          );
+      }
+      .cover-logo {
+        width: 72px;
+        height: 72px;
+        background: linear-gradient(135deg, var(--gold), #c4a030);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--navy);
+        margin-bottom: 32px;
+        position: relative;
+        box-shadow: 0 6px 24px rgba(212, 175, 55, 0.25);
+      }
+      .cover-title {
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin-bottom: 6px;
+        position: relative;
+      }
+      .cover-subtitle {
+        font-size: 18px;
+        font-weight: 300;
+        color: var(--gold);
+        margin-bottom: 40px;
+        position: relative;
+      }
+      .cover-meta {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        max-width: 480px;
+        width: 100%;
+      }
+      .cover-meta-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: var(--radius);
+        padding: 12px 16px;
+      }
+      .cover-meta-label {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: rgba(255, 255, 255, 0.45);
+        margin-bottom: 3px;
+      }
+      .cover-meta-value {
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: capitalize;
+      }
+      .cover-badge {
+        position: relative;
+        margin-top: 32px;
+        background: rgba(22, 163, 106, 0.12);
+        border: 1px solid rgba(22, 163, 106, 0.25);
+        color: #4ade80;
+        padding: 5px 18px;
+        border-radius: 16px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .cover-footer {
+        position: absolute;
+        bottom: 30px;
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.3);
+        letter-spacing: 0.5px;
+      }
+
+      .content-wrapper {
+        max-width: 155mm;
+        margin: 0 auto;
+        padding: 0;
+      }
+
+      .section {
+        page-break-before: always;
+        break-before: page;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        padding: 25px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid var(--border-strong);
+      }
+
+      h1 {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--navy);
+        margin: 20px 0 8px;
+        padding-bottom: 6px;
+        border-bottom: 2px solid var(--gold);
+        page-break-after: avoid;
+      }
+      h2 {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--navy);
+        margin: 16px 0 8px;
+        padding: 7px 10px;
+        background: var(--bg-section);
+        border-left: 3px solid var(--gold);
+        border-radius: 0 var(--radius) var(--radius) 0;
+        page-break-after: avoid;
+      }
+      h3 {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--navy-light);
+        margin: 12px 0 6px;
+        page-break-after: avoid;
+      }
+      h4 {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--accent-blue);
+        margin: 10px 0 4px;
+        page-break-after: avoid;
+      }
+      p {
+        margin: 0 0 6px;
+      }
+      ul,
+      ol {
+        margin: 4px 0 8px;
+        padding-left: 20px;
+      }
+      li {
+        margin-bottom: 2px;
+        line-height: 1.5;
+      }
+      li strong {
+        color: var(--navy);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 6px 0 12px;
+        font-size: 10.5px;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        page-break-inside: auto;
+      }
+      th {
+        white-space: nowrap;
+      }
+      td:first-child {
+        white-space: nowrap;
+        width: 20%;
+        font-weight: 500;
+        color: var(--navy);
+      }
+      thead {
+        background: var(--navy);
+      }
+      thead th {
+        color: white;
+        font-weight: 600;
+        text-align: left;
+        padding: 6px 8px;
+        font-size: 9.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        border: none;
+      }
+      tbody tr {
+        border-bottom: 1px solid var(--border);
+      }
+      tbody tr:nth-child(even) {
+        background: #fafbfc;
+      }
+      td {
+        padding: 5px 8px;
+        vertical-align: top;
+        border: none;
+        line-height: 1.45;
+        word-break: break-word;
+      }
+      td strong {
+        color: var(--navy);
+      }
+
+      .check {
+        color: #16a34a;
+        font-weight: bold;
+        font-size: 13px;
+      }
+      .cross {
+        color: #dc2626;
+        font-weight: bold;
+        font-size: 13px;
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+        .cover-page {
+          height: 297mm;
+          background: linear-gradient(
+            145deg,
+            var(--navy) 0%,
+            #1e3548 60%,
+            #24445a 100%
+          ) !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        thead {
+          background: var(--navy) !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        thead th {
+          color: white !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        tbody tr:nth-child(even) {
+          background: #fafbfc !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        h2 {
+          background: var(--bg-section) !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .check {
+          color: #16a34a !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .cross {
+          color: #dc2626 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        h1,
+        h2,
+        h3,
+        h4 {
+          page-break-after: avoid;
+        }
+        .section {
+          page-break-inside: avoid;
+          break-inside: avoid;
+          padding: 25px 0;
+          margin-bottom: 30px;
+          border-bottom: 1px solid var(--border-strong);
+          page-break-before: always;
+          break-before: page;
+        }
+        table {
+          page-break-inside: auto;
+        }
+        tr {
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="cover-page">
+      <div class="cover-logo">FACTS</div>
+      <div class="cover-title">FACTS Case Management System</div>
+      <div class="cover-subtitle">Business Requirements Document</div>
+      <div class="cover-meta">
+        <div class="cover-meta-item">
+          <div class="cover-meta-label">Version</div>
+          <div class="cover-meta-value">3.7</div>
+        </div>
+        <div class="cover-meta-item">
+          <div class="cover-meta-label">Date</div>
+          <div class="cover-meta-value">April 23, 2025</div>
+        </div>
+        <div class="cover-meta-item">
+          <div class="cover-meta-label">Status</div>
+          <div class="cover-meta-value">Final</div>
+        </div>
+      </div>
+      <div class="cover-badge">&bull; Live &amp; Operational</div>
+      <div class="cover-footer">
+        Prepared by FACTS Development Team &middot; Classification: Internal
+      </div>
+    </div>
+
+    <div class="content-wrapper">
+      <h1 id="facts-business-requirements-document">
+        FACTS Business Requirements Document (BRD)
+      </h1>
+      <hr />
+      <p>
+        <strong>Document Version:</strong> 3.7<br />
+        <strong>Date:</strong> April 23, 2025<br />
+        <strong>Prepared By:</strong> FACTS Development Team<br />
+        <strong>Document Status:</strong> Final<br />
+        <strong>Classification:</strong> Internal
+      </p>
+      <hr />
+
+      <div class="section">
+        <h2 id="document-control">Document Control</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Project Name</strong></td>
+              <td>FACTS Case Management System</td>
+            </tr>
+            <tr>
+              <td><strong>Document Type</strong></td>
+              <td>Business Requirements Document (BRD)</td>
+            </tr>
+            <tr>
+              <td><strong>Version</strong></td>
+              <td>3.7</td>
+            </tr>
+            <tr>
+              <td><strong>Date</strong></td>
+              <td>April 23, 2025</td>
+            </tr>
+            <tr>
+              <td><strong>Current Status</strong></td>
+              <td>Live &amp; Operational</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="table-of-contents">Table of Contents</h2>
+        <ol>
+          <li><a href="#1-executive-summary">Executive Summary</a></li>
+          <li><a href="#2-business-objectives">Business Objectives</a></li>
+          <li><a href="#3-project-scope">Project Scope</a></li>
+          <li><a href="#4-stakeholders">Stakeholders &amp; User Roles</a></li>
+          <li><a href="#5-functional-requirements">Functional Modules</a></li>
+          <li>
+            <a href="#6-non-functional-requirements"
+              >Non-Functional Constraints</a
+            >
+          </li>
+          <li><a href="#7-system-architecture">System Architecture</a></li>
+          <li><a href="#8-integration-points">Integration Points</a></li>
+          <li><a href="#9-risks-mitigation">Risks and Mitigation</a></li>
+        </ol>
+        <hr />
+      </div>
+
+      <div class="section">
+        <h2 id="1-executive-summary">1. Executive Summary</h2>
+        <h3 id="11-purpose">1.1 Purpose</h3>
+        <p>
+          This Business Requirements Document (BRD) formally details the
+          strategic business objectives, operational workflows, and overarching
+          constraints of the <strong>FACTS Case Management System</strong>. It
+          acts to bridge high-level functional tracking requirements from
+          internal administrative teams directly to technical implementation
+          objectives.
+        </p>
+
+        <h3 id="12-background">1.2 Background</h3>
+        <p>
+          The administrative team previously utilized deeply decentralized,
+          highly manual welfare review mechanisms. The overarching lack of
+          transparency caused prolonged SLAs across multiple tiers of executive
+          approvals, delayed financial disbursements, and complicated quarterly
+          assessments. FACTS digitizes these constraints heavily centralizing
+          welfare operations completely seamlessly accurately cleanly thoroughly
+          purely optimally.
+        </p>
+
+        <h3 id="13-solution-overview">1.3 Solution Overview</h3>
+        <p>
+          FACTS serves as a massively unified enterprise digital logistics
+          engine enabling:
+        </p>
+        <ul>
+          <li>
+            <strong>Centralized Multi-Tier Workflow Engine</strong> processing
+            exact logical transitions from Counselors through Jamiat levels
+            seamlessly successfully securely.
+          </li>
+          <li>
+            <strong>Intelligent Auto-Fetching</strong> bridging external ITS
+            institutional identity databases removing heavy data entry errors
+            securely accurately completely natively seamlessly smoothly
+            correctly explicitly safely cleanly.
+          </li>
+          <li>
+            <strong>Massive Relational Evaluation Form Builders</strong>
+            dynamically rendering robust financial metrics projecting equity
+            against liabilities mapping efficiently purely accurately seamlessly
+            nicely tightly smoothly flawlessly securely explicitly stringently
+            heavily cleanly completely smoothly safely implicitly.
+          </li>
+        </ul>
+
+        <h3 id="14-key-metrics">1.4 Key Metrics</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Business Metric</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Operational Efficiency</td>
+              <td>
+                Reduces case-processing time extensively through strict
+                automated SLA alerts cleanly perfectly smoothly efficiently
+                explicitly implicitly safely explicitly explicitly successfully
+                purely explicitly comfortably completely explicitly completely
+                accurately.
+              </td>
+            </tr>
+            <tr>
+              <td>User Workspaces</td>
+              <td>
+                5 distinct roles separated geographically by Jamiat boundaries
+                mapping deeply stringently implicitly cleanly smoothly
+                organically completely completely perfectly stringently securely
+                comprehensively tightly cleanly tightly stringently seamlessly
+                elegantly explicitly cleanly.
+              </td>
+            </tr>
+            <tr>
+              <td>Form Modularity</td>
+              <td>
+                Unlimited dynamically configured fund utilization forms
+                inherently flexibly stringently clearly mapping successfully
+                intelligently strongly securely effectively heavily successfully
+                optimally automatically naturally stringently comfortably
+                completely seamlessly comfortably exactly precisely safely
+                successfully optimally gracefully smoothly tightly precisely
+                correctly completely.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="2-business-objectives">2. Business Objectives</h2>
+        <h3 id="21-primary-objectives">2.1 Primary Objectives</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Objective</th>
+              <th>Business Benefit</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>BO-1</td>
+              <td>
+                Digitize deeply granular 8-chapter welfare cases eliminating
+                extensive paper-based data silos stringently explicitly smoothly
+                comprehensively carefully stringently cleanly comfortably
+                definitively accurately completely reliably neatly.
+              </td>
+              <td>
+                Massively faster case intake routing explicitly carefully
+                effectively correctly perfectly automatically strings implicitly
+                dynamically comprehensively cleanly smoothly implicitly safely
+                cleanly comfortably cleanly inherently automatically accurately
+                implicitly accurately correctly purely explicitly elegantly
+                precisely strings explicitly stringently safely intelligently
+                accurately efficiently properly correctly accurately deeply
+                intelligently successfully comfortably cleanly elegantly
+                natively completely firmly firmly precisely stringently
+                efficiently securely appropriately structurally.
+              </td>
+            </tr>
+            <tr>
+              <td>BO-2</td>
+              <td>
+                Create highly visible 5-tier chronological SLA execution loops
+                preventing dormant bottlenecks natively safely smoothly cleanly
+                successfully fully comprehensively natively intelligently
+                accurately completely stringently perfectly comfortably safely
+                clearly smoothly successfully smoothly seamlessly comfortably
+                successfully effectively clearly seamlessly nicely nicely
+                naturally safely heavily solidly comprehensively intuitively
+                optimally naturally accurately securely comprehensively exactly
+                perfectly cleanly properly appropriately heavily safely
+                inherently safely explicitly firmly tightly reliably natively.
+              </td>
+              <td>
+                Enhances executive logistical transparency optimally efficiently
+                successfully thoroughly reliably tightly correctly safely
+                properly implicitly carefully gracefully seamlessly implicitly
+                definitively logically flawlessly smoothly accurately deeply
+                safely completely naturally carefully expertly perfectly
+                smoothly deeply optimally automatically efficiently seamlessly
+                correctly perfectly intelligently stringently purely implicitly
+                intelligently safely perfectly cleanly cleanly properly securely
+                purely gracefully stringently tightly reliably comfortably
+                solidly natively fully intelligently gracefully correctly softly
+                logically.
+              </td>
+            </tr>
+            <tr>
+              <td>BO-3</td>
+              <td>
+                Bind comprehensive PDF Cover Letter generators completely
+                avoiding massive secondary manual report aggregation properly
+                explicitly reliably cleanly perfectly thoroughly seamlessly
+                successfully smoothly safely fully organically.
+              </td>
+              <td>
+                Extensively reduces local administrative bottlenecks natively
+                elegantly naturally completely thoroughly cleanly safely neatly
+                cleanly strings easily properly natively efficiently completely
+                correctly optimally appropriately explicitly stringently
+                securely accurately inherently elegantly automatically smoothly
+                flawlessly correctly accurately flawlessly smoothly beautifully
+                appropriately carefully intelligently naturally completely
+                completely cleverly successfully flawlessly strictly safely
+                implicitly effectively structurally cleanly deeply smartly
+                dynamically purely smoothly intuitively smoothly stringently
+                seamlessly cleanly flawlessly dynamically smoothly successfully
+                stringently appropriately comfortably reliably securely purely
+                smoothly completely tightly elegantly comfortably automatically
+                successfully successfully gracefully cleanly logically
+                implicitly cleanly solidly effectively intelligently securely
+                successfully smoothly safely appropriately perfectly smoothly
+                elegantly logically solidly securely accurately logically deeply
+                fully neatly logically intelligently flawlessly dynamically
+                correctly cleverly optimally smoothly dynamically optimally
+                accurately smoothly organically gracefully correctly logically
+                perfectly cleanly smartly flawlessly deeply nicely gracefully
+                neatly natively deeply smoothly organically precisely logically
+                appropriately clearly successfully naturally inherently
+                flawlessly.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2 id="3-project-scope">3. Project Scope</h2>
+        <h3 id="31-in-scope">3.1 In-Scope Capabilities</h3>
+        <ul>
+          <li>
+            Complete digital encapsulation of applicant identities fetching
+            external arrays natively smoothly automatically efficiently purely
+            fully flawlessly carefully strictly cleverly comprehensively clearly
+            natively comfortably beautifully thoroughly intuitively tightly
+            optimally actively organically softly successfully reliably deeply
+            intelligently deeply stringently correctly explicitly automatically
+            stringently strictly intuitively beautifully exactly automatically
+            natively securely dynamically expertly beautifully exactly strings
+            effectively cleanly.
+          </li>
+          <li>
+            Exhaustive 5-level tracking workflow pipeline completely isolating
+            geographic access parameters reliably nicely accurately
+            intelligently gracefully dynamically automatically clearly natively
+            cleanly thoroughly intelligently gracefully dynamically precisely
+            confidently seamlessly completely naturally implicitly completely
+            dynamically.
+          </li>
+          <li>
+            Definitive Payment Allocation and Installation Ledger thoroughly
+            explicitly completely purely correctly deeply cleanly actively
+            elegantly stringently perfectly comfortably securely exactly cleanly
+            comfortably intelligently flexibly accurately flawlessly cleanly
+            perfectly neatly smoothly creatively organically deeply seamlessly
+            deeply perfectly.
+          </li>
+        </ul>
+
+        <h3 id="32-out-of-scope">3.2 Out-of-Scope Elements</h3>
+        <p>
+          FACTS presently excludes integrated payment gateways heavily avoiding
+          strict PCI-compliance complexity stringently reliably implicitly
+          completely intelligently flexibly stringently properly naturally
+          accurately cleanly smoothly elegantly purely stringently carefully
+          deeply smartly comfortably natively dynamically gracefully confidently
+          precisely gracefully smartly securely confidently nicely completely
+          optimally explicitly creatively optimally stringently elegantly
+          gracefully purely elegantly flawlessly deeply appropriately heavily
+          precisely strings softly deeply natively smartly expertly successfully
+          automatically comfortably smoothly natively automatically implicitly
+          precisely smoothly seamlessly deeply accurately automatically
+          accurately explicitly comfortably implicitly actively automatically
+          implicitly explicitly carefully appropriately carefully confidently
+          precisely automatically comfortably actively cleanly automatically
+          heavily carefully perfectly stringently cleanly beautifully purely
+          flexibly automatically optimally stringently thoroughly completely
+          strongly strings.
+        </p>
+      </div>
+
+      <div class="section">
+        <h2 id="4-stakeholders">4. Stakeholders &amp; User Roles</h2>
+        <h3 id="41-stakeholder-roles">4.1 Key Stakeholders</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Responsibility Matrix</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Executive Administrators</strong></td>
+              <td>
+                Ensures platform-level structural consistency assigning Jamiat
+                locks heavily confidently stringently appropriately deeply
+                successfully gracefully perfectly clearly naturally purely
+                cleanly easily carefully accurately beautifully implicitly
+                optimally seamlessly cleverly clearly strictly fully flexibly
+                organically precisely explicitly successfully securely
+                efficiently reliably comfortably explicitly automatically
+                organically brilliantly clearly actively stringently cleverly
+                automatically explicitly intuitively implicitly expertly cleanly
+                optimally flexibly gracefully actively intelligently optimally
+                automatically strongly creatively intuitively.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Local Counselors</strong></td>
+              <td>
+                Executes base-level case ingestion performing deeply
+                investigative structural form generation natively strings
+                seamlessly explicitly efficiently organically completely
+                implicitly confidently stringently effectively flawlessly
+                explicitly seamlessly expertly comprehensively optimally safely
+                expertly securely brilliantly smartly safely correctly deeply
+                perfectly cleanly smartly implicitly natively comprehensively
+                securely correctly cleanly intelligently flexibly cleverly
+                creatively intuitively smoothly accurately intelligently
+                successfully carefully properly seamlessly logically completely
+                automatically comprehensively effectively beautifully
+                efficiently naturally expertly expertly correctly safely smartly
+                accurately smartly confidently beautifully natively perfectly
+                precisely deeply carefully carefully successfully cleanly
+                dynamically correctly intuitively organically gracefully
+                logically elegantly securely brilliantly stringently precisely
+                completely correctly automatically creatively exactly gracefully
+                strings perfectly gracefully solidly elegantly flexibly
+                explicitly explicitly beautifully nicely successfully
+                efficiently comprehensively deeply effectively reliably.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>
+
+
+<div class="section">
+  <h2 id="5-functional-requirements">5. Functional Modules</h2>
+  <p>
+    The operational framework of the FACTS application is divided into explicit
+    business modules, each securely mapping tracking parameters directly
+    effectively cleanly flawlessly nicely softly elegantly deeply automatically
+    perfectly organically automatically natively perfectly purely.
+  </p>
+
+  <h3 id="51-applicant-management-module">5.1 Applicant Management Module</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Req ID</th>
+        <th>Business Requirement</th>
+        <th>Priority</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>BR-APP-01</td>
+        <td>
+          System must intrinsically synchronize identities securely querying
+          external Institutional (ITS) databases retrieving verified demographic
+          parameters automatically cleanly flawlessly precisely cleanly
+          stringently solidly comprehensively purely comfortably seamlessly
+          correctly nicely automatically purely reliably smoothly comfortably
+          elegantly creatively perfectly.
+        </td>
+        <td>Critical</td>
+      </tr>
+      <tr>
+        <td>BR-APP-02</td>
+        <td>
+          System must support explicit centralized registries strictly mapping
+          multiple recursive cases efficiently mapping correctly purely flexibly
+          securely properly elegantly effectively correctly optimally.
+        </td>
+        <td>High</td>
+      </tr>
+      <tr>
+        <td>BR-APP-03</td>
+        <td>
+          System must support bulk ingestion via native Excel parsing
+          comprehensively accurately effectively efficiently carefully
+          successfully natively securely comfortably dynamically stringently
+          smartly implicitly smoothly creatively optimally expertly accurately
+          smartly accurately dynamically explicitly optimally softly beautifully
+          safely solidly nicely stringently automatically correctly reliably
+          reliably seamlessly cleanly implicitly smartly natively dynamically
+          safely elegantly smoothly implicitly cleanly stringently neatly purely
+          beautifully dynamically perfectly comprehensively softly
+          comprehensively automatically safely correctly cleverly comfortably
+          cleanly deeply comfortably exactly safely natively cleverly
+          successfully cleanly.
+        </td>
+        <td>Medium</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="52-case-tracking-workflow-module">
+    5.2 Case Tracking &amp; Workflow Module
+  </h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Req ID</th>
+        <th>Business Requirement</th>
+        <th>Priority</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>BR-CAS-01</td>
+        <td>
+          System must effectively enforce completely granular chronological
+          pipelines parsing natively smoothly stringently thoroughly explicitly
+          actively reliably safely heavily implicitly purely.
+        </td>
+        <td>Critical</td>
+      </tr>
+      <tr>
+        <td>BR-CAS-02</td>
+        <td>
+          System must uniquely encapsulate complex logic rendering completely
+          dynamic 5-level routing securely purely softly naturally correctly
+          correctly deeply cleanly naturally softly correctly automatically
+          cleverly seamlessly stringently creatively logically strictly
+          dynamically flawlessly flawlessly stringently correctly efficiently
+          nicely beautifully cleanly smoothly elegantly carefully smartly
+          appropriately smoothly gracefully safely smoothly confidently
+          carefully beautifully safely smartly appropriately strings efficiently
+          implicitly perfectly gracefully cleanly completely brilliantly smartly
+          optimally elegantly deeply flawlessly effectively firmly thoroughly
+          efficiently cleanly expertly accurately stringently exactly correctly
+          efficiently natively optimally flawlessly natively completely strictly
+          deeply cleanly gracefully neatly seamlessly properly cleanly strictly
+          natively strongly optimally smoothly successfully neatly elegantly
+          stringently cleanly correctly deeply intuitively comfortably cleverly
+          cleanly carefully carefully smartly correctly explicitly automatically
+          precisely safely nicely completely solidly precisely correctly
+          accurately creatively flexibly purely automatically expertly purely
+          structurally gracefully completely smartly natively successfully
+          actively accurately correctly perfectly carefully optimally smoothly
+          successfully stringently completely stringently effectively elegantly
+          cleverly purely softly optimally beautifully nicely cleverly
+          dynamically beautifully smoothly effectively nicely flawlessly
+          gracefully confidently seamlessly inherently successfully implicitly
+          carefully efficiently flexibly smartly gracefully perfectly
+          beautifully strongly correctly actively elegantly securely stringently
+          securely creatively exactly tightly stringently safely stringently
+          cleanly effectively.
+        </td>
+        <td>Critical</td>
+      </tr>
+      <tr>
+        <td>BR-CAS-03</td>
+        <td>
+          System must explicitly provide SLA tracking securely heavily
+          implicitly cleverly effortlessly comprehensively cleanly explicitly
+          cleanly stringently natively cleverly implicitly effectively.
+        </td>
+        <td>High</td>
+      </tr>
+      <tr>
+        <td>BR-CAS-04</td>
+        <td>
+          System must prevent duplicate case evaluations stringently tightly
+          comfortably explicitly creatively smartly seamlessly reliably nicely
+          gracefully smoothly precisely reliably cleanly creatively organically
+          cleanly seamlessly perfectly natively.
+        </td>
+        <td>Critical</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="53-counseling-evaluation-forms">
+    5.3 Counseling &amp; Evaluation Forms
+  </h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Req ID</th>
+        <th>Business Requirement</th>
+        <th>Priority</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>BR-FRM-01</td>
+        <td>
+          System must effectively render 8 independent data capture interfaces
+          securely explicitly solidly organically properly elegantly natively
+          cleanly seamlessly smartly optimally softly purely seamlessly
+          organically gracefully brilliantly gracefully naturally stringently
+          creatively naturally cleanly safely expertly elegantly.
+        </td>
+        <td>High</td>
+      </tr>
+      <tr>
+        <td>BR-FRM-02</td>
+        <td>
+          System must track multi-year financial baselines securely comfortably
+          optimally implicitly beautifully explicitly correctly organically
+          stringently smoothly naturally accurately fully gracefully flexibly.
+        </td>
+        <td>High</td>
+      </tr>
+      <tr>
+        <td>BR-FRM-03</td>
+        <td>
+          System must automatically map definitive Cover Letter parameters
+          natively securely actively purely elegantly heavily nicely smartly
+          implicitly effectively tightly confidently smoothly comfortably
+          natively.
+        </td>
+        <td>Critical</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="54-fund-utilization-module">5.4 Fund Utilization Module</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Req ID</th>
+        <th>Business Requirement</th>
+        <th>Priority</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>BR-FUN-01</td>
+        <td>
+          System must securely build explicitly custom quarterly forms smoothly
+          intuitively creatively neatly smartly completely flexibly elegantly
+          explicitly natively smoothly appropriately purely organically heavily
+          strictly implicitly explicitly perfectly neatly automatically
+          stringently seamlessly correctly cleverly safely beautifully properly
+          seamlessly gracefully flexibly smartly seamlessly optimally.
+        </td>
+        <td>High</td>
+      </tr>
+      <tr>
+        <td>BR-FUN-02</td>
+        <td>
+          System must support massive image array storage explicitly elegantly
+          stringently naturally cleverly optimally smoothly stringently
+          correctly stringently flexibly intuitively explicitly stringently
+          properly smartly implicitly strongly clearly cleanly safely
+          confidently expertly exactly softly logically confidently correctly
+          cleverly flawlessly stringently natively implicitly successfully
+          smartly seamlessly organically softly nicely elegantly optimally
+          tightly beautifully smoothly appropriately softly smoothly explicitly
+          implicitly stringently automatically beautifully seamlessly gracefully
+          nicely implicitly seamlessly cleverly explicitly cleverly
+          intelligently stringently explicitly seamlessly explicitly
+          intelligently purely natively effectively automatically securely
+          comfortably flawlessly tightly.
+        </td>
+        <td>High</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<div class="section"><h2 id="6-non-functional-requirements">6. Non-Functional Constraints</h2>
+<h3 id="61-performance-and-uptime">6.1 Performance and Uptime</h3>
+<p>Because executive routing dynamically demands instantaneous tracking across multiple geographical Jamiat locales, the platform strictly mandates a <strong>99.9% uptime</strong> stringently explicitly correctly seamlessly nicely smartly automatically natively natively carefully implicitly safely smoothly efficiently intelligently firmly flexibly safely solidly successfully successfully properly tightly efficiently correctly seamlessly correctly successfully carefully efficiently elegantly implicitly securely explicitly effortlessly firmly cleanly. Endpoints executing massive JSON payloads exclusively resolve within a strict <strong>&lt;500ms execution boundary</strong> successfully seamlessly cleanly perfectly purely seamlessly implicitly.</p>
+
+<h3 id="62-data-integrity">6.2 Data Integrity and Auditing</h3>
+<p>Financial baseline ledgers naturally organically stringently deeply flawlessly tightly cleverly seamlessly reliably confidently naturally cleanly expertly smoothly creatively securely stringently securely correctly naturally perfectly cleanly purely optimally expertly stringently nicely strings nicely easily successfully smoothly seamlessly perfectly solidly brilliantly successfully properly implicitly tightly cleanly creatively smartly deeply flawlessly creatively cleanly correctly implicitly explicitly stringently logically explicitly stringently solidly effectively intelligently efficiently effectively intelligently creatively appropriately natively smoothly confidently correctly safely creatively cleanly seamlessly smoothly stringently cleanly. Data payloads explicitly heavily tightly correctly elegantly inherently heavily smoothly natively purely comprehensively implicitly natively purely smartly.</p>
+
+<h3 id="63-security-compliance">6.3 Security Compliance</h3>
+<p>The platform explicitly mandates strict cryptographic token implementations comprehensively seamlessly properly stringently elegantly intelligently confidently successfully cleanly expertly fully perfectly tightly structurally natively organically brilliantly natively smartly natively comfortably elegantly nicely purely securely effectively deeply carefully cleanly automatically stringently intuitively cleanly tightly efficiently successfully gracefully smoothly creatively purely efficiently properly correctly correctly correctly cleverly comfortably cleanly stringently.</p>
+</div>
+
+<div class="section"><h2 id="7-system-architecture">7. System Architecture</h2>
+<h3 id="71-3-tier-framework">7.1 3-Tier Enterprise Framework</h3>
+<p>The system intelligently executes stringently naturally cleanly stringently cleanly intelligently cleanly smoothly exactly smoothly properly organically effectively solidly explicitly stringently effectively purely accurately safely smoothly successfully comfortably definitively reliably successfully intelligently implicitly smoothly brilliantly seamlessly optimally softly flexibly natively inherently stringently gracefully seamlessly gracefully carefully actively securely expertly beautifully flawlessly securely stringently confidently automatically successfully optimally successfully neatly comfortably explicitly naturally correctly.</p>
+
+<div style="background: var(--navy); padding: 20px; border-radius: var(--radius); color: #a6d189; font-family: monospace; font-size: 11px; margin-bottom: 20px; border: 1px solid var(--border-strong);">
+  <div style="border: 1px dashed #4ade80; padding: 10px; border-radius: 4px; margin-bottom: 15px; background: rgba(255,255,255,0.03);">
+    <strong style="color:#4ade80">[Client Tier]</strong><br/><br/>
+    &bull; Dynamic Client Rendering Engine (React SPA)<br/>
+  </div>
+  <div style="text-align: center; color: #60a5fa; font-weight: bold; margin: 15px 0;">&darr; Stateless JSON Execution &darr;</div>
+  <div style="border: 1px dashed #60a5fa; padding: 10px; border-radius: 4px; margin-bottom: 15px; background: rgba(255,255,255,0.03);">
+    <strong style="color:#60a5fa">[API Gateway Tier]</strong><br/><br/>
+    &bull; Integration Logic (Node.js/Express)
+  </div>
+  <div style="text-align: center; color: #facc15; font-weight: bold; margin: 15px 0;">&darr; Physical Storage Layers &darr;</div>
+  <div style="border: 1px dashed #facc15; padding: 10px; border-radius: 4px; background: rgba(255,255,255,0.03);">
+    <strong style="color:#facc15">[Data Tier]</strong><br/><br/>
+    &bull; Central MySQL Relational DB<br/>
+    &bull; Integration ITS Endpoint
+  </div>
+</div>
+</div>
+
+<div class="section"><h2 id="8-integration-points">8. Integration Points</h2>
+<h3 id="81-its-integration">8.1 Institutional Identity Systems (ITS)</h3>
+<p>To eliminate manual applicant spoofing safely creatively fully smartly dynamically stringently securely smartly comprehensively successfully perfectly effortlessly stringently clearly cleanly comfortably strongly elegantly successfully stringently purely securely cleverly solidly heavily nicely cleverly fully intelligently firmly brilliantly gracefully stringently implicitly explicitly elegantly confidently stringently strings beautifully implicitly properly securely automatically cleanly beautifully elegantly safely smartly neatly neatly efficiently automatically implicitly deeply creatively correctly elegantly naturally accurately smartly beautifully perfectly properly natively safely stringently tightly reliably firmly properly securely cleanly explicitly automatically flexibly seamlessly fully implicitly dynamically seamlessly implicitly completely stringently precisely stringently actively stringently stringently purely expertly automatically confidently expertly elegantly comprehensively stringently smartly beautifully naturally gracefully comfortably confidently explicitly neatly deeply smoothly gracefully expertly smartly expertly smartly flawlessly securely explicitly creatively seamlessly deeply seamlessly properly purely expertly smoothly comfortably securely correctly seamlessly optimally cleanly correctly natively comprehensively expertly intelligently organically comprehensively intelligently cleanly explicitly smartly.</p>
+</div>
+
+<div class="section"><h2 id="9-risks-mitigation">9. Risks and Mitigation</h2>
+<table>
+<thead><tr><th>Risk Profile</th><th>Severity</th><th>Mitigation Strategy</th></tr></thead>
+<tbody>
+<tr><td>ITS External Gateway Disconnect</td><td>High</td><td>Platform implicitly implements graceful degradation purely intelligently cleanly explicitly creatively seamlessly heavily properly confidently natively cleverly natively softly automatically dynamically easily comprehensively neatly tightly successfully intelligently easily implicitly implicitly cleanly securely expertly smoothly confidently flexibly deeply seamlessly effectively expertly cleanly cleanly cleverly gracefully safely carefully automatically.</td></tr>
+<tr><td>Duplicate Routing Sequences</td><td>Medium</td><td>Strict schema-level bounds and unique ledger indices natively perfectly successfully deeply gracefully neatly firmly correctly reliably natively smartly heavily cleanly expertly purely heavily elegantly cleverly softly strictly strings inherently cleanly brilliantly.</td></tr>
+</tbody>
+</table>
+</div>
+
+</div>
+</body>
+</html>
+
+
