@@ -461,9 +461,9 @@ Reporting module with PDF export capabilities for quarterly reports and case sum
 ### 13. User and Role Management
 Complete RBAC system with granular permissions at the resource + action level.
 
-**Resources (14):** users, cases, applicants, counseling_forms, payment_management, cover_letters, cover_letter_forms, notifications, reports, roles, dashboard, welfare_checklist, master, case_identification
+**Resources (15):** users, cases, applicants, counseling_forms, comments, payment_management, cover_letters, cover_letter_forms, notifications, reports, roles, dashboard, welfare_checklist, master, case_identification
 
-**Actions per resource:** create, read, update, delete, approve, edit, fill, view, close_case, submit (varies by resource)
+**Actions per resource:** create, read, update, delete, approve, edit, fill, view, close_case, submit, read_comments, write_comments (varies by resource)
 
 ### 14. Master Data
 Administrative configuration tables: Case Types, Relations, Education Levels, Occupations, Executive Levels, Workflow Stages, Jamiat, Jamaat.
@@ -522,10 +522,10 @@ Administrative configuration tables: Case Types, Relations, Education Levels, Oc
 | PUT | `/:caseId/executive-approve` | Auth | Executive approval |
 | PUT | `/:caseId/executive-rework` | Auth | Executive rework |
 | PUT | `/:caseId/workflow-action` | Auth | Generic workflow action |
-| GET | `/:caseId/comments` | Auth | Get case comments |
-| POST | `/:caseId/comments` | Auth | Add comment |
-| GET | `/:caseId/workflow-comments/:step` | Auth | Workflow step comments |
-| POST | `/:caseId/workflow-comments` | Auth | Add workflow comment |
+| GET | `/:caseId/comments` | comments:read_comments | Get case comments |
+| POST | `/:caseId/comments` | comments:write_comments | Add comment |
+| GET | `/:caseId/workflow-comments/:step` | comments:read_comments | Workflow step comments |
+| POST | `/:caseId/workflow-comments` | comments:write_comments | Add workflow comment |
 | GET | `/:caseId/payment-schedule` | Case access | Get payment schedule |
 | POST | `/:caseId/payment-schedule` | Case access | Create payment schedule |
 | POST | `/:caseId/payment-schedule/:id/confirm-disbursement` | Case access | Confirm payment |
