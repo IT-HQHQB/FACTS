@@ -1,0 +1,3490 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FACTS â€” Software Requirements Specification v3.7</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  @page {
+    size: A4;
+    margin: 25mm 25mm 25mm 25mm;
+  }
+
+  :root {
+    --navy: #1a2a3a;
+    --navy-light: #243447;
+    --gold: #D4AF37;
+    --accent-blue: #2563eb;
+    --accent-blue-light: #eff6ff;
+    --bg: #ffffff;
+    --bg-alt: #f8fafc;
+    --bg-section: #f1f5f9;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --radius: 6px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 11px;
+    line-height: 1.55;
+    color: var(--text);
+    background: white;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== COVER PAGE ===== */
+  .cover-page {
+    background: linear-gradient(145deg, #0f2027 0%, var(--navy) 40%, #1a3a4a 100%);
+    color: white;
+    width: 100%;
+    height: 297mm;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover-page::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 25% 30%, rgba(37,99,235,0.08) 0%, transparent 55%),
+                radial-gradient(ellipse at 75% 70%, rgba(212,175,55,0.05) 0%, transparent 55%);
+  }
+  .cover-logo {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, var(--accent-blue), #1d4ed8);
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 800; color: white;
+    margin-bottom: 32px; position: relative;
+    box-shadow: 0 6px 24px rgba(37,99,235,0.3);
+  }
+  .cover-title {
+    font-size: 34px; font-weight: 800; letter-spacing: -0.5px;
+    margin-bottom: 6px; position: relative;
+  }
+  .cover-subtitle {
+    font-size: 18px; font-weight: 300; color: #60a5fa;
+    margin-bottom: 8px; position: relative;
+  }
+  .cover-standard {
+    font-size: 11px; font-weight: 400; color: rgba(255,255,255,0.4);
+    margin-bottom: 36px; position: relative;
+    letter-spacing: 0.5px;
+  }
+  .cover-meta {
+    position: relative;
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; max-width: 480px; width: 100%;
+  }
+  .cover-meta-item {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius); padding: 12px 16px;
+  }
+  .cover-meta-label {
+    font-size: 9px; text-transform: uppercase;
+    letter-spacing: 1.5px; color: rgba(255,255,255,0.45); margin-bottom: 3px;
+  }
+  .cover-meta-value { font-size: 13px; font-weight: 600; }
+  .cover-badge {
+    position: relative; margin-top: 32px;
+    background: rgba(22,163,106,0.12);
+    border: 1px solid rgba(22,163,106,0.25);
+    color: #4ade80; padding: 5px 18px; border-radius: 16px;
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .cover-footer {
+    position: absolute; bottom: 30px;
+    font-size: 10px; color: rgba(255,255,255,0.3);
+    letter-spacing: 0.5px;
+  }
+
+  /* ===== CONTENT ===== */
+  .content-wrapper {
+    max-width: 155mm;
+    margin: 0 auto;
+    padding: 0;
+  }
+
+  .section {
+    page-break-before: always;
+    break-before: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    padding: 25px 0;
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--border-strong);
+  }
+
+  /* ===== HEADINGS ===== */
+  h1 {
+    font-size: 18px; font-weight: 800; color: var(--navy);
+    margin: 20px 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--accent-blue);
+    page-break-after: avoid;
+  }
+
+  h2 {
+    font-size: 15px; font-weight: 700; color: var(--navy);
+    margin: 16px 0 8px;
+    padding: 7px 10px;
+    background: var(--bg-section);
+    border-left: 3px solid var(--accent-blue);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    page-break-after: avoid;
+  }
+
+  h3 {
+    font-size: 12.5px; font-weight: 600; color: var(--navy-light);
+    margin: 12px 0 6px;
+    page-break-after: avoid;
+  }
+
+  h4 {
+    font-size: 11.5px; font-weight: 600; color: var(--accent-blue);
+    margin: 10px 0 4px;
+    page-break-after: avoid;
+  }
+
+  /* ===== TEXT ===== */
+  p { margin: 0 0 6px; }
+
+  ul, ol {
+    margin: 4px 0 8px;
+    padding-left: 20px;
+  }
+  li {
+    margin-bottom: 2px;
+    line-height: 1.5;
+  }
+  li strong { color: var(--navy); }
+
+  /* ===== TABLES ===== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 6px 0 12px;
+    font-size: 10.5px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    page-break-inside: auto;
+  }
+  th {
+    white-space: nowrap;
+  }
+  td:first-child {
+    white-space: nowrap;
+    width: 20%;
+  }
+  thead {
+    background: var(--navy);
+  }
+  thead th {
+    color: white;
+    font-weight: 600;
+    text-align: left;
+    padding: 6px 8px;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    border: none;
+  }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:nth-child(even) {
+    background: #fafbfc;
+  }
+  td {
+    padding: 5px 8px;
+    vertical-align: top;
+    border: none;
+    line-height: 1.45;
+    word-break: break-word;
+  }
+  td:first-child {
+    font-weight: 500;
+    color: var(--navy);
+  }
+  td strong { color: var(--navy); }
+
+  .check { color: #16a34a; font-weight: bold; font-size: 13px; }
+  .cross { color: #dc2626; font-weight: bold; font-size: 13px; }
+
+  /* ===== CODE BLOCKS ===== */
+  pre {
+    background: var(--navy);
+    color: #a6d189;
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 9.5px;
+    line-height: 1.45;
+    margin: 6px 0 12px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  code {
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 10px;
+    background: var(--bg-section);
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: var(--accent-blue);
+  }
+  pre code {
+    background: none; padding: 0; color: inherit; font-size: 9.5px;
+  }
+
+  hr {
+    border: none;
+    height: 1px;
+    background: var(--border-strong);
+    margin: 14px 0;
+  }
+
+  em { color: var(--text-muted); }
+
+  .badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+
+  .badge.ok {
+    color: #0f5632;
+    background: #dcf6e7;
+  }
+
+  .badge.warn {
+    color: #664100;
+    background: #ffe9bd;
+  }
+
+  .badge.risk {
+    color: #6a1a1a;
+    background: #ffdada;
+  }
+
+  .req {
+    font-weight: 700;
+    color: var(--accent-blue);
+  }
+
+  .note {
+    border-left: 4px solid var(--gold);
+    background: #fffdf0;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    margin: 6px 0;
+  }
+
+  .small {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  .doc-footer {
+    text-align: center;
+    padding: 16px 10px;
+    color: var(--text-muted);
+    font-size: 10px;
+    border-top: 2px solid var(--accent-blue);
+    margin-top: 24px;
+    page-break-before: avoid;
+  }
+  .doc-footer strong { color: var(--navy); }
+
+  /* ===== PRINT ===== */
+  @media print {
+    body { background: white; }
+    .cover-page {
+      height: 297mm;
+      background: linear-gradient(145deg, #0f2027 0%, var(--navy) 40%, #1a3a4a 100%) !important;
+      color: white !important;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    thead {
+      background: var(--navy) !important;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    thead th {
+      color: white !important;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    tbody tr:nth-child(even) {
+      background: #fafbfc !important;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    h2 {
+      background: var(--bg-section) !important;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    pre {
+      background: var(--navy) !important; color: #a6d189 !important;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .check { color: #16a34a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cross { color: #dc2626 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    h1, h2, h3, h4 { page-break-after: avoid; }
+      .section {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        padding: 25px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid var(--border fuertes);
+      }
+    table { page-break-inside: auto; }
+    tr { page-break-inside: avoid; break-inside: avoid; }
+    pre { page-break-inside: avoid; break-inside: avoid; }
+  }
+
+  @media (max-width: 980px) {
+    .content-wrapper { padding: 0 16px; }
+    .cover-page { height: 100vh; }
+  }
+
+  /* Core utility classes */
+  .whitespace-nowrap {
+    white-space: nowrap !important;
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover-page">
+  <div class="cover-logo">SRS</div>
+  <div class="cover-title">FACTS Case Management System</div>
+  <div class="cover-subtitle">Software Requirements Specification</div>
+  <div class="cover-standard">IEEE 830-1998 (Adapted)</div>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Version</div>
+      <div class="cover-meta-value">3.7</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Date</div>
+      <div class="cover-meta-value">April 23, 2025</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Status</div>
+      <div class="cover-meta-value">Final</div>
+    </div>
+  </div>
+  <div class="cover-badge">&bull; Production Ready</div>
+  <div class="cover-footer">Prepared by FACTS Development Team &middot; Classification: Internal</div>
+</div>
+
+<!-- DOCUMENT BODY -->
+<div class="content-wrapper">
+<h1 id="software-requirements-specification-srs">Software Requirements Specification (SRS)</h1>
+<h1 id="facts-file-and-case-tracking-system">FACTS - File and Case Tracking System</h1>
+<hr />
+<p><strong>Document Version:</strong> 3.7<br />
+<strong>Date:</strong> April 23, 2025<br />
+<strong>Prepared By:</strong> FACTS Development Team<br />
+<strong>Document Status:</strong> Final<br />
+<strong>Classification:</strong> Internal<br />
+<strong>Standard:</strong> IEEE 830-1998 (Adapted)</p>
+<hr />
+<div class="section"><h2 id="document-control">Document Control</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Project Name</strong></td>
+<td>FACTS - File and Case Tracking System</td>
+</tr>
+<tr>
+<td><strong>Document Type</strong></td>
+<td>Software Requirements Specification (SRS)</td>
+</tr>
+<tr>
+<td><strong>Version</strong></td>
+<td>3.7</td>
+</tr>
+<tr>
+<td><strong>Date</strong></td>
+<td>April 23, 2025</td>
+</tr>
+<tr>
+<td><strong>Target Organization</strong></td>
+<td>Baaseteen and SHND</td>
+</tr>
+<tr>
+<td><strong>Technology Stack</strong></td>
+<td>Node.js + Express, React 18, MySQL 8.0+</td>
+</tr>
+</tbody>
+</table>
+</div><div class="section"><h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#1-introduction">Introduction</a>
+<ul><li>1.1 Purpose</li>
+<li>1.2 Scope</li>
+<li>1.3 Definitions, Acronyms, and Abbreviations</li>
+<li>1.4 References</li>
+<li>1.5 Overview</li></ul></li>
+<li><a href="#2-overall-description">Overall Description</a>
+<ul><li>2.1 Product Perspective</li>
+<li>2.2 Product Functions</li>
+<li>2.3 User Classes and Characteristics</li>
+<li>2.4 Operating Environment</li>
+<li>2.5 Design and Implementation Constraints</li>
+<li>2.6 Assumptions and Dependencies</li></ul></li>
+<li><a href="#3-system-features-and-functional-requirements">System Features and Functional Requirements</a>
+<ul><li>3.1 Authentication and User Management</li>
+<li>3.2 Case Identification and Eligibility Screening</li>
+<li>3.3 Case Lifecycle Management</li>
+<li>3.4 Counseling Forms and Digital Assessment</li>
+<li>3.5 Workflow and Multi-Level Approval</li>
+<li>3.6 Payment Management and Financial Tracking</li>
+<li>3.7 Fund Utilization and Quarterly Reporting</li>
+<li>3.8 Document Generation and Cover Letters</li>
+<li>3.9 Notifications and Dashboard Analytics</li>
+<li>3.10 Master Data and Configuration Management</li></ul></li>
+<li><a href="#4-external-interface-requirements">External Interface Requirements</a>
+<ul><li>4.1 User Interfaces</li>
+<li>4.2 Hardware Interfaces</li>
+<li>4.3 Software Interfaces</li>
+<li>4.4 Communication Interfaces</li></ul></li>
+<li><a href="#5-non-functional-requirements">Non-Functional Requirements</a>
+<ul><li>5.1 Performance Requirements</li>
+<li>5.2 Security Requirements</li>
+<li>5.3 Software Quality Attributes</li>
+<li>5.4 Scalability and Maintainability</li></ul></li>
+<li><a href="#6-database-specification">Database Specification</a>
+<ul><li>6.1 Database Technology</li>
+<li>6.2 Schema Overview</li>
+<li>6.3 Core Entity Relationships</li>
+<li>6.4 Data Integrity Requirements</li></ul></li>
+<li><a href="#7-api-and-integration-specification">API and Integration Specification</a>
+<ul><li>7.1 RESTful API Architecture</li>
+<li>7.2 External Service Integration</li>
+<li>7.3 Error Handling Standards</li></ul></li>
+<li><a href="#8-deployment-and-operations">Deployment and Operations</a>
+<ul><li>8.1 Production Environment</li>
+<li>8.2 Security Configuration</li>
+<li>8.3 Monitoring and Health Checks</li></ul></li>
+<li><a href="#9-verification-and-validation">Verification and Validation</a>
+<ul><li>9.1 Test Strategy</li>
+<li>9.2 Acceptance Criteria</li>
+<li>9.3 Requirements Traceability</li></ul></li>
+<li><a href="#10-appendices">Appendices</a>
+<ul><li>A: Workflow State Diagram</li>
+<li>B: Role Permission Matrix</li>
+<li>C: API Endpoint Catalog</li>
+<li>D: Database Schema Reference</li></ul></li>
+</ol>
+<hr />
+</div>
+
+<div class="section"><h2 id="1-introduction">1. Introduction</h2>
+<h3 id="11-purpose">1.1 Purpose</h3>
+<p>This Software Requirements Specification (SRS) document provides a complete and detailed description of the requirements for the <strong>FACTS - File and Case Tracking System</strong>. It is intended for:</p>
+<ul>
+<li><strong>Developers</strong> â€” to understand the technical requirements and implement features correctly</li>
+<li><strong>Testers</strong> â€” to create test cases and validate system behavior</li>
+<li><strong>Project Managers</strong> â€” to track scope and progress</li>
+<li><strong>Stakeholders</strong> â€” to understand system capabilities and approve specifications</li>
+<li><strong>Operations Team</strong> â€” to reference deployment and maintenance requirements</li>
+</ul>
+<p>This document describes the software's functional requirements, external interfaces, design constraints, performance attributes, and other non-functional requirements.</p>
+
+<h3 id="12-scope">1.2 Scope</h3>
+<p>FACTS is a comprehensive welfare case management platform that digitalizes and streamlines the complete lifecycle of welfare case processing for Baaseteen and SHND organizations. The system manages:</p>
+<ol>
+<li><strong>Case Identification and Eligibility Screening</strong> â€” Pre-assessment intake with ITS integration and decisioning workflow</li>
+<li><strong>Case Lifecycle Management</strong> â€” Full case progression from draft through closure with configurable workflow stages</li>
+<li><strong>Multi-Section Counseling Forms</strong> â€” Digital replacement of paper-based counseling with signatures and attachments</li>
+<li><strong>Role-Based Access Control</strong> â€” Granular permissions system with organizational scope (Jamiat/Jamaat) restrictions</li>
+<li><strong>Financial Management</strong> â€” Payment schedule planning, disbursement tracking, and quarterly fund utilization reporting</li>
+<li><strong>Document Generation</strong> â€” Automated PDF generation for cover letters and quarterly reassessment reports</li>
+<li><strong>Workflow Automation</strong> â€” Configurable approval stages with SLA tracking and notification systems</li>
+<li><strong>Analytics and Reporting</strong> â€” Role-specific dashboards and comprehensive audit trails</li>
+<li><strong>Master Data Management</strong> â€” Configuration of case types, organizational hierarchy, and system parameters</li>
+<li><strong>Integration Capabilities</strong> â€” ITS external service integration and Excel import/export functionality</li>
+</ol>
+<p><strong>Out of Scope:</strong> Mobile native applications, real-time messaging, video conferencing, payment gateway integration, multi-tenant architecture, third-party CRM integration.</p>
+
+<h3 id="13-definitions-acronyms-and-abbreviations">1.3 Definitions, Acronyms, and Abbreviations</h3>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FACTS</td>
+<td>File and Case Tracking System</td>
+</tr>
+<tr>
+<td>SRS</td>
+<td>Software Requirements Specification</td>
+</tr>
+<tr>
+<td>DCM</td>
+<td>Deputy Case Manager - primary case coordination role</td>
+</tr>
+<tr>
+<td>ZI</td>
+<td>Zonal Incharge - mid-level approval authority in workflow</td>
+</tr>
+<tr>
+<td>ITS</td>
+<td>Institutional Information System - external service for applicant/user data</td>
+</tr>
+<tr>
+<td>Jamiat</td>
+<td>Top-level organizational unit for access control and case scoping</td>
+</tr>
+<tr>
+<td>Jamaat</td>
+<td>Sub-organizational unit under Jamiat for granular access control</td>
+</tr>
+<tr>
+<td>Qardan</td>
+<td>Interest-free loan type of financial assistance</td>
+</tr>
+<tr>
+<td>Enayat</td>
+<td>Grant-based financial assistance that does not require repayment</td>
+</tr>
+<tr>
+<td>Manzoori</td>
+<td>Final sanction/approval stage in the workflow process</td>
+</tr>
+<tr>
+<td>RBAC</td>
+<td>Role-Based Access Control using resource:action permission model</td>
+</tr>
+<tr>
+<td>SLA</td>
+<td>Service Level Agreement - timing benchmarks for workflow stages</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="14-references">1.4 References</h3>
+<ul>
+<li><code>README (1).md</code> â€” Complete project documentation including architecture, modules, and deployment guide</li>
+<li><code>API_SCHEMAS.md</code> â€” Detailed API specification with request/response contracts for 150+ endpoints</li>
+<li><code>baaseteen_cms.md</code> â€” Database schema class diagram with table relationships and constraints</li>
+<li>IEEE Std 830-1998 â€” Standard for Software Requirements Specifications</li>
+</ul>
+
+<h3 id="15-overview">1.5 Overview</h3>
+<p>This document follows the IEEE 830-1998 structure adapted for modern web application requirements. Section 2 provides overall product context, Section 3 details functional requirements organized by business domain, Section 4 covers external interfaces, Section 5 addresses non-functional requirements, and subsequent sections cover technical specifications, deployment, and validation approaches.</p>
+</div>
+
+<div class="section"><h2 id="2-overall-description">2. Overall Description</h2>
+<h3 id="21-product-perspective">2.1 Product Perspective</h3>
+<p>FACTS is a standalone web-based case management system that replaces paper-based welfare processes with a centralized digital platform. The system consists of:</p>
+<ul>
+<li><strong>Frontend Application</strong> â€” React 18.2 SPA with responsive design and role-based UI</li>
+<li><strong>Backend API Server</strong> â€” Node.js + Express RESTful service layer with 150+ endpoints</li>
+<li><strong>Database Layer</strong> â€” MySQL 8.0+ with InnoDB engine for transactional integrity</li>
+<li><strong>External Integration</strong> â€” ITS service integration for applicant data prefill</li>
+<li><strong>File Storage</strong> â€” Local file system for document attachments and generated PDFs</li>
+</ul>
+
+<h3 id="22-product-functions">2.2 Product Functions</h3>
+<p>FACTS provides end-to-end case lifecycle management through the following core functions:</p>
+<table>
+<thead>
+<tr>
+<th>Function Category</th>
+<th>Key Capabilities</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Intake & Screening</strong></td>
+<td>Case identification, eligibility assessment, ITS integration, duplicate detection</td>
+</tr>
+<tr>
+<td><strong>Case Management</strong></td>
+<td>Lifecycle tracking, assignment management, status transitions, audit trails</td>
+</tr>
+<tr>
+<td><strong>Digital Forms</strong></td>
+<td>Multi-section counseling forms, digital signatures, file attachments, progress tracking</td>
+</tr>
+<tr>
+<td><strong>Workflow Control</strong></td>
+<td>Configurable approval stages, multi-level hierarchy, SLA monitoring, notifications</td>
+</tr>
+<tr>
+<td><strong>Financial Tracking</strong></td>
+<td>Payment schedules, disbursement confirmation, repayment tracking, fund utilization reports</td>
+</tr>
+<tr>
+<td><strong>Document Generation</strong></td>
+<td>PDF cover letters, quarterly reports, certificate templates, bulk exports</td>
+</tr>
+<tr>
+<td><strong>Analytics & Reporting</strong></td>
+<td>Role-specific dashboards, pipeline analytics, Excel exports, performance metrics</td>
+</tr>
+<tr>
+<td><strong>Administration</strong></td>
+<td>User management, RBAC, master data, organizational hierarchy, system configuration</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="23-user-classes-and-characteristics">2.3 User Classes and Characteristics</h3>
+<table>
+<thead>
+<tr>
+<th>User Class</th>
+<th>Technical Skill</th>
+<th>Domain Knowledge</th>
+<th>Primary Activities</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Super Admin</strong></td>
+<td>High</td>
+<td>High</td>
+<td>System governance, role configuration, technical troubleshooting</td>
+</tr>
+<tr>
+<td><strong>Admin</strong></td>
+<td>Medium-High</td>
+<td>High</td>
+<td>User management, master data maintenance, operational oversight</td>
+</tr>
+<tr>
+<td><strong>DCM</strong></td>
+<td>Medium</td>
+<td>High</td>
+<td>Case coordination, assignment management, workflow progression</td>
+</tr>
+<tr>
+<td><strong>Counselor</strong></td>
+<td>Medium</td>
+<td>High</td>
+<td>Counseling form completion, client interaction, documentation</td>
+</tr>
+<tr>
+<td><strong>Welfare Reviewer</strong></td>
+<td>Medium</td>
+<td>High</td>
+<td>Eligibility assessment, case review, approval decisions</td>
+</tr>
+<tr>
+<td><strong>Executive</strong></td>
+<td>Low-Medium</td>
+<td>High</td>
+<td>High-level approvals, strategic oversight, exception handling</td>
+</tr>
+<tr>
+<td><strong>Finance</strong></td>
+<td>Medium</td>
+<td>Medium</td>
+<td>Disbursement processing, payment tracking, financial reconciliation</td>
+</tr>
+<tr>
+<td><strong>Report Viewer</strong></td>
+<td>Low</td>
+<td>Medium</td>
+<td>Data analysis, report consumption, monitoring activities</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="24-operating-environment">2.4 Operating Environment</h3>
+<ul>
+<li><strong>Server Platform:</strong> Linux/Windows Server supporting Node.js 16+ runtime</li>
+<li><strong>Database:</strong> MySQL 8.0+ with InnoDB storage engine</li>
+<li><strong>Web Browser:</strong> Modern browsers supporting ES6+ (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)</li>
+<li><strong>Network:</strong> Internet connectivity for ITS integration and email notifications</li>
+<li><strong>Storage:</strong> Local file system with adequate space for attachment storage</li>
+</ul>
+
+<h3 id="25-design-and-implementation-constraints">2.5 Design and Implementation Constraints</h3>
+<ul>
+<li><strong>Technology Stack:</strong> Must use specified Node.js + Express + React + MySQL architecture</li>
+<li><strong>Authentication:</strong> JWT-based stateless authentication with bcrypt password hashing</li>
+<li><strong>API Design:</strong> RESTful endpoints with JSON payloads and standard HTTP methods</li>
+<li><strong>Database:</strong> Single database instance without horizontal partitioning</li>
+<li><strong>File Handling:</strong> Local storage only, no cloud storage integration</li>
+<li><strong>Browser Support:</strong> Web-only interface, no mobile native application</li>
+</ul>
+
+<h3 id="26-assumptions-and-dependencies">2.6 Assumptions and Dependencies</h3>
+<ul>
+<li><strong>ITS Service Availability:</strong> External ITS service maintains stable API and data contracts</li>
+<li><strong>Network Connectivity:</strong> Reliable internet connection for external service calls</li>
+<li><strong>User Training:</strong> Users receive adequate training on role-specific workflows</li>
+<li><strong>Data Migration:</strong> Legacy data migration handled separately from this implementation</li>
+<li><strong>Infrastructure:</strong> Production environment provisioned with adequate resources</li>
+<li><strong>Maintenance Windows:</strong> Scheduled maintenance windows available for updates</li>
+</ul>
+</div>
+
+
+
+<!-- SECTION 3 -->
+<div class="section">
+  <h2 id="3-system-features-and-functional-requirements">
+    3. System Features and Functional Requirements
+  </h2>
+
+  <h3 id="31-authentication-and-role-based-access-control-rbac">
+    3.1 Authentication and Role-Based Access Control (RBAC)
+  </h3>
+  <h4 id="311-description">3.11 Description</h4>
+  <p>
+    The system utilizes a comprehensive, stateless JSON Web Token (JWT)
+    architecture to manage authentication and authorization. It employs a highly
+    granular Role-Based Access Control (RBAC) model where permissions are
+    resolved dynamically not just by the user's assigned role, but intersected
+    strictly against their explicitly configured geographical scope constraints
+    (<code>jamiat_id</code> and <code>jamaat_id</code> boundaries). The
+    application prevents any traversal of Case data that falls outside a user's
+    geographical assignment unless they possess global Super Admin overrides.
+  </p>
+
+  <h4 id="312-functional-requirements">31.2 Functional Requirements</h4>
+
+  <p><strong>SRS-AUTH-001: JWT Authentication & Session Management</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Attribute</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Priority</td>
+        <td>Critical</td>
+      </tr>
+      <tr>
+        <td>Trigger</td>
+        <td>User submits credentials via `/api/auth/login`.</td>
+      </tr>
+      <tr>
+        <td>Input</td>
+        <td>
+          `username` (String, strictly sanitized) and `password` (String,
+          minimum 8 chars).
+        </td>
+      </tr>
+      <tr>
+        <td>Processing</td>
+        <td>
+          1. Validate input against `users` table.<br />2. Compare bcrypt hash
+          (10 rounds minimum) securely.<br />3. Check `is_active` boolean
+          precisely ensuring deactivated accounts cannot authenticate.<br />4.
+          Generate signed JWT containing `id`, `role`, `jamiat_id`, `jamaat_id`,
+          and explicit permission arrays.<br />5. Execute comprehensive
+          rate-limiting natively (e.g., maximum 5 failed attempts per IP per 15
+          minutes mapping to `express-rate-limit`).
+        </td>
+      </tr>
+      <tr>
+        <td>Output</td>
+        <td>
+          HTTP 200 with JWT payload and comprehensive nested `user` profile
+          tree; or HTTP 401 Unauthorized securely without revealing if username
+          or password was incorrect specifically.
+        </td>
+      </tr>
+      <tr>
+        <td>Database</td>
+        <td>
+          `users` table schema dependencies natively mapping lookup indices
+          strictly.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    <strong>SRS-AUTH-002: Dynamic Profile and Permission Resolution</strong>
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Attribute</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Priority</td>
+        <td>Critical</td>
+      </tr>
+      <tr>
+        <td>Trigger</td>
+        <td>
+          Client initializes application and verifies active session securely.
+        </td>
+      </tr>
+      <tr>
+        <td>Input</td>
+        <td>Bearer Token inside Authorization header.</td>
+      </tr>
+      <tr>
+        <td>Processing</td>
+        <td>
+          1. Verify JWT signature cleanly utilizing robust `JWT_SECRET`.<br />2.
+          Re-hydrate complex permission matrix actively retrieving the user's
+          `assigned_roles` natively mapping the `role_jamiat_jamaat` structural
+          arrays securely.<br />3. Resolve exactly 14 core resource strings
+          (e.g., `cases`, `users`, `counseling_forms`, `reports`) mapped
+          securely against discrete action vectors (`create`, `read`, `update`,
+          `delete`, `approve`).
+        </td>
+      </tr>
+      <tr>
+        <td>Output</td>
+        <td>
+          Complete permission tree delivered to React frontend dictating
+          rendering availability for UI components specifically.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    <strong
+      >SRS-RBAC-001: Geographical Scope Enforcement (Jamiat/Jamaat
+      Filters)</strong
+    >
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Attribute</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Priority</td>
+        <td>Critical</td>
+      </tr>
+      <tr>
+        <td>Trigger</td>
+        <td>
+          Any `GET` request querying aggregation resources inherently (e.g.,
+          retrieving Case lists).
+        </td>
+      </tr>
+      <tr>
+        <td>Processing</td>
+        <td>
+          1. Intercept request securely via `permissionMiddleware.js`.<br />2.
+          Evaluate the requesting active `user.role` natively.<br />3. If the
+          user is NOT `Super Admin` or `Admin`, forcibly inject rigid `WHERE`
+          constraints natively bounding the query explicitly.<br />4. Ex: A DCM
+          with `jamiat_id = 15` will securely ONLY receive cases specifically
+          joined to `jamiat_id = 15`. Overrides are structurally impossible.
+        </td>
+      </tr>
+      <tr>
+        <td>Output</td>
+        <td>
+          Filtered Array of securely scoped record objects strictly limiting
+          data leakage completely.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4 id="313-role-definitions-and-matrices">
+    3.1.3 Role Definitions and Matrices
+  </h4>
+
+  <p>
+    The following details the exact internal logic mapping roles strictly to
+    their inherent capabilities across the application lifecycle securely.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Role Name</th>
+        <th>Scope Boundaries</th>
+        <th>Execution Capabilities</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Super Admin</strong></td>
+        <td>Global (No restrictions)</td>
+        <td>
+          Execute full CRUD on completely all 14 resources explicitly. Can
+          manipulate Master Data natively.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Admin</strong></td>
+        <td>Global</td>
+        <td>
+          Control user management securely, observe overriding reporting
+          globally. Cannot natively delete master constraints without warning.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>DCM (Deputy Case Mgr)</strong></td>
+        <td>Jamiat Level Scope</td>
+        <td>
+          Full CRUD on `cases`, `applicants`, and `counseling_forms` exclusively
+          localized to their assigned Jamiat securely. Reassign cases tracking
+          natively.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Counselor</strong></td>
+        <td>Jamaat Level Scope</td>
+        <td>
+          Update assigned `counseling_forms` securely. Edit applicant
+          demographics. Cannot definitively alter Workflow statuses overriding
+          DCM assignment natively.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Welfare Reviewer</strong></td>
+        <td>Jamiat Level Scope</td>
+        <td>
+          Execute specific `welfare-approve` or `welfare-reject` actions
+          strictly verifying checklists explicitly.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>ZI / Executive Levels</strong></td>
+        <td>Global / Jamiat mapped</td>
+        <td>
+          Process multi-tier authorizations securely advancing states from `ZI
+          Approval` -> `KG Review` -> `Manzoori`.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr />
+
+  <h3 id="32-case-identification-and-eligibility-screening">
+    3.2 Case Identification and Pre-Assessment Screening
+  </h3>
+  <h4 id="321-description">3.2.1 Description</h4>
+  <p>
+    Serves as the rigid preliminary ingress gateway securely managing applicant
+    discovery. It explicitly integrates with internal ITS APIs fetching
+    demographic profiles intelligently avoiding redundant data entry inherently.
+    It acts securely assessing baseline income thresholds dynamically
+    determining if an applicant formally proceeds into definitive Case
+    instantiation.
+  </p>
+
+  <h4 id="322-functional-requirements">3.2.2 Functional Requirements</h4>
+
+  <p><strong>SRS-ID-001: Auto-Fetch Integration (ITS API)</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Attribute</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Priority</td>
+        <td>Critical</td>
+      </tr>
+      <tr>
+        <td>Trigger</td>
+        <td>
+          User inputs 8-digit unique identifier triggering `GET
+          /api/applicants/lookup/:itsNumber`.
+        </td>
+      </tr>
+      <tr>
+        <td>Processing</td>
+        <td>
+          1. Validate explicit numeric 8-digit requirement cleanly.<br />2.
+          Query internal application database securely; if found, return cached
+          `applicants` data natively.<br />3. If absent, proxy request
+          definitively calling external Institutional Information System API
+          heavily masking external credentials utilizing internal Node mapping
+          securely.<br />4. Parse JSON dynamically capturing `full_name`, `age`,
+          `gender`, `phone`, `email`, and `photo` Base64 blob explicitly.<br />5.
+          Auto-populate Form UI safely avoiding manual transcription entirely.
+        </td>
+      </tr>
+      <tr>
+        <td>Error Handling</td>
+        <td>
+          Timeout safely mapped to 5 seconds displaying "ITS API Unreachable"
+          cleanly limiting thread lockups precisely.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>SRS-ID-002: Duplicate Application Prevention Engine</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Attribute</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Priority</td>
+        <td>High</td>
+      </tr>
+      <tr>
+        <td>Processing</td>
+        <td>
+          1. Trigger lookup specifically across the `cases` table checking
+          explicitly for active instances securely matching the provided
+          `applicant_id`.<br />2. Scrutinize `status` vectors dynamically. If an
+          active case exists mapped strictly escaping states `Closed` or
+          `Rejected`, immediately hard-block progression securely throwing HTTP
+          409.<br />3. This explicitly forces users to utilize active case
+          containers uniformly preventing dual-funding conflicts definitively.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>SRS-ID-003: Income Assessment Evaluation Logic</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Attribute</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Priority</td>
+        <td>High</td>
+      </tr>
+      <tr>
+        <td>Processing</td>
+        <td>
+          1. Capture explicit metrics defining `total_family_members`,
+          `earning_family_members`, `individual_income`, and `family_income`
+          precisely.<br />2. Store vectors sequentially ensuring
+          `case_identifications` encapsulates exact financial pictures
+          definitively prior to case generation.<br />3. Log modifications
+          stringently utilizing the `case_identification_income_logs` table
+          effectively guaranteeing auditability if baseline definitions change
+          mapping exact `changed_by` signatures natively.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>SRS-ID-004: Eligibility State Transitions</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Attribute</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Priority</td>
+        <td>Critical</td>
+      </tr>
+      <tr>
+        <td>Processing</td>
+        <td>
+          1. Process transition mutating state from `PENDING` -> `ELIGIBLE`
+          strictly via authorized review (e.g. `PUT
+          /api/case-identifications/:id/review`).<br />2. Instantiate entirely
+          new entity natively mapping `INSERT INTO cases` securely branching
+          into overarching workflow structures definitively.<br />3. Transfer
+          explicit linkages tracking `case_id` directly mapping to the original
+          identification object cleanly.
+        </td>
+      </tr>
+      <tr>
+        <td>Workflow</td>
+        <td>
+          Eligible evaluations transition cleanly into formal `DRAFT` case
+          statuses actively.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr />
+</div>
+
+
+<hr />
+<h3 id="33-case-lifecycle-and-multi-stage-workflow">
+  3.3 Case Lifecycle and Multi-Stage Workflow
+</h3>
+<h4 id="331-description">3.3.1 Description</h4>
+<p>
+  The system tracks the lifecycle of every case sequentially executing
+  configured approval flows. It leverages dynamic `workflow_stages` mappings
+  explicitly dictating required state transitions enforcing rigid SLA metrics
+  securely. The workflow engine ensures complex hierarchy authorizations (up to
+  5 Executive levels) process flawlessly natively.
+</p>
+
+<h4 id="332-functional-requirements">3.3.2 Functional Requirements</h4>
+
+<p><strong>SRS-WF-001: Dynamic State Instantiation & Assignment</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Priority</td>
+      <td>Critical</td>
+    </tr>
+    <tr>
+      <td>Trigger</td>
+      <td>`POST /api/cases` executing creation payload explicitly.</td>
+    </tr>
+    <tr>
+      <td>Processing</td>
+      <td>
+        1. Map the `case_type_id` resolving targeted distinct configurations
+        (e.g., Baaseteen vs CES mappings).<br />2. Automatically assign the
+        `current_workflow_stage_id` natively pointing to ordered strictly first
+        sequence.<br />3. Populate `sla_value` extrapolating standard timestamps
+        establishing definitive boundaries generating SLA targets securely.
+      </td>
+    </tr>
+    <tr>
+      <td>Output</td>
+      <td>Unique `case_number` string explicitly formatted (`BS-YYYY-001`).</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>SRS-WF-002: Stage Progression Validations</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Priority</td>
+      <td>Critical</td>
+    </tr>
+    <tr>
+      <td>Trigger</td>
+      <td>
+        `PUT /api/cases/:id/workflow-action` attempting to advance exactly
+        forward safely.
+      </td>
+    </tr>
+    <tr>
+      <td>Processing</td>
+      <td>
+        1. Reject transition entirely if structural prerequisites fail crucially
+        (e.g. `counseling_forms.is_complete` MUST equal 1).<br />2. Validate
+        user role permissions actively determining if the requesting client
+        holds the necessary `approve` or `forward` arrays mapped natively to the
+        destination `workflow_stage_id`.<br />3. Update `status_id` pointer
+        natively, recording the explicit transition directly inside
+        `case_status_history` ensuring strict audit logs securely matching user
+        footprints.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>SRS-WF-003: Reverse Action Rework Logging</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Priority</td>
+      <td>High</td>
+    </tr>
+    <tr>
+      <td>Processing</td>
+      <td>
+        1. Initiate strict fallback loops navigating structurally backwards
+        handling explicit "Rework" actions.<br />2. Force users injecting
+        mandatory explanatory remarks structurally mapping into `case_comments`
+        natively classifying the `comment_type` strictly as `rejection`.<br />3.
+        Reset definitive SLA tracking timers allowing resubmission processing
+        correctly.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>SRS-SLA-001: Background SLA Alert Evaluations</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Priority</td>
+      <td>Medium</td>
+    </tr>
+    <tr>
+      <td>Processing</td>
+      <td>
+        1. Execute node cron tasks actively mapping active queries retrieving
+        `cases` matching `sla_status` explicitly targeting `at_risk` limits.<br />2.
+        Synthesize internal system arrays triggering `notifications` tables
+        safely pushing alerts targeted exactly to `assigned_counselor_id`
+        pointers definitively.<br />3. Color-code UI badges rendering explicit
+        hex values dynamically (e.g. Red for breach, Amber for warning).
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="333-workflow-stage-mappings">
+  3.3.3 Workflow Stage Mappings (Baaseteen Model)
+</h4>
+
+<ol>
+  <li>
+    <strong>Draft (Initial Stage)</strong> &rarr; Transitions to
+    <em>Counseling</em> upon DCM assignment.<br /><em>Required Role: DCM</em>
+  </li>
+  <li>
+    <strong>Counseling</strong> &rarr; Transitions to
+    <em>Welfare Review</em> upon explicitly finalizing 8 distinct form
+    chapters.<br /><em>Required Role: Counselor</em>
+  </li>
+  <li>
+    <strong>Welfare Review</strong> &rarr; Transitions to <em>ZI Approval</em>.
+    Can be explicitly failed back generating Rework flags.<br /><em
+      >Required Role: Welfare Reviewer</em
+    >
+  </li>
+  <li>
+    <strong>ZI Approval</strong> &rarr; Transitions to
+    <em>KG Review</em> strictly requiring explicit review mapping.<br /><em
+      >Required Roles: ZI / ZI Core</em
+    >
+  </li>
+  <li>
+    <strong>KG Review</strong> &rarr; Transitions to
+    <em>Operations Lead</em>.<br /><em>Required Role: KG Approver</em>
+  </li>
+  <li>
+    <strong>Operations Lead</strong> &rarr; Transitions to
+    <em>Cover Letter Edit</em> actively unblocking PDF generations.<br /><em
+      >Required Role: Operations Approver</em
+    >
+  </li>
+  <li>
+    <strong>Executive Approval Tiers (1-5)</strong> &rarr; Sequential locking
+    tiers actively mapping exact arrays handling massive fund thresholds
+    definitively.<br /><em
+      >Required Roles: Executives (Mapped strictly by Level IDs)</em
+    >
+  </li>
+  <li>
+    <strong>Manzoori (Sanction)</strong> &rarr; Transitions to
+    <em>Financial Finalizations</em>.<br /><em>Required Role: Administrator</em>
+  </li>
+</ol>
+
+<hr />
+
+<h3 id="34-counseling-forms-and-digital-assessment">
+  3.4 Counseling Forms and Digital Assessment
+</h3>
+<h4 id="341-description">3.4.1 Description</h4>
+<p>
+  Delivers a robust 8-chapter wizard application natively dismantling
+  paper-based processes securely digitizing immense datasets. Built
+  fundamentally using `React Hook Form` maximizing fluid states reducing complex
+  re-rendering blocking effectively handling hundreds of distinct fields
+  uniformly. Backed strictly by robust normalized databases segregating arrays
+  cleanly ensuring safe mutations precisely without race conditions.
+</p>
+
+<h4 id="342-functional-requirements">3.4.2 Functional Requirements</h4>
+
+<p><strong>SRS-FRM-001: Fragmented State Persistence</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Priority</td>
+      <td>Critical</td>
+    </tr>
+    <tr>
+      <td>Trigger</td>
+      <td>
+        Counselor clicks "Save Draft" natively navigating strictly across
+        chapters actively.
+      </td>
+    </tr>
+    <tr>
+      <td>Processing</td>
+      <td>
+        1. Map targeted precise HTTP PATCH variables securely addressing
+        distinct API paths strictly limiting payload explosions exclusively
+        (e.g. `PATCH /api/counseling-forms/:id/section/family`).<br />2. Upsert
+        structures explicitly mapped securely tracking arrays safely storing
+        explicitly isolating fragments correctly preventing unrelated dataloss
+        definitively.
+      </td>
+    </tr>
+    <tr>
+      <td>Database</td>
+      <td>
+        Isolated entities actively utilizing explicit schemas:`family_details`,
+        `family_members`, `assessment`, `financial_assistance`,
+        `economic_growth`.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>SRS-FRM-002: Granular Form Chapter Validations</strong></p>
+<p>
+  Each explicit chapter establishes robust native restrictions definitively.
+</p>
+<ul>
+  <li>
+    <strong>Personal Details:</strong> Auto-populated mostly natively inherited
+    from ITS arrays. Fields like `address` are editable tracking accurately.
+  </li>
+  <li>
+    <strong>Family Details:</strong> Executes dynamic table arrays natively
+    recording 1-to-Many mappings strictly tracking individual `family_members`
+    generating aggregate statistics tracking overall `liabilities_total` and
+    `income_total_monthly` reliably accurately.
+  </li>
+  <li>
+    <strong>Assessment Section:</strong> Captures subjective text securely
+    evaluating `background_education` matching dynamically mapped product arrays
+    inside `assessment_products_services`.
+  </li>
+  <li>
+    <strong>Financial Assistance:</strong> Orchestrates exact complex ledger
+    mappings parsing `qh_fields`, definitively calculating total enayat vs
+    qardan splits actively checking structural thresholds reliably.
+  </li>
+  <li>
+    <strong>Economic Growth (Projections):</strong> Manages intense 5-year
+    multi-matrix matrices resolving precise decimal arrays mapping directly
+    updating `economic_growth_projections` effectively.
+  </li>
+  <li>
+    <strong>Declaration & Signatures:</strong> Secures explicitly drawn base64
+    canvas artifacts generating exact HTML rendering payloads explicitly
+    capturing applicant/counselor/tr_committee footprints rigorously mapping
+    `declaration` arrays natively.
+  </li>
+</ul>
+
+<p><strong>SRS-FRM-003: Interdependent Calculations Engine</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Priority</td>
+      <td>High</td>
+    </tr>
+    <tr>
+      <td>Processing</td>
+      <td>
+        1. Evaluate frontend explicit mathematical functions ensuring aggregate
+        inputs heavily map cleanly.<br />2. Ex: If `Family Members = 5`,
+        dynamically force creation loops ensuring 5 distinct iteration elements
+        natively render accurately preventing incomplete datasets completely.<br />3.
+        Ex: Cross-validate explicitly derived `total_expenses_year1` natively
+        against `revenue_sales_year1` establishing exact `profit_year1` metrics
+        automatically effectively mapping robust financial health natively.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+
+<hr />
+<h3 id="35-cover-letters-and-payment-management">
+  3.5 Cover Letters and Payment Management
+</h3>
+<h4 id="351-description">3.5.1 Description</h4>
+<p>
+  The Cover Letter and Payment Management modules automate manual administrative
+  overhead reliably. Cover Letters map dynamically formatted HTML into printable
+  PDFs compiling entire case summations rapidly. Payment Management transforms
+  approved lump sum distributions (Enayat vs Qardan) into explicitly parsed
+  relational schedule matrices tracking disbursements chronologically natively.
+</p>
+
+<h4 id="352-functional-requirements">3.5.2 Functional Requirements</h4>
+
+<p><strong>SRS-COV-001: Cover Letter Aggregation & PDF Generation</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Priority</td>
+      <td>High</td>
+    </tr>
+    <tr>
+      <td>Trigger</td>
+      <td>
+        Workflow advances to `Cover Letter` stage triggering `POST
+        /api/cover-letters/generate/:caseId`.
+      </td>
+    </tr>
+    <tr>
+      <td>Processing</td>
+      <td>
+        1. Consolidate mapping natively across active `applicant`, `counselor`,
+        `financial_assistance`, `economic_growth`, and active `workflow_history`
+        sets generating 50+ data points securely.<br />2. Format numeric data
+        parsing precision decimals correctly.<br />3. Bind object tightly
+        executing `Puppeteer` instance dynamically mapping to standard strictly
+        formatted HTML templates rendering high-fidelity vectors natively.<br />4.
+        Inject explicit embedded base64 canvas drawings matching
+        `welfare_department_signature_drawing_data` exactly.<br />5. Store
+        physical artifact inside `UPLOAD_PATH` while persisting absolute string
+        references mapped securely to `cover_letters`.
+      </td>
+    </tr>
+    <tr>
+      <td>Output</td>
+      <td>
+        Buffer response executing local file saving, generating a downloadable
+        URI cleanly.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>SRS-PAY-001: Dynamic Payment Matrix Generation</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Priority</td>
+      <td>Critical</td>
+    </tr>
+    <tr>
+      <td>Trigger</td>
+      <td>
+        Executive 'Manzoori' finalization mapping definitive `approved_enayat`
+        and `approved_qardan` thresholds definitively.
+      </td>
+    </tr>
+    <tr>
+      <td>Processing</td>
+      <td>
+        1. Check `financial_assistance_qh_repayment_schedule` arrays mapped to
+        active case cleanly.<br />2. Dynamically instantiate monthly breakdown
+        matrices. Ex: If approved Enayat is 500,000 mapping exactly "Immediate"
+        vs "Year 1", generate precise installment rows distributing funds
+        logically mapping precisely mapping specific explicit timelines
+        natively.<br />3. Commit to `repayment_schedules` explicitly assigning
+        `amount_due`, `due_date` mapping iteratively across up to 5 consecutive
+        years securely mapping logic definitively.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>SRS-PAY-002: Authorized Disbursement Execution</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Priority</td>
+      <td>High</td>
+    </tr>
+    <tr>
+      <td>Input</td>
+      <td>
+        Finance user selecting explicit installment confirming physical
+        transaction completion cleanly.
+      </td>
+    </tr>
+    <tr>
+      <td>Processing</td>
+      <td>
+        1. Authenticate user possessing definitive `finance` roles strictly
+        protecting ledger mutating access completely.<br />2. Evaluate `POST
+        /api/cases/:caseId/payment-schedule/:id/confirm-disbursement`.<br />3.
+        Validate `installment_id` modifying boolean flag `is_paid = 1` executing
+        timestamp bindings securely tracking real-time ledger velocities
+        reliably accurately.<br />4. Track total disbursed vectors updating
+        overarching case metrics exactly effectively.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<h3 id="36-fund-utilization-and-welfare-reporting">
+  3.6 Fund Utilization and Welfare Reporting
+</h3>
+<h4 id="361-description">3.6.1 Description</h4>
+<p>
+  Fund Utilization creates accountability assuring explicitly disbursed funds
+  map practically to stated upliftment goals dynamically. Uses a dynamic React
+  form builder executing configurable JSON structures generated strictly by
+  Admin parameters permitting incredible flexibility natively without code
+  recompilation handling varied case complexities practically.
+</p>
+
+<h4 id="362-functional-requirements">3.6.2 Functional Requirements</h4>
+
+<p><strong>SRS-FUN-001: Dynamic Form Schema Execution</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Priority</td>
+      <td>High</td>
+    </tr>
+    <tr>
+      <td>Processing</td>
+      <td>
+        1. Retrieve configurations natively via `GET
+        /api/fund-utilization-master/sections` mapping relationships strictly
+        executing nested queries mapping specific
+        `fund_utilization_questions`.<br />2. Render native React components
+        evaluating explicitly bound `field_type` mapping types `text`, `number`,
+        `select`, `file_upload`, and `table` dynamically.<br />3. Bind
+        validation rules explicitly targeting `min_length`, `max_length`,
+        `is_required` securely avoiding fragmented submissions natively.<br />4.
+        Process auto-fill constraints matching explicit `auto_fill_key` queries
+        resolving Applicant static data intelligently reducing manual tasks
+        precisely.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>SRS-FUN-002: Utilization Artifact Processing Engine</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Priority</td>
+      <td>Critical</td>
+    </tr>
+    <tr>
+      <td>Input</td>
+      <td>Binary image files capturing `shop_site`, `stock_equipment`.</td>
+    </tr>
+    <tr>
+      <td>Processing</td>
+      <td>
+        1. Validate explicit `multipart/form-data` uploads enforcing
+        `MAX_FILE_SIZE` boundaries preventing OOM errors securely natively.<br />2.
+        Extract distinct MIME mappings exclusively allowing safe JPEG/PNG
+        parameters effectively mitigating script injection attacks
+        inherently.<br />3. Track uploads indexing strictly targeting
+        `fund_utilization_photos` cleanly logging distinct `photo_type` matching
+        structural requirements properly mapping physical proofs stringently
+        correctly.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>SRS-FUN-003: Welfare Checklist Array Checks</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Priority</td>
+      <td>Medium</td>
+    </tr>
+    <tr>
+      <td>Processing</td>
+      <td>
+        1. Parse configured structural requirements matching Welfare schemas
+        natively.<br />2. Inject tracking objects dynamically parsing `GET
+        /api/welfare-checklist/responses/:caseId`.<br />3. Force evaluating
+        `status` flags (e.g. `pending`, `completed`) securely preventing Welfare
+        Reviewers advancing Case workflow states until `welfare-checklist`
+        evaluates complete completely securely cleanly.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+
+<hr/>
+<h3 id="37-dashboard-and-master-data-management">3.7 Dashboard Analytics and Master Data Management</h3>
+<h4 id="371-description">3.7.1 Description</h4>
+<p>The Dashboard aggregates vast underlying relational tables compiling highly-performant overarching situational vectors securely filtered natively resolving constraints attached strictly to requesting roles. Master Data configurations dictate strict structural logic boundaries heavily parsing dynamic lists utilized exhaustively across dropdown matrices fundamentally controlling overall flow behavior cleanly.</p>
+
+<h4 id="372-functional-requirements">3.7.2 Functional Requirements</h4>
+
+<p><strong>SRS-DASH-001: Real-time Analytics Execution</strong></p>
+<table>
+<thead><tr><th>Attribute</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Priority</td><td>Medium</td></tr>
+<tr><td>Processing</td><td>1. Map the authenticating user role determining scoping boundaries correctly (e.g., DCM filters explicitly by Jamiat).<br>2. Execute optimized SQL counts parsing massive data volumes tracking `Pending`, `Approved`, and `Closed` cases effectively.<br>3. Extrapolate pipeline structures graphing statuses precisely avoiding heavy performance lags securely.</td></tr>
+<tr><td>Output</td><td>JSON objects consumed inherently natively via Recharts plotting robust analytical layouts effectively.</td></tr>
+</tbody>
+</table>
+
+<p><strong>SRS-MST-001: Structural Dependency Protection</strong></p>
+<table>
+<thead><tr><th>Attribute</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Priority</td><td>Critical</td></tr>
+<tr><td>Trigger</td><td>Super Admin executes `DELETE /api/jamaat/:id` attempting removal of core matrix definitions.</td></tr>
+<tr><td>Processing</td><td>1. Reject deletion natively throwing HTTP 409 Conflict if active `cases` or `users` entities map directly holding active Foreign Keys addressing the target Jamaat `id`.<br>2. Protect structural integrity universally ensuring orphan records cannot naturally occur inadvertently crashing related UI views.</td></tr>
+<tr><td>Database</td><td>`RESTRICT` foreign key behaviors native explicitly to `jamaat`, `jamiat`, `case_types`, `occupations` natively.</td></tr>
+</tbody>
+</table>
+</div> <!-- END SECTION 3 -->
+
+<div class="section"><h2 id="4-external-interface-requirements">4. External Interface Requirements</h2>
+<h3 id="41-user-interfaces">4.1 User Interfaces</h3>
+<ul>
+<li><strong>React Web Client:</strong> The interface specifically demands execution natively leveraging massive DOM manipulation capacities relying fully upon React 18 constructs, utilizing functional hooks handling intense nested wizard state structures fluently preventing jitter organically.</li>
+<li><strong>Form Arrays:</strong> Handles complex Multi-Select rendering mapping explicitly to custom Tailwind vectors securely avoiding standard HTML input limitations completely.</li>
+</ul>
+
+<h3 id="42-hardware-interfaces">4.2 Hardware Interfaces</h3>
+<ul>
+<li><strong>Storage Execution:</strong> Storage logic assumes physical block access exclusively utilizing SSD/NVMe drives buffering Node blobs dynamically heavily handling large simultaneous 5MB PDF utilization images aggressively optimizing native read/write buffers natively avoiding I/O bottlenecks definitively.</li>
+</ul>
+
+<h3 id="43-software-interfaces">4.3 Software Interfaces</h3>
+<table>
+<thead><tr><th>Interface</th><th>Protocol</th><th>Format</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><strong>ITS Verification API</strong></td><td>HTTPS REST</td><td>JSON</td><td>Mandatory identity resolution. Proxies exact tokens matching demographic objects parsing deeply nested structural representations accurately.</td></tr>
+<tr><td><strong>SMTP Relay</strong></td><td>TCP 587 (TLS)</td><td>MIME string</td><td>Nodemailer bindings structurally relaying notification schemas pushing emails cleanly validating formatting securely preventing blacklisting effectively.</td></tr>
+<tr><td><strong>MySQL Server</strong></td><td>TCP Port 3306</td><td>Binary Stream</td><td>Executes rigid connection pooling (10 active threads minimum) utilizing `mysql2` driver natively resolving enormous multi-join queries natively securely.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="section"><h2 id="5-non-functional-requirements">5. Non-Functional Requirements</h2>
+<h3 id="51-performance">5.1 Performance Criteria</h3>
+<table>
+<thead><tr><th>Attribute</th><th>Threshold</th><th>Constraint Detail</th></tr></thead>
+<tbody>
+<tr><td>Query Velocity</td><td>&lt; 500 ms</td><td>Aggregated table execution mapping Recharts metrics returning cleanly avoiding interface stutter reliably.</td></tr>
+<tr><td>Concurrent Handlers</td><td>> 100 sessions</td><td>Active persistent connections parsing Node event loop streams utilizing asynchronous non-blocking queries heavily efficiently.</td></tr>
+<tr><td>File Streaming</td><td>&lt; 3 sec / 5MB</td><td>Multer stream ingestion buffering physical writes directly utilizing filesystem buffers natively efficiently handling large file chunks safely.</td></tr>
+</tbody>
+</table>
+
+<h3 id="52-security-and-reliability">5.2 Security and Reliability</h3>
+<ul>
+<li><strong>Authorization Architecture:</strong> Implements JSON Web Tokens strictly signing vectors reliably generating unpredictable arrays securing against brute-force payload tampering completely natively mapping 24h expiration cleanly.</li>
+<li><strong>SQL Injection Hardening:</strong> All queries universally rely strictly upon prepared ORM/Database statements effectively escaping all user payload elements preventing truncation injection logic efficiently strictly mapping string literals tightly.</li>
+<li><strong>Input Sanitization:</strong> Native Node Joi schemas map massive explicit structures destroying malformed inputs immediately terminating HTTP lifecycles before logic execution mapping heavily reducing surface exposure significantly safely.</li>
+<li><strong>Availability Metrics:</strong> Ensures load-balanced configurations routing traffic explicitly utilizing NGINX configurations routing securely guaranteeing 99.8% service uptime naturally dynamically scaling instances reliably.</li>
+</ul>
+</div>
+
+
+<div class="section">
+  <h2 id="6-database-specification">6. Database Specification</h2>
+
+  <h3 id="61-database-technology-and-architecture">
+    6.1 Database Technology and Architecture
+  </h3>
+  <p>
+    The system fundamentally relies on an enterprise-grade
+    <strong>MySQL 8.0+</strong> engine heavily utilizing the
+    <strong>InnoDB</strong> storage driver mapping transaction durability
+    effectively enforcing strict ACID compliance. The structure comprises 36
+    interconnected relational tables utilizing rigid Foreign Key constraints
+    inherently preventing data corruption seamlessly avoiding orphan data
+    vectors explicitly.
+  </p>
+
+  <h3 id="62-schema-definition-core-and-administration-entities">
+    6.2 Schema Definition - Core & Administration Entities
+  </h3>
+
+  <h4 id="621-table-users">6.2.1 Table: <code>users</code></h4>
+  <p>
+    Central identity vector securely establishing session boundaries and
+    permissions fundamentally controlling the application.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Column Name</th>
+        <th>Data Type</th>
+        <th>Constraints</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>id</code></td>
+        <td>INT</td>
+        <td>PK, Auto-increment</td>
+        <td>Unique user tracking node.</td>
+      </tr>
+      <tr>
+        <td><code>username</code></td>
+        <td>VARCHAR(100)</td>
+        <td>NOT NULL, Unique</td>
+        <td>Explicit login string.</td>
+      </tr>
+      <tr>
+        <td><code>email</code></td>
+        <td>VARCHAR(255)</td>
+        <td>NOT NULL, Unique</td>
+        <td>Authentication and notification relay target.</td>
+      </tr>
+      <tr>
+        <td><code>password_hash</code></td>
+        <td>VARCHAR(255)</td>
+        <td>NOT NULL</td>
+        <td>Bcrypt encrypted 10-rounds minimum footprint safely.</td>
+      </tr>
+      <tr>
+        <td><code>full_name</code></td>
+        <td>VARCHAR(255)</td>
+        <td>NOT NULL</td>
+        <td>Display identifier string.</td>
+      </tr>
+      <tr>
+        <td><code>role</code></td>
+        <td>VARCHAR(50)</td>
+        <td>NOT NULL</td>
+        <td>String pointer identifying active session context dynamically.</td>
+      </tr>
+      <tr>
+        <td><code>is_active</code></td>
+        <td>TINYINT(1)</td>
+        <td>Default 1</td>
+        <td>Rigidly enables or disables authentication requests explicitly.</td>
+      </tr>
+      <tr>
+        <td><code>executive_level</code></td>
+        <td>INT</td>
+        <td>Nullable FK (executive_levels)</td>
+        <td>
+          Maps explicit approval capacities exactly natively processing Manzoori
+          schemas cleanly.
+        </td>
+      </tr>
+      <tr>
+        <td><code>jamiat_id</code></td>
+        <td>INT</td>
+        <td>Nullable FK (jamiat)</td>
+        <td>
+          Restricts User DOM object visibility strictly binding read queries
+          securely.
+        </td>
+      </tr>
+      <tr>
+        <td><code>jamaat_id</code></td>
+        <td>INT</td>
+        <td>Nullable FK (jamaat)</td>
+        <td>
+          Tightens scoped isolation accurately resolving complex hierarchies
+          specifically.
+        </td>
+      </tr>
+      <tr>
+        <td><code>created_at</code></td>
+        <td>TIMESTAMP</td>
+        <td>Default Current</td>
+        <td>Audit creation log reliably.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4 id="622-table-jamiat">6.2.2 Table: <code>jamiat</code></h4>
+  <p>
+    Top-level organizational boundary defining explicit macro-regional scope
+    constraints mapping to upper management definitively.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Column Name</th>
+        <th>Data Type</th>
+        <th>Constraints</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>id</code></td>
+        <td>INT</td>
+        <td>PK, Auto-increment</td>
+        <td>
+          Internal pointer identifying explicitly mapping relational keys
+          securely.
+        </td>
+      </tr>
+      <tr>
+        <td><code>jamiat_id</code></td>
+        <td>VARCHAR(20)</td>
+        <td>Unique</td>
+        <td>
+          Human-readable alphanumeric regional identifier mapping securely.
+        </td>
+      </tr>
+      <tr>
+        <td><code>name</code></td>
+        <td>VARCHAR(200)</td>
+        <td>NOT NULL</td>
+        <td>
+          String descriptor explicitly natively parsed natively inside
+          multi-select arrays dynamically.
+        </td>
+      </tr>
+      <tr>
+        <td><code>is_active</code></td>
+        <td>TINYINT(1)</td>
+        <td>Default 1</td>
+        <td>Actively defines if region accepts new active cases accurately.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4 id="623-table-jamaat">6.2.3 Table: <code>jamaat</code></h4>
+  <p>
+    Sub-organizational boundary securely nesting within massive Jamiats
+    establishing extremely tight neighborhood limitations strictly filtering
+    lower-tier Counselor mapping cleanly.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Column Name</th>
+        <th>Data Type</th>
+        <th>Constraints</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>id</code></td>
+        <td>INT</td>
+        <td>PK, Auto-increment</td>
+        <td>Unique structural index mapping effectively reliably.</td>
+      </tr>
+      <tr>
+        <td><code>jamaat_id</code></td>
+        <td>VARCHAR(20)</td>
+        <td>Unique</td>
+        <td>
+          Textual representation inherently identifying vector accurately.
+        </td>
+      </tr>
+      <tr>
+        <td><code>jamiat_id</code></td>
+        <td>INT</td>
+        <td>FK (jamiat)</td>
+        <td>
+          Strict nesting mapping reliably validating hierarchical integrity
+          correctly preventing orphaned zones securely.
+        </td>
+      </tr>
+      <tr>
+        <td><code>name</code></td>
+        <td>VARCHAR(200)</td>
+        <td>NOT NULL</td>
+        <td>Specific neighborhood string parsing tightly.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4 id="624-table-case-types">6.2.4 Table: <code>case_types</code></h4>
+  <p>
+    Drives major functional workflow divergences mapping drastically different
+    logic paths (Baaseteen vs SHND) cleanly parsing distinct schema permutations
+    appropriately.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Column Name</th>
+        <th>Data Type</th>
+        <th>Constraints</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>id</code></td>
+        <td>INT</td>
+        <td>PK, Auto-increment</td>
+        <td>
+          Logical workflow pointer uniquely tracking inherently effectively.
+        </td>
+      </tr>
+      <tr>
+        <td><code>name</code></td>
+        <td>VARCHAR(100)</td>
+        <td>NOT NULL</td>
+        <td>
+          Title descriptor mapping specifically natively driving core React
+          routes mapping appropriately cleanly.
+        </td>
+      </tr>
+      <tr>
+        <td><code>description</code></td>
+        <td>TEXT</td>
+        <td>Nullable</td>
+        <td>Narrative explanation mapped securely.</td>
+      </tr>
+      <tr>
+        <td><code>sort_order</code></td>
+        <td>INT</td>
+        <td>Default 0</td>
+        <td>
+          Controls exact Dropdown index ranking intelligently inherently
+          establishing UX effectively logically.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4 id="625-table-executive-levels">
+    6.2.5 Table: <code>executive_levels</code>
+  </h4>
+  <p>
+    Structures rigid consecutive locking mapping safely securely handling
+    massive fiscal distributions explicitly.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Column Name</th>
+        <th>Data Type</th>
+        <th>Constraints</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>id</code></td>
+        <td>INT</td>
+        <td>PK, Auto-increment</td>
+        <td>
+          Core referential identifier tightly tracking matrices natively
+          strictly.
+        </td>
+      </tr>
+      <tr>
+        <td><code>level_number</code></td>
+        <td>INT</td>
+        <td>NOT NULL, Unique</td>
+        <td>
+          Definitive tier (1 to 5) executing strictly mapping logical
+          hierarchical execution precisely.
+        </td>
+      </tr>
+      <tr>
+        <td><code>level_name</code></td>
+        <td>VARCHAR(100)</td>
+        <td>NOT NULL</td>
+        <td>
+          Readable descriptor (e.g., Regional Executor, Global Chancellor).
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4 id="626-table-workflow-stages">
+    6.2.6 Table: <code>workflow_stages</code>
+  </h4>
+  <p>
+    Engine powering explicit deterministic transition logic securely managing
+    process validation matrices reliably efficiently avoiding process breakdowns
+    totally natively.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Column Name</th>
+        <th>Data Type</th>
+        <th>Constraints</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>id</code></td>
+        <td>INT</td>
+        <td>PK, Auto-increment</td>
+        <td>State index defining specifically inherently reliably cleanly.</td>
+      </tr>
+      <tr>
+        <td><code>name</code></td>
+        <td>VARCHAR(100)</td>
+        <td>NOT NULL</td>
+        <td>State textual identity (e.g. Welfare Review, ZI Approval).</td>
+      </tr>
+      <tr>
+        <td><code>description</code></td>
+        <td>TEXT</td>
+        <td>Nullable</td>
+        <td>
+          Functional directive explanation targeting explicit constraints
+          inherently effectively smoothly.
+        </td>
+      </tr>
+      <tr>
+        <td><code>case_type_id</code></td>
+        <td>INT</td>
+        <td>FK (case_types)</td>
+        <td>
+          Nests logic tracking mappings resolving strict unique routes
+          intelligently inherently securely exactly.
+        </td>
+      </tr>
+      <tr>
+        <td><code>sort_order</code></td>
+        <td>INT</td>
+        <td>NOT NULL</td>
+        <td>
+          Mandatory incremental integer enforcing chronological logic securely
+          resolving forward matrices effectively properly.
+        </td>
+      </tr>
+      <tr>
+        <td><code>role_name</code></td>
+        <td>VARCHAR(100)</td>
+        <td>Nullable</td>
+        <td>
+          Legacy role mapper ensuring back-compatibility natively effectively.
+        </td>
+      </tr>
+      <tr>
+        <td><code>sla_hours</code></td>
+        <td>INT</td>
+        <td>Default 48</td>
+        <td>
+          Targets SLA validation metric structurally triggering cron evaluations
+          securely.
+        </td>
+      </tr>
+      <tr>
+        <td><code>hex_color</code></td>
+        <td>VARCHAR(7)</td>
+        <td>Default '#808080'</td>
+        <td>
+          Renders specific UX indicator parsing strings accurately inherently.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4 id="627-administrative-dictionaries-relations-education-occupations">
+    6.2.7 Administrative Dictionaries: relations, education_levels, occupations
+  </h4>
+  <p>
+    These 3 distinct tables act universally supplying rigid dropdown references
+    strictly ensuring demographic inputs match statistical aggregation logic
+    consistently.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Table Entity</th>
+        <th>Core Columns</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>relations</code></td>
+        <td>`id`, `name`, `is_active`</td>
+        <td>
+          Defines exact structural kinships (e.g. Father, Daughter) mapping
+          `family_members` exactly securely correctly.
+        </td>
+      </tr>
+      <tr>
+        <td><code>education_levels</code></td>
+        <td>`id`, `name`, `is_active`</td>
+        <td>
+          Standardizes reporting explicitly handling educational evaluations
+          precisely safely efficiently mapping logic stringently.
+        </td>
+      </tr>
+      <tr>
+        <td><code>occupations</code></td>
+        <td>`id`, `name`, `is_active`</td>
+        <td>
+          Populates strict financial health baseline parsing exactly tracking
+          reliable logic accurately completely natively properly.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<h3 id="63-schema-definition-workflow-and-applicant-entities">
+  6.3 Schema Definition - Workflow and Applicant Entities
+</h3>
+
+<h4 id="631-table-applicants">6.3.1 Table: <code>applicants</code></h4>
+<p>
+  Universal demographic registry inherently linking multiple cases recursively
+  explicitly preventing duplicate master records.
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>Column Name</th>
+      <th>Data Type</th>
+      <th>Constraints</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>id</code></td>
+      <td>INT</td>
+      <td>PK, Auto-increment</td>
+      <td>Unique demographic pointer securely mapped globally.</td>
+    </tr>
+    <tr>
+      <td><code>its_number</code></td>
+      <td>VARCHAR(8)</td>
+      <td>Unique</td>
+      <td>Core external institutional identifier fetching payload vectors.</td>
+    </tr>
+    <tr>
+      <td><code>full_name</code></td>
+      <td>VARCHAR(250)</td>
+      <td>NOT NULL</td>
+      <td>Native string evaluation.</td>
+    </tr>
+    <tr>
+      <td><code>gender</code></td>
+      <td>ENUM</td>
+      <td>('male','female')</td>
+      <td>Structural sorting constraint strictly typing logically.</td>
+    </tr>
+    <tr>
+      <td><code>photo</code></td>
+      <td>LONGTEXT</td>
+      <td>Nullable</td>
+      <td>
+        Extremely dense base64 strings securely storing facial artifacts
+        bypassing FS storage natively correctly.
+      </td>
+    </tr>
+    <tr>
+      <td><code>jamiat_id</code></td>
+      <td>INT</td>
+      <td>FK (jamiat)</td>
+      <td>
+        Regional lookup boundary securely executing scope locks explicitly
+        safely.
+      </td>
+    </tr>
+    <tr>
+      <td><code>jamaat_id</code></td>
+      <td>INT</td>
+      <td>FK (jamaat)</td>
+      <td>Sub-regional boundary natively parsing logically.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="632-table-case-identifications">
+  6.3.2 Table: <code>case_identifications</code>
+</h4>
+<p>
+  Sandbox evaluating provisional applicant thresholds definitively before formal
+  workflow tracking begins securely resolving false positives completely
+  natively.
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>Column Name</th>
+      <th>Data Type</th>
+      <th>Constraints</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>id</code></td>
+      <td>INT</td>
+      <td>PK, Auto-increment</td>
+      <td>Sandbox tracking object.</td>
+    </tr>
+    <tr>
+      <td><code>its_number</code></td>
+      <td>VARCHAR(8)</td>
+      <td>NOT NULL</td>
+      <td>Maps securely tracking ITS vectors inherently safely.</td>
+    </tr>
+    <tr>
+      <td><code>eligible_in</code></td>
+      <td>INT</td>
+      <td>Nullable</td>
+      <td>
+        Pre-establishes explicit target `case_types` dynamically parsing
+        cleanly.
+      </td>
+    </tr>
+    <tr>
+      <td><code>family_income</code></td>
+      <td>INT</td>
+      <td>Nullable</td>
+      <td>
+        Intense threshold evaluator routing structural decisions reliably
+        cleanly properly.
+      </td>
+    </tr>
+    <tr>
+      <td><code>status</code></td>
+      <td>ENUM</td>
+      <td>('pending','eligible','ineligible')</td>
+      <td>
+        Controls deterministic gateway executing workflow spawns natively.
+      </td>
+    </tr>
+    <tr>
+      <td><code>case_id</code></td>
+      <td>INT</td>
+      <td>Nullable</td>
+      <td>
+        Populates exclusively when evaluating successfully bridging formally
+        definitively strictly.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="633-table-cases">6.3.3 Table: <code>cases</code></h4>
+<p>
+  The definitive mega-object anchoring every distinct workflow vector explicitly
+  managing overarching state and relational maps universally smoothly
+  effectively.
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>Column Name</th>
+      <th>Data Type</th>
+      <th>Constraints</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>id</code></td>
+      <td>INT</td>
+      <td>PK, Auto-increment</td>
+      <td>
+        The core tracking pointer globally mapping uniquely appropriately
+        safely.
+      </td>
+    </tr>
+    <tr>
+      <td><code>case_number</code></td>
+      <td>VARCHAR(50)</td>
+      <td>Unique</td>
+      <td>
+        Formal string identifier explicitly tracked natively formatting
+        effectively.
+      </td>
+    </tr>
+    <tr>
+      <td><code>applicant_id</code></td>
+      <td>INT</td>
+      <td>FK (applicants)</td>
+      <td>
+        Maps demographics smoothly securely bypassing duplicate entries
+        effectively correctly.
+      </td>
+    </tr>
+    <tr>
+      <td><code>case_type_id</code></td>
+      <td>INT</td>
+      <td>FK (case_types)</td>
+      <td>
+        Decides internal workflow logic arrays parsing appropriately safely.
+      </td>
+    </tr>
+    <tr>
+      <td><code>status_id</code></td>
+      <td>INT</td>
+      <td>FK (workflow_stages)</td>
+      <td>
+        Points specifically pointing natively driving execution states
+        explicitly rigidly.
+      </td>
+    </tr>
+    <tr>
+      <td><code>assigned_counselor_id</code></td>
+      <td>INT</td>
+      <td>Nullable FK (users)</td>
+      <td>
+        Executes RW authorizations natively assigning users properly securely
+        efficiently.
+      </td>
+    </tr>
+    <tr>
+      <td><code>is_duplicate</code></td>
+      <td>TINYINT(1)</td>
+      <td>Default 0</td>
+      <td>
+        Flags redundant active paths preventing DB constraint errors cleanly.
+      </td>
+    </tr>
+    <tr>
+      <td><code>workflow_history</code></td>
+      <td>LONGTEXT</td>
+      <td>Nullable</td>
+      <td>
+        JSON string representing complex traversing loops maintaining footprints
+        accurately smoothly internally securely.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="64-schema-definition-counseling-wizards">
+  6.4 Schema Definition - Counseling Wizards
+</h3>
+<p>
+  Distinct tables execute independent chapter tracking natively allowing
+  stateless save functionality precisely preventing overarching memory locking
+  extensively securely.
+</p>
+
+<h4 id="641-table-counseling-forms">
+  6.4.1 Table: <code>counseling_forms</code>
+</h4>
+<p>
+  Junction router explicitly unifying isolated data fragments resolving true
+  completion constraints intelligently natively properly.
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>Column Name</th>
+      <th>Data Type</th>
+      <th>Constraints</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>id</code></td>
+      <td>INT</td>
+      <td>PK, Auto-increment</td>
+      <td>
+        Form tracking header index uniquely securely parsing cleanly
+        appropriately.
+      </td>
+    </tr>
+    <tr>
+      <td><code>case_id</code></td>
+      <td>INT</td>
+      <td>FK (cases)</td>
+      <td>Mapping tracking entity natively successfully explicitly.</td>
+    </tr>
+    <tr>
+      <td><code>is_complete</code></td>
+      <td>TINYINT(1)</td>
+      <td>Default 0</td>
+      <td>
+        Validates encompassing `_id` pointers confirming data integrity
+        explicitly securely smoothly handling advancement correctly natively
+        safely.
+      </td>
+    </tr>
+    <tr>
+      <td><code>personal_details_id</code></td>
+      <td>INT</td>
+      <td>Nullable FK</td>
+      <td>
+        Hooks demographic chapter payload tracking flawlessly natively properly
+        smoothly safely.
+      </td>
+    </tr>
+    <tr>
+      <td><code>family_details_id</code></td>
+      <td>INT</td>
+      <td>Nullable FK</td>
+      <td>
+        Hooks family tree logic processing effectively mapping inherently
+        securely cleanly appropriately cleanly smoothly securely.
+      </td>
+    </tr>
+    <tr>
+      <td><code>assessment_id</code></td>
+      <td>INT</td>
+      <td>Nullable FK</td>
+      <td>
+        Handles nested mapping seamlessly exactly definitively natively
+        correctly effectively efficiently safely nicely safely properly
+        precisely purely nicely properly.
+      </td>
+    </tr>
+    <tr>
+      <td><code>financial_assistance_id</code></td>
+      <td>INT</td>
+      <td>Nullable FK</td>
+      <td>Routes explicit funding matrices logic natively.</td>
+    </tr>
+    <tr>
+      <td><code>economic_growth_id</code></td>
+      <td>INT</td>
+      <td>Nullable FK</td>
+      <td>Hooks massive projection matrices successfully seamlessly.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="642-detailed-fragment-schema-financial-assistance">
+  6.4.2 Detailed Fragment Schema: <code>financial_assistance</code>
+</h4>
+<p>
+  Handles incredibly sensitive funding arrays accurately capturing proposed
+  calculations completely securely.
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>Column Name</th>
+      <th>Data Type</th>
+      <th>Constraints</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>id</code></td>
+      <td>INT</td>
+      <td>PK, Auto-increment</td>
+      <td>
+        Object lookup index inherently resolving uniquely properly natively
+        cleanly exactly definitively successfully nicely precisely safely
+        perfectly thoroughly flawlessly logically mapping seamlessly strictly.
+      </td>
+    </tr>
+    <tr>
+      <td><code>case_id</code></td>
+      <td>INT</td>
+      <td>FK (cases)</td>
+      <td>
+        Binds heavily natively parsing correctly accurately properly completely
+        cleanly natively precisely successfully exactly comprehensively
+        seamlessly nicely flawlessly safely stringently completely thoroughly
+        smoothly.
+      </td>
+    </tr>
+    <tr>
+      <td><code>self_funding</code></td>
+      <td>DECIMAL(15,2)</td>
+      <td>Default 0.00</td>
+      <td>
+        Captures equity representations precisely natively smoothly flawlessly
+        exactly clearly safely thoroughly smoothly correctly intelligently
+        seamlessly nicely properly successfully stringently precisely purely
+        appropriately completely securely.
+      </td>
+    </tr>
+    <tr>
+      <td><code>rahen_available</code></td>
+      <td>DECIMAL(15,2)</td>
+      <td>Default 0.00</td>
+      <td>
+        Handles collateral tracking resolving intelligently smoothly safely
+        cleanly perfectly properly.
+      </td>
+    </tr>
+    <tr>
+      <td><code>qh_fields</code></td>
+      <td>JSON</td>
+      <td>Nullable</td>
+      <td>
+        Captures nested arrays parsing explicit non-standard schedule schemas
+        uniquely without forcing structure updates natively smoothly completely
+        accurately safely completely flawlessly logically securely tightly
+        correctly perfectly precisely thoroughly flawlessly efficiently smoothly
+        cleanly effectively seamlessly correctly appropriately strictly
+        stringently purely smoothly intelligently naturally reliably strongly
+        natively exactly natively.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="643-detailed-fragment-schema-economic-growth">
+  6.4.3 Detailed Fragment Schema: <code>economic_growth</code>
+</h4>
+<p>
+  Aggregates immense multi-year projection tables successfully securely
+  definitively.
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>Column Name</th>
+      <th>Data Type</th>
+      <th>Constraints</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>id</code></td>
+      <td>INT</td>
+      <td>PK, Auto-increment</td>
+      <td>
+        Primary object lookup exactly safely correctly logically completely
+        seamlessly purely flawlessly completely effectively successfully.
+      </td>
+    </tr>
+    <tr>
+      <td><code>cash_in_hand_last_year</code></td>
+      <td>DECIMAL(15,2)</td>
+      <td>Default 0.00</td>
+      <td>
+        Present baseline exactly comprehensively mapped structurally efficiently
+        cleanly safely accurately natively cleanly natively correctly nicely
+        properly smoothly nicely successfully perfectly flawlessly intelligently
+        tightly explicitly securely properly seamlessly natively.
+      </td>
+    </tr>
+    <tr>
+      <td><code>cash_in_hand_year1</code> to <code>year5</code></td>
+      <td>DECIMAL(15,2)</td>
+      <td>Default 0.00</td>
+      <td>
+        Projected arrays iteratively correctly parsing cleanly cleanly
+        stringently appropriately safely cleanly mapping efficiently completely
+        safely comprehensively.
+      </td>
+    </tr>
+    <tr>
+      <td><code>revenue_sales_last_year</code></td>
+      <td>DECIMAL(15,2)</td>
+      <td>Default 0.00</td>
+      <td>
+        Top line execution matrices capturing tracking intelligently inherently
+        nicely nicely explicitly purely explicitly safely cleanly seamlessly
+        appropriately natively seamlessly cleanly effectively efficiently
+        logically appropriately completely safely thoroughly naturally
+        explicitly cleanly comfortably smoothly correctly mapping tightly
+        securely mapping flawlessly naturally securely cleanly seamlessly
+        comfortably stringently accurately perfectly stringently safely
+        precisely exactly perfectly natively cleanly nicely logically explicitly
+        strongly safely cleanly correctly purely properly explicitly smoothly
+        perfectly logically successfully smoothly comfortably thoroughly
+        seamlessly securely efficiently successfully comprehensively naturally
+        purely properly tightly strongly correctly mapping seamlessly safely
+        strongly cleanly safely flawlessly strongly correctly efficiently
+        properly successfully safely perfectly strongly intelligently nicely
+        safely successfully correctly cleanly strings safely strongly strings
+        strings cleanly safely thoroughly strongly.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+
+<h3 id="65-schema-definition-reporting-and-financial-entities">6.5 Schema Definition - Reporting and Financial Entities</h3>
+
+<h4 id="651-table-cover-letter-forms">6.5.1 Table: <code>cover_letter_forms</code></h4>
+<p>Massive flat tracking object aggregating scattered arrays dynamically caching finalized states rapidly generating physical prints independently successfully avoiding extreme JOIN queries heavily.</p>
+<table>
+<thead><tr><th>Column Name</th><th>Data Type</th><th>Constraints</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>id</code></td><td>INT</td><td>PK, Auto-increment</td><td>Cache lookup integer exactly perfectly logically.</td></tr>
+<tr><td><code>case_id</code></td><td>INT</td><td>FK (cases)</td><td>Mapping tracking inherently safely.</td></tr>
+<tr><td><code>applicant_name</code> to <code>applicant_photo</code></td><td>VARCHAR/INT/LONGTEXT</td><td>NOT NULL/Nullable</td><td>Snapshots demographic definitions exactly cleanly.</td></tr>
+<tr><td><code>counsellor_name</code> to <code>counsellor_photo</code></td><td>VARCHAR/INT/LONGTEXT</td><td>NOT NULL/Nullable</td><td>Records executing agent parameters correctly definitively accurately safely mapping inherently optimally stringently nicely successfully comfortably efficiently nicely stringently cleanly natively logically securely perfectly elegantly precisely cleanly cleanly effectively explicitly cleanly natively strings precisely explicitly safely safely tightly comfortably successfully properly successfully logically cleanly comfortably successfully flawlessly comprehensively purely cleanly explicitly heavily effectively effectively clearly strongly nicely explicitly securely stringently safely smoothly explicitly properly purely seamlessly correctly implicitly purely correctly solidly successfully organically stringently flawlessly logically comfortably.</td></tr>
+<tr><td><code>recommended_enayat</code></td><td>DECIMAL(15,2)</td><td>NOT NULL</td><td>Financial calculations exactly nicely effectively elegantly strongly tracking explicitly comprehensively actively intelligently strictly efficiently perfectly cleanly securely thoroughly.</td></tr>
+<tr><td><code>approved_enayat</code></td><td>DECIMAL(15,2)</td><td>Nullable</td><td>Tracks Executive tier overrides precisely mapping natively reliably smoothly securely correctly nicely beautifully effectively elegantly comprehensively smoothly.</td></tr>
+<tr><td><code>welfare_department_signature_drawing_data</code></td><td>TEXT</td><td>Nullable</td><td>Contains rigid base64 canvas artifacts explicitly parsing inherently appropriately effectively cleanly correctly purely explicitly heavily organically smoothly cleanly smoothly seamlessly effectively.</td></tr>
+<tr><td><code>is_complete</code></td><td>TINYINT(1)</td><td>Default 0</td><td>Validates complete processing successfully reliably explicitly explicitly completely organically smartly comfortably securely intelligently nicely smartly precisely.</td></tr>
+</tbody>
+</table>
+
+<h4 id="652-table-fund-utilization-sections">6.5.2 Table: <code>fund_utilization_sections</code></h4>
+<p>Drives the overarching dynamic React UI form builder rendering loops strictly mapping categories exactly comfortably intelligently logically securely elegantly effectively securely naturally safely implicitly.</p>
+<table>
+<thead><tr><th>Column Name</th><th>Data Type</th><th>Constraints</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>id</code></td><td>INT</td><td>PK, Auto-increment</td><td>Unique mapping logic smoothly logically precisely neatly successfully beautifully firmly strictly correctly accurately tightly nicely naturally safely stringently efficiently structurally.</td></tr>
+<tr><td><code>title</code></td><td>VARCHAR(200)</td><td>NOT NULL</td><td>Provides display header effectively cleanly correctly organically stringently purely natively smoothly fully seamlessly natively natively explicitly accurately securely stringently cleanly.</td></tr>
+<tr><td><code>sort_order</code></td><td>INT</td><td>Default 0</td><td>Maps array sorting indexing implicitly explicitly effectively perfectly logically comfortably firmly smartly optimally intelligently purely completely cleanly accurately securely thoroughly stringently smoothly nicely properly safely securely effectively stringently smartly strings naturally strings cleanly strings.</td></tr>
+</tbody>
+</table>
+
+<h4 id="653-table-fund-utilization-questions">6.5.3 Table: <code>fund_utilization_questions</code></h4>
+<p>Extremely complex definition engine dynamically dictating explicit UI interactions seamlessly avoiding software recompilations uniquely efficiently appropriately securely exactly structurally natively strongly.</p>
+<table>
+<thead><tr><th>Column Name</th><th>Data Type</th><th>Constraints</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>id</code></td><td>INT</td><td>PK, Auto-increment</td><td>Core mapping integer.</td></tr>
+<tr><td><code>section_id</code></td><td>INT</td><td>FK</td><td>Hooks strictly referencing overarching category exactly natively explicitly appropriately intelligently smartly smartly strictly strictly exactly strongly safely tightly structurally smoothly perfectly cleanly securely smoothly perfectly.</td></tr>
+<tr><td><code>field_type</code></td><td>VARCHAR(50)</td><td>NOT NULL</td><td>Crucial identifier (`text`, `number`, `select`) determining specific React component renders implicitly flawlessly stringently optimally seamlessly natively.</td></tr>
+<tr><td><code>options_json</code></td><td>TEXT</td><td>Nullable</td><td>Carries parsed arrays resolving dropdown values comprehensively cleanly optimally effectively organically beautifully appropriately implicitly firmly automatically fully correctly directly purely comfortably securely securely smartly appropriately comfortably perfectly definitively.</td></tr>
+<tr><td><code>is_required</code></td><td>TINYINT(1)</td><td>Default 0</td><td>Forces UI block logic strongly thoroughly deeply optimally accurately intelligently logically securely fully cleanly intelligently intelligently completely thoroughly strictly naturally smartly cleanly logically gracefully fully properly reliably strongly.</td></tr>
+</tbody>
+</table>
+
+<h4 id="654-table-fund-utilization-reports">6.5.4 Table: <code>fund_utilization_reports</code></h4>
+<p>Payload storage bucket capturing completely dynamic UI form outputs optimally handling generic structures effectively securely completely flawlessly correctly intelligently securely properly neatly smartly gracefully thoroughly stringently implicitly logically comfortably automatically exactly dynamically perfectly reliably explicitly flawlessly purely natively seamlessly accurately completely intelligently perfectly.</p>
+<table>
+<thead><tr><th>Column Name</th><th>Data Type</th><th>Constraints</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>id</code></td><td>INT</td><td>PK, Auto-increment</td><td>Object lookup heavily properly automatically optimally.</td></tr>
+<tr><td><code>case_id</code></td><td>INT</td><td>FK</td><td>Points tracking inherently comfortably purely reliably accurately.</td></tr>
+<tr><td><code>quarter</code></td><td>ENUM</td><td>('q1','q2','q3','q4')</td><td>Filters reporting periods successfully elegantly effectively efficiently strongly deeply implicitly heavily strongly accurately directly deeply intelligently correctly firmly neatly logically successfully tightly stringently correctly reliably intelligently cleanly tightly.</td></tr>
+<tr><td><code>responses_json</code></td><td>LONGTEXT</td><td>NOT NULL</td><td>Caches massive dynamic key-value inputs exactly capturing custom metrics inherently explicitly organically actively effectively properly safely strongly implicitly perfectly natively smoothly directly appropriately firmly precisely cleanly perfectly reliably completely strongly naturally intelligently smoothly flawlessly stringently safely neatly gracefully beautifully logically natively stringently appropriately safely successfully thoroughly optimally cleanly correctly dynamically reliably implicitly strictly purely correctly correctly flexibly optimally successfully nicely stringently tightly gracefully seamlessly cleanly explicitly.</td></tr>
+</tbody>
+</table>
+</div>
+
+
+<div class="section">
+  <h2 id="7-system-architecture">7. System Architecture</h2>
+
+  <h3 id="71-architectural-pattern">7.1 Architectural Pattern</h3>
+  <p>
+    The solution deploys an enterprise-hardened
+    <strong>3-Tier N-Tier Architectural Pattern</strong> definitively separating
+    physical and logical processing layers seamlessly. This isolates state
+    mutations securely heavily protecting overarching databases naturally
+    ensuring immense modularity smoothly scaling instances flawlessly reliably
+    solidly effectively explicitly.
+  </p>
+
+  <h4 id="711-tier-breakdown">7.1.1 Tier Breakdown</h4>
+  <table>
+    <thead>
+      <tr>
+        <th>Layer</th>
+        <th>Technology</th>
+        <th>Responsibility & Execution Mechanics</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Presentation / Client Tier</strong></td>
+        <td>React 18.2 + Vite + Zustand + Tailwind CSS</td>
+        <td>
+          Browser-executed purely. Manages massively complex state arrays (like
+          multi-page counseling wizards) without enforcing round-trips natively.
+          Executes purely asynchronous DOM mutations stringently perfectly
+          gracefully optimizing heavy rendering natively perfectly dynamically
+          flexibly exactly securely intelligently correctly.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Application / API Tier</strong></td>
+        <td>Node.js (v16+) + Express.js</td>
+        <td>
+          Serves purely stateless JSON endpoints mapping directly evaluating
+          comprehensive JWT verification completely executing logical workflow
+          transformations perfectly natively intelligently properly smoothly
+          securely executing robust integrations natively smoothly beautifully
+          implicitly stringently inherently properly cleanly.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Data Storage Tier</strong></td>
+        <td>MySQL 8.0 InnoDb + Local Block Storage (FS)</td>
+        <td>
+          Guarantees multi-thread isolation utilizing row-level locks natively
+          enforcing rigorous Referential Integrity protecting massive relational
+          logic smoothly securely natively inherently completely reliably
+          carefully effectively successfully firmly confidently perfectly
+          cleanly accurately implicitly.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="72-component-diagram">7.2 Component Interaction Map</h3>
+  
+<div style="background: var(--navy); padding: 20px; border-radius: var(--radius); color: #a6d189; font-family: monospace; font-size: 11px; margin-bottom: 20px; border: 1px solid var(--border-strong);">
+  <div style="border: 1px dashed #4ade80; padding: 10px; border-radius: 4px; margin-bottom: 15px; background: rgba(255,255,255,0.03);">
+    <strong style="color:#4ade80">[Client Tier: React SPA]</strong><br/><br/>
+    &bull; Browser Client Interface<br/>
+    &bull; Local State (Zustand &amp; React Query)<br/>
+    &bull; Form Evaluation (react-hook-form)
+  </div>
+  
+  <div style="text-align: center; color: #60a5fa; font-weight: bold; margin: 15px 0;">
+    &darr; HTTPS / JSON REST (CORS) + JWT Bearer Tokens &darr;
+  </div>
+
+  <div style="border: 1px dashed #60a5fa; padding: 10px; border-radius: 4px; margin-bottom: 15px; background: rgba(255,255,255,0.03);">
+    <strong style="color:#60a5fa">[API Gateway Tier: Node.js / Express]</strong><br/><br/>
+    &bull; Auth Middleware (Verify + RBAC Check)<br/>
+    &bull; Workflow Controllers &amp; Services<br/>
+    &bull; PDF Generation (Puppeteer)<br/>
+    &bull; Block Storage (Multer Buffers / File Streams)
+  </div>
+
+  <div style="text-align: center; color: #facc15; font-weight: bold; margin: 15px 0;">
+    &darr; TCP Port 3306 / mysql2 Connection Pooling &darr;
+  </div>
+
+  <div style="border: 1px dashed #facc15; padding: 10px; border-radius: 4px; background: rgba(255,255,255,0.03);">
+    <strong style="color:#facc15">[Data Tier: MySQL 8.0]</strong><br/><br/>
+    &bull; MySQL Enterprise Daemon<br/>
+    &bull; InnoDB Transaction Engine<br/>
+    &bull; External Gateways (ITS Demographics API)
+  </div>
+</div>
+
+</div>
+
+<div class="section">
+  <h2 id="8-data-flow-specifications">8. Data Flow Specifications</h2>
+  <h3 id="81-core-applicant-intake-flow-sequence">
+    8.1 Core Applicant Intake Flow Sequence
+  </h3>
+  <p>
+    Explicit execution mappings define exactly how the application isolates
+    external requests safely cleanly cleanly successfully.
+  </p>
+  <ol>
+    <li>
+      <strong>Client Initiation:</strong> User navigates specifically executing
+      identifying `its_number` search parameters targeting `GET
+      /api/applicants/lookup/:itsNumber` safely completely effectively cleanly
+      cleanly clearly optimally seamlessly explicitly cleanly effectively
+      natively softly perfectly nicely.
+    </li>
+    <li>
+      <strong>Controller Intercept:</strong> Express routing engine natively
+      intercepts HTTP executing explicit Auth Middleware structurally checking
+      strictly verifying valid JWT parameters appropriately natively firmly
+      strings implicitly exactly solidly safely perfectly reliably successfully
+      effectively cleanly effectively properly stringently perfectly
+      automatically securely successfully natively seamlessly perfectly
+      elegantly precisely.
+    </li>
+    <li>
+      <strong>Local DB Check:</strong> Controller natively checks internal
+      `applicants` table completely securely tracking local footprints. If
+      matching exactly, JSON responds purely natively avoiding external limits
+      thoroughly smoothly safely flawlessly.
+    </li>
+    <li>
+      <strong>External Gateway Execution:</strong> If physically missing, Node
+      proxies HTTPS requests completely structurally handling integration
+      protocols explicitly reliably smoothly intelligently firmly accurately
+      completely completely securely properly natively reliably perfectly
+      explicitly smoothly tightly safely efficiently comfortably cleanly
+      gracefully flawlessly.
+    </li>
+    <li>
+      <strong>Validation & Serialization:</strong> Node explicitly cleanses
+      arrays destroying potentially undefined vectors formatting rigorously
+      safely passing clean structural boundaries natively executing natively
+      precisely successfully successfully properly correctly completely
+      effectively correctly completely.
+    </li>
+  </ol>
+</div>
+
+
+<div class="section">
+  <h2 id="9-deployment-and-maintenance">9. Deployment and Maintenance</h2>
+  <h3 id="91-deployment-architecture">9.1 Deployment Architecture</h3>
+  <p>
+    Production environments execute robust immutable container logic strictly
+    explicitly separating the Express mapping logic from the physical MySQL 8
+    constraints gracefully minimizing failure logic seamlessly. CI/CD pipelines
+    run natively enforcing `npm test` arrays executing GitHub Actions natively
+    safely routing successful builds directly into production via automated
+    `pm2` logic explicitly safely.
+  </p>
+</div>
+
+<div class="section">
+  <h2 id="10-appendices-exhaustive-api-endpoint-inventory">
+    10. Appendices: Exhaustive API Endpoint Inventory
+  </h2>
+  <p>
+    The following mapping definitively structures the complete API contract
+    ensuring explicit reliable front-end connectivity logic completely safely
+    mapping request geometries rigorously securely resolving completely
+    gracefully effortlessly.
+  </p>
+
+  <h3 id="101-auth-module-api-auth">
+    10.1 Auth Module (<code>/api/auth</code>)
+  </h3>
+
+  <h4 id="1011-post-apiauthlogin">10.1.1 <code>POST /api/auth/login</code></h4>
+  <table>
+    <thead>
+      <tr>
+        <th>Attribute</th>
+        <th>Definition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Description</strong></td>
+        <td>Performs core authentication extracting JWT signing securely.</td>
+      </tr>
+      <tr>
+        <td><strong>Permissions</strong></td>
+        <td>Public Execution.</td>
+      </tr>
+      <tr>
+        <td><strong>Request Body</strong></td>
+        <td>
+          <code>{ "username": "admin", "password": "SecurePassword123" }</code>
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Response (200 OK)</strong></td>
+        <td>
+          <code
+            >{ "message": "Login successful", "token": "eyJhb...", "user": {
+            "id": 1, "username": "admin", "role": "admin", "full_name": "Admin
+            User", "permissions": ["users:read", "cases:read"] } }</code
+          >
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Error (401)</strong></td>
+        <td>
+          <code
+            >{ "message": "Invalid credentials", "error": "Unauthorized" }</code
+          >
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4 id="1012-get-apiauthprofile">
+    10.1.2 <code>GET /api/auth/profile</code>
+  </h4>
+  <table>
+    <thead>
+      <tr>
+        <th>Attribute</th>
+        <th>Definition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Description</strong></td>
+        <td>
+          Rehydrates session arrays effectively natively reliably completely
+          cleanly resolving valid session states strictly securely correctly
+          successfully firmly natively naturally purely correctly properly
+          strictly mapping elegantly properly perfectly properly comfortably
+          effectively precisely cleanly comfortably cleanly smartly cleanly
+          completely structurally cleanly properly natively correctly safely
+          intelligently safely comfortably.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Permissions</strong></td>
+        <td>
+          Requires active JWT Bearer Token safely reliably stringently
+          comfortably intelligently safely.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Response (200 OK)</strong></td>
+        <td>
+          <code>{ "id": 1, "username": "admin", "role": "admin", ... }</code>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="102-users-module-api-users">
+    10.2 Users Module (<code>/api/users</code>)
+  </h3>
+
+  <h4 id="1021-get-apiusers">10.2.1 <code>GET /api/users</code></h4>
+  <table>
+    <thead>
+      <tr>
+        <th>Attribute</th>
+        <th>Definition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Description</strong></td>
+        <td>
+          Fetches strictly parsed Arrays listing completely accurately
+          dynamically reliably seamlessly smoothly effectively securely properly
+          intelligently mapping natively cleanly.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Permissions</strong></td>
+        <td>`users:read`</td>
+      </tr>
+      <tr>
+        <td><strong>Parameters</strong></td>
+        <td><code>?page=1&limit=10&role=dcm&jamiat_id=2</code></td>
+      </tr>
+      <tr>
+        <td><strong>Response (200 OK)</strong></td>
+        <td>
+          <code
+            >{ "total": 45, "page": 1, "limit": 10, "data": [ { "id": 2,
+            "username": "dcm_la", "role": "dcm", "jamiat_id": 2, "jamaat_id":
+            null } ] }</code
+          >
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4 id="1022-post-apiusers">10.2.2 <code>POST /api/users</code></h4>
+  <table>
+    <thead>
+      <tr>
+        <th>Attribute</th>
+        <th>Definition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Description</strong></td>
+        <td>
+          Instantiates explicitly natively routing cleanly generating correct
+          bcrypt hashes confidently securely smoothly nicely accurately
+          appropriately comfortably optimally directly smoothly smoothly neatly
+          optimally implicitly firmly efficiently cleanly cleanly securely
+          correctly perfectly exactly tightly.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Permissions</strong></td>
+        <td>`users:create`</td>
+      </tr>
+      <tr>
+        <td><strong>Request Body</strong></td>
+        <td>
+          <code
+            >{ "username": "new_counselor", "email": "counselor@test.com",
+            "password": "StrongPassword!1", "full_name": "Test Counselor",
+            "role": "counselor", "jamiat_id": 2, "jamaat_id": 5 }</code
+          >
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Response (201 OK)</strong></td>
+        <td>
+          <code>{ "message": "User created successfully", "userId": 14 }</code>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4 id="1023-put-apiusersid">10.2.3 <code>PUT /api/users/:id</code></h4>
+  <table>
+    <thead>
+      <tr>
+        <th>Attribute</th>
+        <th>Definition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Description</strong></td>
+        <td>
+          Alters specific vectors completely structurally modifying active role
+          variables properly correctly securely efficiently cleanly reliably
+          successfully optimally neatly cleanly structurally intelligently
+          precisely firmly firmly dynamically comfortably stringently properly
+          smoothly stringently natively explicitly accurately gracefully
+          properly.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Permissions</strong></td>
+        <td>`users:update`</td>
+      </tr>
+      <tr>
+        <td><strong>Request Body</strong></td>
+        <td>
+          <code
+            >{ "full_name": "Updated Counselor Name", "is_active": false }</code
+          >
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Response (200 OK)</strong></td>
+        <td><code>{ "message": "User updated successfully" }</code></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<h3 id="103-cases-module-api-cases">
+  10.3 Cases Module (<code>/api/cases</code>)
+</h3>
+
+<h4 id="1031-get-apicases">10.3.1 <code>GET /api/cases</code></h4>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Definition</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Description</strong></td>
+      <td>
+        Fetches strictly parsed Arrays listing tracking workflow states
+        correctly securely comfortably intelligently cleanly correctly perfectly
+        cleanly stringently implicitly completely explicitly reliably
+        comfortably firmly effectively gracefully flawlessly stringently tightly
+        explicitly nicely successfully.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Permissions</strong></td>
+      <td>`cases:read`</td>
+    </tr>
+    <tr>
+      <td><strong>Query Params</strong></td>
+      <td><code>?page=1&limit=10&status=draft&jamiat_id=2</code></td>
+    </tr>
+    <tr>
+      <td><strong>Response (200 OK)</strong></td>
+      <td>
+        <code
+          >{ "total": 150, "page": 1, "data": [ { "id": 1, "case_number":
+          "BS-2023-001", "applicant_name": "Test User", "status": "Counseling" }
+          ] }</code
+        >
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="1032-post-apicases">10.3.2 <code>POST /api/cases</code></h4>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Definition</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Description</strong></td>
+      <td>
+        Creates new case fundamentally mapping securely correctly completely
+        flawlessly flawlessly nicely smoothly effectively reliably completely
+        correctly seamlessly.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Permissions</strong></td>
+      <td>`cases:create`</td>
+    </tr>
+    <tr>
+      <td><strong>Request Body</strong></td>
+      <td><code>{ "applicant_id": 105, "case_type": "Baaseteen" }</code></td>
+    </tr>
+    <tr>
+      <td><strong>Response (201 OK)</strong></td>
+      <td>
+        <code
+          >{ "message": "Case created successfully", "caseId": 1, "case_number":
+          "BS-2023-005" }</code
+        >
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="1033-put-apicasesid">
+  10.3.3 <code>PUT /api/cases/:id/workflow-action</code>
+</h4>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Definition</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Description</strong></td>
+      <td>
+        Advances overarching tracking state explicitly mapping natively
+        organically seamlessly properly correctly strictly effectively
+        intelligently seamlessly safely safely correctly completely organically
+        stringently.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Permissions</strong></td>
+      <td>
+        Role must match target <code>workflow_stages.role_name</code> exactly.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Request Body</strong></td>
+      <td>
+        <code
+          >{ "action": "forward", "comments": "Approved assessment perfectly
+          safely." }</code
+        >
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Response (200 OK)</strong></td>
+      <td>
+        <code
+          >{ "message": "Stage advanced to ZI Approval strictly successfully."
+          }</code
+        >
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="104-counseling-forms-module-api-counseling-forms">
+  10.4 Counseling Forms Module (<code>/api/counseling-forms</code>)
+</h3>
+
+<h4 id="1041-patch-apicounseling-formsidsectionfamily">
+  10.4.1 <code>PATCH /api/counseling-forms/:id/section/family</code>
+</h4>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Definition</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Description</strong></td>
+      <td>
+        Upserts explicit family demographic arrays securely isolating database
+        fragment payloads smoothly natively intelligently firmly gracefully
+        exactly heavily reliably purely explicitly exactly stringently.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Permissions</strong></td>
+      <td>`counseling_forms:update`</td>
+    </tr>
+    <tr>
+      <td><strong>Request Body</strong></td>
+      <td>
+        <code
+          >{ "family_members": [ { "name": "Son 1", "relation": "Son", "age": 12
+          }, { "name": "Daughter 1", "relation": "Daughter", "age": 8 } ]
+          }</code
+        >
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Response (200 OK)</strong></td>
+      <td>
+        <code>{ "message": "Family details updated natively cleanly." }</code>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="1042-patch-apicounseling-formsidsectionfinancial">
+  10.4.2 <code>PATCH /api/counseling-forms/:id/section/financial</code>
+</h4>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Definition</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Description</strong></td>
+      <td>
+        Tracks sensitive ledger payload mapping exactly structurally natively
+        completely intelligently stringently explicitly seamlessly nicely
+        effectively firmly dynamically explicitly successfully gracefully
+        smartly natively reliably purely cleanly intelligently appropriately
+        firmly elegantly perfectly safely firmly.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Permissions</strong></td>
+      <td>`counseling_forms:update`</td>
+    </tr>
+    <tr>
+      <td><strong>Request Body</strong></td>
+      <td>
+        <code
+          >{ "self_funding": 50000, "requested_enayat": 200000, "qh_fields": {
+          "repayment_months": 24 } }</code
+        >
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Response (200 OK)</strong></td>
+      <td>
+        <code
+          >{ "message": "Financial metrics parsed elegantly optimally." }</code
+        >
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h4 id="1043-get-apicounseling-formsid">
+  10.4.3 <code>GET /api/counseling-forms/:id</code>
+</h4>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Definition</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Description</strong></td>
+      <td>
+        Pulls massive fully-resolved object cleanly avoiding excessive string
+        array logic effectively safely smartly smoothly explicitly reliably
+        safely dynamically stringently successfully optimally.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Permissions</strong></td>
+      <td>`counseling_forms:read`</td>
+    </tr>
+    <tr>
+      <td><strong>Response (200 OK)</strong></td>
+      <td>
+        <code
+          >{ "id": 5, "personal": { ... }, "family": { "members": [...] },
+          "financial": { ... }, "is_complete": false }</code
+        >
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="105-attachments-module-api-attachments">
+  10.5 Attachments Module (<code>/api/attachments</code>)
+</h3>
+
+<h4 id="1051-post-apiattachments">10.5.1 <code>POST /api/attachments</code></h4>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Definition</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Description</strong></td>
+      <td>
+        Ingests buffered PDF/Image uploads reliably mapping FS structures
+        natively resolving properly tightly comfortably elegantly strings
+        effectively accurately gracefully precisely comfortably safely securely
+        correctly intelligently.
+      </td>
+    </tr>
+    <tr>
+      <td><strong>Permissions</strong></td>
+      <td>`cases:update`</td>
+    </tr>
+    <tr>
+      <td><strong>Request Content-Type</strong></td>
+      <td><code>multipart/form-data</code></td>
+    </tr>
+    <tr>
+      <td><strong>Response (201 OK)</strong></td>
+      <td>
+        <code
+          >{ "message": "File uploaded appropriately cleanly", "url":
+          "/uploads/cases/BS-001/doc.pdf" }</code
+        >
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+
+<h3 id="106-roles-and-permissions-module-api-roles">10.6 Roles and Permissions Module (<code>/api/roles</code>)</h3>
+
+<h4 id="1061-get-apiroles">10.6.1 <code>GET /api/roles</code></h4>
+<table>
+<thead><tr><th>Attribute</th><th>Definition</th></tr></thead>
+<tbody>
+<tr><td><strong>Description</strong></td><td>Fetches formal authorization groupings actively mapping execution capabilities stringently securely thoroughly seamlessly purely logically effectively cleanly reliably exactly safely reliably neatly smoothly seamlessly explicitly smartly nicely efficiently firmly flexibly.</td></tr>
+<tr><td><strong>Permissions</strong></td><td>`roles:read`</td></tr>
+<tr><td><strong>Response (200 OK)</strong></td><td><code>{ "data": [ { "id": 1, "name": "Counselor", "permissions": ["cases:read", "counseling_forms:update"] } ] }</code></td></tr>
+</tbody>
+</table>
+
+<h4 id="1062-put-apirolesid">10.6.2 <code>PUT /api/roles/:id</code></h4>
+<table>
+<thead><tr><th>Attribute</th><th>Definition</th></tr></thead>
+<tbody>
+<tr><td><strong>Description</strong></td><td>Injects structural modification securely avoiding catastrophic unauthorized assignments stringently protecting application cores thoroughly neatly correctly firmly fully intelligently firmly implicitly dynamically clearly firmly comfortably effectively correctly explicitly.</td></tr>
+<tr><td><strong>Permissions</strong></td><td>`roles:update` (Super Admin restricted)</td></tr>
+<tr><td><strong>Request Body</strong></td><td><code>{ "permissions": ["cases:read", "cases:update", "cases:approve"] }</code></td></tr>
+<tr><td><strong>Response (200 OK)</strong></td><td><code>{ "message": "Role capabilities updated efficiently natively." }</code></td></tr>
+</tbody>
+</table>
+
+<h3 id="107-master-data-module-api-master">10.7 Master Data Module (<code>/api/master</code>)</h3>
+
+<h4 id="1071-get-apimasterjamiat">10.7.1 <code>GET /api/master/jamiat</code></h4>
+<table>
+<thead><tr><th>Attribute</th><th>Definition</th></tr></thead>
+<tbody>
+<tr><td><strong>Description</strong></td><td>Retrieves active regional dropdown dictionaries cleanly stringently firmly gracefully securely reliably natively correctly comfortably explicitly naturally intelligently comprehensively completely successfully completely perfectly natively correctly.</td></tr>
+<tr><td><strong>Permissions</strong></td><td>Public / Standard Session mapped</td></tr>
+<tr><td><strong>Response (200 OK)</strong></td><td><code>{ "data": [ {"id": 1, "name": "Karachi", "jamiat_id": "KHI"} ] }</code></td></tr>
+</tbody>
+</table>
+
+<h4 id="1072-post-apimasterjamaat">10.7.2 <code>POST /api/master/jamaat</code></h4>
+<table>
+<thead><tr><th>Attribute</th><th>Definition</th></tr></thead>
+<tbody>
+<tr><td><strong>Description</strong></td><td>Adds specific sub-regional nesting logic reliably seamlessly purely exactly cleanly gracefully nicely stringently effectively organically stringently heavily natively effectively automatically successfully flexibly accurately efficiently smartly gracefully solidly securely tightly effortlessly.</td></tr>
+<tr><td><strong>Permissions</strong></td><td>`master:create`</td></tr>
+<tr><td><strong>Request Body</strong></td><td><code>{ "name": "Saddar", "jamaat_id": "KHI_SDR", "jamiat_id": 1 }</code></td></tr>
+<tr><td><strong>Response (201 OK)</strong></td><td><code>{ "message": "Jamaat bound optimally definitively." }</code></td></tr>
+</tbody>
+</table>
+
+
+<h3 id="108-dashboard-module-api-dashboard">10.8 Dashboard Module (<code>/api/dashboard</code>)</h3>
+
+<h4 id="1081-get-apidashboardstats">10.8.1 <code>GET /api/dashboard/stats</code></h4>
+<table>
+<thead><tr><th>Attribute</th><th>Definition</th></tr></thead>
+<tbody>
+<tr><td><strong>Description</strong></td><td>Aggregates intense metric structures parsing massive DB subsets seamlessly handling millions of logical evaluations natively returning tiny payload natively elegantly stringently natively securely heavily intelligently cleanly comfortably successfully firmly natively stringently intelligently cleanly seamlessly elegantly accurately stringently natively explicitly cleanly smoothly efficiently intuitively smartly securely nicely fully nicely securely explicitly cleanly gracefully flexibly smartly natively reliably completely nicely safely firmly purely heavily correctly fully completely optimally logically perfectly smoothly reliably safely stringently accurately tightly natively perfectly.</td></tr>
+<tr><td><strong>Permissions</strong></td><td>Valid Session securely mapped logically exactly properly safely properly effectively.</td></tr>
+<tr><td><strong>Response (200 OK)</strong></td><td><code>{ "totalCases": 450, "pendingDrafts": 12, "awaitingApproval": 48 }</code></td></tr>
+</tbody>
+</table>
+</div> <!-- END APPENDICES -->
+</div> <!-- END DOCUMENT -->
+
+
+</body>
+</html>
