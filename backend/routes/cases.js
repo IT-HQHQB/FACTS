@@ -1870,6 +1870,13 @@ router.put('/:caseId/welfare-reject', authenticateToken, async (req, res) => {
 router.get('/:caseId/comments', authenticateToken, async (req, res) => {
   try {
     const { caseId } = req.params;
+    const userRole = req.user.role;
+
+    // Check if user has permission to read comments
+    const canReadComments = await hasPermission(userRole, 'comments', 'read_comments');
+    if (!canReadComments) {
+      return res.status(403).json({ error: 'You do not have permission to view comments' });
+    }
 
     const [comments] = await pool.execute(
       `SELECT cc.*, u.full_name, u.role
@@ -1893,6 +1900,13 @@ router.post('/:caseId/comments', authenticateToken, async (req, res) => {
     const { caseId } = req.params;
     const { comment, comment_type = 'general' } = req.body;
     const userId = req.user.id;
+    const userRole = req.user.role;
+
+    // Check if user has permission to write comments
+    const canWriteComments = await hasPermission(userRole, 'comments', 'write_comments');
+    if (!canWriteComments) {
+      return res.status(403).json({ error: 'You do not have permission to add comments' });
+    }
 
     if (!comment || comment.trim().length === 0) {
       return res.status(400).json({ error: 'Comment is required' });
@@ -1936,7 +1950,7 @@ router.get('/:caseId/workflow-comments/:workflowStep', authenticateToken, async 
     const userRole = req.user.role;
 
     // Check if user has permission to view comments
-    const canViewComments = await hasPermission(userRole, 'counseling_forms', 'comment');
+    const canViewComments = await hasPermission(userRole, 'comments', 'read_comments');
     
     if (!canViewComments) {
       return res.status(403).json({ error: 'You do not have permission to view comments' });
@@ -1969,7 +1983,7 @@ router.post('/:caseId/workflow-comments', authenticateToken, async (req, res) =>
     const userRole = req.user.role;
 
     // Check if user has permission to add comments
-    const canAddComments = await hasPermission(userRole, 'counseling_forms', 'comment');
+    const canAddComments = await hasPermission(userRole, 'comments', 'write_comments');
     
     if (!canAddComments) {
       return res.status(403).json({ error: 'You do not have permission to add comments' });

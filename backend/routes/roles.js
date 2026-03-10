@@ -483,7 +483,7 @@ router.get('/permissions/available', authenticateToken, authorizeRoles('super_ad
       // Counseling form permissions
       { 
         resource: 'counseling_forms', 
-        actions: ['create', 'read', 'update', 'delete', 'complete', 'comment'],
+        actions: ['create', 'read', 'update', 'delete', 'complete'],
         stages: counselingFormStages
       },
       // Payment management permissions
@@ -508,6 +508,8 @@ router.get('/permissions/available', authenticateToken, authorizeRoles('super_ad
       { resource: 'master', actions: ['read', 'create', 'update', 'delete'] },
       // Case Identification permissions
       { resource: 'case_identification', actions: ['create', 'read', 'update', 'delete', 'approve', 'edit'] },
+      // Comments permissions
+      { resource: 'comments', actions: ['read_comments', 'write_comments'] },
     ];
     
     res.json({ permissions });

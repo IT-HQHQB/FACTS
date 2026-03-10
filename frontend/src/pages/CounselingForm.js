@@ -97,7 +97,8 @@ const CounselingForm = () => {
   const [stagePermissions, setStagePermissions] = useState({});
   
   // Check if user has permission to view/add comments
-  const { hasPermission: canComment } = usePermission('counseling_forms', 'comment');
+  const { hasPermission: canReadComments } = usePermission('comments', 'read_comments');
+  const { hasPermission: canWriteComments } = usePermission('comments', 'write_comments');
   const queryClient = useQueryClient();
 
   // Define workflow steps and tabs (used in multiple places)
@@ -2561,8 +2562,8 @@ const CounselingForm = () => {
           )}
 
           {/* Workflow Comments for Personal Details */}
-          {activeTab === 'personal' && canComment && (
-            <WorkflowComments caseId={caseId} workflowStep="personal" />
+          {activeTab === 'personal' && canReadComments && (
+            <WorkflowComments caseId={caseId} workflowStep="personal" canWrite={canWriteComments} />
           )}
 
           {/* Family Details Section */}
@@ -3373,8 +3374,8 @@ const CounselingForm = () => {
           )}
 
           {/* Workflow Comments for Family Details */}
-          {activeTab === 'family' && canComment && (
-            <WorkflowComments caseId={caseId} workflowStep="family" />
+          {activeTab === 'family' && canReadComments && (
+            <WorkflowComments caseId={caseId} workflowStep="family" canWrite={canWriteComments} />
           )}
 
           {/* Assessment Section */}
@@ -3654,8 +3655,8 @@ const CounselingForm = () => {
           )}
 
           {/* Workflow Comments for Assessment */}
-          {activeTab === 'assessment' && canComment && (
-            <WorkflowComments caseId={caseId} workflowStep="assessment" />
+          {activeTab === 'assessment' && canReadComments && (
+            <WorkflowComments caseId={caseId} workflowStep="assessment" canWrite={canWriteComments} />
           )}
 
           {/* Financial Assistance Section */}
@@ -5101,8 +5102,8 @@ const CounselingForm = () => {
           )}
 
           {/* Workflow Comments for Financial Assistance */}
-          {activeTab === 'financial' && canComment && (
-            <WorkflowComments caseId={caseId} workflowStep="financial" />
+          {activeTab === 'financial' && canReadComments && (
+            <WorkflowComments caseId={caseId} workflowStep="financial" canWrite={canWriteComments} />
           )}
 
           {/* Economic Growth Section */}
@@ -6854,8 +6855,8 @@ const CounselingForm = () => {
           )}
 
           {/* Workflow Comments for Economic Growth */}
-          {activeTab === 'growth' && canComment && (
-            <WorkflowComments caseId={caseId} workflowStep="growth" />
+          {activeTab === 'growth' && canReadComments && (
+            <WorkflowComments caseId={caseId} workflowStep="growth" canWrite={canWriteComments} />
           )}
 
           {/* Declaration Section */}
@@ -7416,8 +7417,8 @@ const CounselingForm = () => {
           )}
 
           {/* Workflow Comments for Declaration */}
-          {activeTab === 'declaration' && canComment && (
-            <WorkflowComments caseId={caseId} workflowStep="declaration" />
+          {activeTab === 'declaration' && canReadComments && (
+            <WorkflowComments caseId={caseId} workflowStep="declaration" canWrite={canWriteComments} />
           )}
 
           {/* Attachments Section */}
@@ -8572,8 +8573,8 @@ const CounselingForm = () => {
           )}
 
           {/* Workflow Comments for Attachments */}
-          {activeTab === 'attachments' && canComment && (
-            <WorkflowComments caseId={caseId} workflowStep="attachments" />
+          {activeTab === 'attachments' && canReadComments && (
+            <WorkflowComments caseId={caseId} workflowStep="attachments" canWrite={canWriteComments} />
           )}
         </Card>
 

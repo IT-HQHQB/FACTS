@@ -310,7 +310,7 @@ const ManzooriUploadSection = ({ caseId, canEdit: workflowCanEdit, canView: work
 };
 
 // Comments Section Component
-const CommentsSection = ({ caseId }) => {
+const CommentsSection = ({ caseId, canRead, canWrite }) => {
   const { user } = useAuth();
   const [newComment, setNewComment] = useState('');
   const [commentType, setCommentType] = useState('general');
@@ -354,9 +354,16 @@ const CommentsSection = ({ caseId }) => {
     }
   };
 
+  if (!canRead) {
+    return (
+      <div className="text-center py-4 text-gray-500">You do not have permission to view comments</div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Add Comment Form */}
+      {canWrite && (
       <div className="border rounded-lg p-4 bg-gray-50">
         <h4 className="text-sm font-medium text-gray-900 mb-3">Add Comment</h4>
         <div className="space-y-3">
@@ -387,6 +394,7 @@ const CommentsSection = ({ caseId }) => {
           </Button>
         </div>
       </div>
+      )}
 
       {/* Comments List */}
       <div className="space-y-3">
@@ -437,6 +445,9 @@ const CaseDetails = () => {
   const { hasPermission: canChangeAssignee } = usePermission('cases', 'change_assignee');
   // Payment management permissions
   const { hasPermission: hasPaymentManagementRead } = usePermission('payment_management', 'read');
+  // Comments permissions
+  const { hasPermission: canReadComments } = usePermission('comments', 'read_comments');
+  const { hasPermission: canWriteComments } = usePermission('comments', 'write_comments');
   
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignModalMode, setAssignModalMode] = useState('assign'); // 'assign' | 'reassign'
@@ -950,7 +961,7 @@ const CaseDetails = () => {
               <h3 className="text-lg font-semibold text-gray-900">Comments & Feedback</h3>
             </Card.Header>
             <Card.Content>
-              <CommentsSection caseId={caseId} />
+              <CommentsSection caseId={caseId} canRead={canReadComments} canWrite={canWriteComments} />
             </Card.Content>
           </Card>
         </div>

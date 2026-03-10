@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { Button, Card } from './ui';
 
-const WorkflowComments = ({ caseId, workflowStep }) => {
+const WorkflowComments = ({ caseId, workflowStep, canWrite = true }) => {
   const { user } = useAuth();
   const [newComment, setNewComment] = useState('');
   const queryClient = useQueryClient();
@@ -50,7 +50,7 @@ const WorkflowComments = ({ caseId, workflowStep }) => {
   return (
     <Card className="mt-4">
       <Card.Header>
-        <h4 className="text-sm font-medium text-gray-900">Comments for {workflowStep.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</h4>
+        <h4 className="text-sm font-medium text-gray-900">Comments for {workflowStep.replace('_', ' ').replace(/w/g, l => l.toUpperCase())}</h4>
       </Card.Header>
       <Card.Content>
         <div className="space-y-4">
@@ -79,31 +79,33 @@ const WorkflowComments = ({ caseId, workflowStep }) => {
             </div>
           ) : (
             <div className="text-center py-4">
-              <div className="text-sm text-gray-500">No comments yet. Be the first to add one!</div>
+              <div className="text-sm text-gray-500">No comments yet</div>
             </div>
           )}
 
-          {/* Add Comment Form */}
-          <div className="border rounded-lg p-3 bg-gray-50">
-            <div className="space-y-3">
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Add your comment for this workflow step..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
-                rows={3}
-              />
-              <Button
-                onClick={handleAddComment}
-                disabled={!newComment.trim() || addCommentMutation.isLoading}
-                loading={addCommentMutation.isLoading}
-                size="sm"
-                variant="primary"
-              >
-                Add Comment
-              </Button>
+          {/* Add Comment Form - only shown if user has write permission */}
+          {canWrite && (
+            <div className="border rounded-lg p-3 bg-gray-50">
+              <div className="space-y-3">
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Add your comment for this workflow step..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                  rows={3}
+                />
+                <Button
+                  onClick={handleAddComment}
+                  disabled={!newComment.trim() || addCommentMutation.isLoading}
+                  loading={addCommentMutation.isLoading}
+                  size="sm"
+                  variant="primary"
+                >
+                  Add Comment
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
       </Card.Content>
