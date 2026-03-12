@@ -2696,18 +2696,54 @@
             <div class="sub-heading">
               Step 3 — Case Advances Through the Approval Workflow
             </div>
-            <div class="flow-path">
-              <div class="flow-node highlight">Counseling<br />Form Done</div>
+
+            <!-- Row 1 -->
+            <div class="flow-path" style="margin-bottom: 4px">
+              <div class="flow-node highlight">
+                Draft Stage<br />(DCM Assigns)
+              </div>
               <div class="flow-arrow">›</div>
-              <div class="flow-node">Cover Letter<br />Stage</div>
+              <div class="flow-node active">Counseling<br />Form Fill</div>
               <div class="flow-arrow">›</div>
               <div class="flow-node">Welfare<br />Review</div>
-              <div class="flow-arrow">›</div>
+            </div>
+
+            <!-- Row 2 -->
+            <div class="flow-path" style="margin-bottom: 4px">
               <div class="flow-node">ZI<br />Approval</div>
               <div class="flow-arrow">›</div>
-              <div class="flow-node">Executive<br />Approval</div>
+              <div class="flow-node">KG<br />Review</div>
               <div class="flow-arrow">›</div>
-              <div class="flow-node">Disbursement</div>
+              <div class="flow-node">Operations<br />Lead</div>
+            </div>
+
+            <!-- Row 3 -->
+            <div class="flow-path" style="margin-bottom: 4px">
+              <div class="flow-node">Cover Letter<br />Generation</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Executive Approval<br />(Multi-level)</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Manzoori<br />(Sanction)</div>
+            </div>
+
+            <!-- Row 4 -->
+            <div class="flow-path" style="margin-bottom: 4px">
+              <div class="flow-node">Financial<br />Disbursement</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Payment Schedule<br />Tracking</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Fund Utilization<br />(Quarterly)</div>
+              <div class="flow-arrow">›</div>
+              <div
+                class="flow-node"
+                style="
+                  background: var(--navy);
+                  border-color: var(--navy);
+                  color: #fff;
+                "
+              >
+                Case<br />Closure
+              </div>
             </div>
             <ul class="details-list" style="margin-top: 8px">
               <li>
