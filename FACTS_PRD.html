@@ -1,0 +1,4001 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FACTS — Product Requirements Document v3.7</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+      @page {
+        size: A4;
+        margin: 18mm 16mm 18mm 16mm;
+      }
+
+      :root {
+        --navy: #1a2a3a;
+        --navy-light: #243447;
+        --teal: #0d9488;
+        --teal-dark: #0f766e;
+        --teal-light: #ccfbf1;
+        --accent: #0d9488;
+        --accent-light: #f0fdfa;
+        --bg: #ffffff;
+        --bg-alt: #f8fafc;
+        --bg-section: #f1f5f9;
+        --text: #1e293b;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --border-strong: #cbd5e1;
+        --radius: 6px;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        font-size: 11px;
+        line-height: 1.55;
+        color: var(--text);
+        background: white;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ===== COVER PAGE ===== */
+      .cover-page {
+        background: linear-gradient(
+          145deg,
+          #0f2027 0%,
+          #1a2a3a 35%,
+          #0f3d3e 100%
+        );
+        color: white;
+        width: 100%;
+        height: 297mm;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 40px;
+        page-break-after: always;
+        position: relative;
+        overflow: visible;
+      }
+      .cover-page::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(
+            ellipse at 30% 35%,
+            rgba(13, 148, 136, 0.1) 0%,
+            transparent 55%
+          ),
+          radial-gradient(
+            ellipse at 70% 70%,
+            rgba(212, 175, 55, 0.04) 0%,
+            transparent 55%
+          );
+      }
+      .cover-logo {
+        width: 72px;
+        height: 72px;
+        background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: 800;
+        color: white;
+        margin-bottom: 32px;
+        position: relative;
+        box-shadow: 0 6px 24px rgba(13, 148, 136, 0.3);
+        letter-spacing: 1px;
+      }
+      .cover-title {
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin-bottom: 6px;
+        position: relative;
+      }
+      .cover-subtitle {
+        font-size: 18px;
+        font-weight: 300;
+        color: #5eead4;
+        margin-bottom: 8px;
+        position: relative;
+      }
+      .cover-tagline {
+        font-size: 13px;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 36px;
+        position: relative;
+        max-width: 440px;
+      }
+      .cover-meta {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        max-width: 480px;
+        width: 100%;
+      }
+      .cover-meta-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: var(--radius);
+        padding: 12px 16px;
+      }
+      .cover-meta-label {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: rgba(255, 255, 255, 0.45);
+        margin-bottom: 3px;
+      }
+      .cover-meta-value {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .cover-badge {
+        position: relative;
+        margin-top: 32px;
+        background: rgba(22, 163, 106, 0.12);
+        border: 1px solid rgba(22, 163, 106, 0.25);
+        color: #4ade80;
+        padding: 5px 18px;
+        border-radius: 16px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .cover-footer {
+        position: absolute;
+        bottom: 30px;
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.3);
+        letter-spacing: 0.5px;
+      }
+
+      /* ===== CONTENT ===== */
+      .content-wrapper {
+        max-width: 178mm;
+        margin: 0 auto;
+        padding: 0;
+      }
+
+      .section {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      /* ===== HEADINGS ===== */
+      h1 {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--navy);
+        margin: 20px 0 8px;
+        padding-bottom: 6px;
+        border-bottom: 2px solid var(--teal);
+        page-break-after: avoid;
+      }
+
+      h2 {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--navy);
+        margin: 16px 0 8px;
+        padding: 7px 10px;
+        background: var(--bg-section);
+        border-left: 3px solid var(--teal);
+        border-radius: 0 var(--radius) var(--radius) 0;
+        page-break-after: avoid;
+      }
+
+      h3 {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--navy-light);
+        margin: 12px 0 6px;
+        page-break-after: avoid;
+      }
+
+      h4 {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--teal-dark);
+        margin: 10px 0 4px;
+        page-break-after: avoid;
+      }
+
+      /* ===== TEXT ===== */
+      p {
+        margin: 0 0 6px;
+      }
+      ul,
+      ol {
+        margin: 4px 0 8px;
+        padding-left: 20px;
+      }
+      li {
+        margin-bottom: 2px;
+        line-height: 1.5;
+      }
+      li strong {
+        color: var(--navy);
+      }
+
+      /* ===== TABLES ===== */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 6px 0 12px;
+        font-size: 10.5px;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        page-break-inside: auto;
+      }
+      thead {
+        background: var(--navy);
+      }
+      thead th {
+        color: white;
+        font-weight: 600;
+        text-align: left;
+        padding: 6px 8px;
+        font-size: 9.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        border: none;
+      }
+      tbody tr {
+        border-bottom: 1px solid var(--border);
+      }
+      tbody tr:nth-child(even) {
+        background: #fafbfc;
+      }
+      td {
+        padding: 5px 8px;
+        vertical-align: top;
+        border: none;
+        line-height: 1.45;
+        word-break: break-word;
+      }
+      td:first-child {
+        font-weight: 500;
+        color: var(--navy);
+      }
+      td strong {
+        color: var(--navy);
+      }
+
+      .check {
+        color: #16a34a;
+        font-weight: bold;
+        font-size: 13px;
+      }
+      .cross {
+        color: #dc2626;
+        font-weight: bold;
+        font-size: 13px;
+      }
+
+      /* ===== CODE BLOCKS ===== */
+      pre {
+        background: var(--navy);
+        color: #a6d189;
+        padding: 12px 14px;
+        border-radius: var(--radius);
+        overflow-x: auto;
+        font-family: "Cascadia Code", "Consolas", monospace;
+        font-size: 9.5px;
+        line-height: 1.45;
+        margin: 6px 0 12px;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      code {
+        font-family: "Cascadia Code", "Consolas", monospace;
+        font-size: 10px;
+        background: var(--bg-section);
+        padding: 1px 4px;
+        border-radius: 3px;
+        color: var(--teal-dark);
+      }
+      pre code {
+        background: none;
+        padding: 0;
+        color: inherit;
+        font-size: 9.5px;
+      }
+
+      hr {
+        border: none;
+        height: 1px;
+        background: var(--border-strong);
+        margin: 14px 0;
+      }
+      em {
+        color: var(--text-muted);
+      }
+
+      .doc-footer {
+        text-align: center;
+        padding: 16px 10px;
+        color: var(--text-muted);
+        font-size: 10px;
+        border-top: 2px solid var(--teal);
+        margin-top: 24px;
+        page-break-before: avoid;
+      }
+      .doc-footer strong {
+        color: var(--navy);
+      }
+
+      /* ===== PRINT ===== */
+      @media print {
+        body {
+          background: white;
+        }
+        .cover-page {
+          height: 260mm;
+          background: linear-gradient(
+            145deg,
+            #0f2027 0%,
+            #1a2a3a 35%,
+            #0f3d3e 100%
+          ) !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        thead {
+          background: var(--navy) !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        thead th {
+          color: white !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        tbody tr:nth-child(even) {
+          background: #fafbfc !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        h2 {
+          background: var(--bg-section) !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        pre {
+          background: var(--navy) !important;
+          color: #a6d189 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .check {
+          color: #16a34a !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .cross {
+          color: #dc2626 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        h1,
+        h2,
+        h3,
+        h4 {
+          page-break-after: avoid;
+        }
+        .section {
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+        table {
+          page-break-inside: auto;
+        }
+        tr {
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+        pre {
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- COVER PAGE -->
+    <div class="cover-page">
+      <div class="cover-logo">PRD</div>
+      <div class="cover-title">FACTS</div>
+      <div class="cover-subtitle">File &amp; Case Tracking System</div>
+      <div class="cover-tagline">
+        A comprehensive case management and welfare tracking platform for
+        Baaseteen &amp; SHND organizations
+      </div>
+      <div class="cover-meta">
+        <div class="cover-meta-item">
+          <div class="cover-meta-label">Version</div>
+          <div class="cover-meta-value">3.7</div>
+        </div>
+        <div class="cover-meta-item">
+          <div class="cover-meta-label">Date</div>
+          <div class="cover-meta-value">April 23, 2025</div>
+        </div>
+        <div class="cover-meta-item">
+          <div class="cover-meta-label">Status</div>
+          <div class="cover-meta-value">Final</div>
+        </div>
+      </div>
+      <div class="cover-badge">&bull; Live &amp; Operational</div>
+      <div class="cover-footer">
+        Prepared by FACTS Development Team &middot; Classification: Internal
+      </div>
+    </div>
+
+    <!-- DOCUMENT BODY -->
+    <div class="content-wrapper">
+      <h1>Product Requirements Document (PRD)</h1>
+      <h1>FACTS — File &amp; Case Tracking System</h1>
+      <hr />
+      <p>
+        <strong>Document Version:</strong> 3.7<br />
+        <strong>Date:</strong> April 23, 2025<br />
+        <strong>Prepared By:</strong> FACTS Development Team<br />
+        <strong>Document Status:</strong> Final<br />
+        <strong>Classification:</strong> Internal
+      </p>
+      <hr />
+
+      <div class="section">
+        <h2>Document Control</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Project Name</strong></td>
+              <td>FACTS — File &amp; Case Tracking System</td>
+            </tr>
+            <tr>
+              <td><strong>Document Type</strong></td>
+              <td>Product Requirements Document (PRD)</td>
+            </tr>
+            <tr>
+              <td><strong>Version</strong></td>
+              <td>3.7</td>
+            </tr>
+            <tr>
+              <td><strong>Date</strong></td>
+              <td>April 23, 2025</td>
+            </tr>
+            <tr>
+              <td><strong>Current Status</strong></td>
+              <td>Live &amp; Operational</td>
+            </tr>
+            <tr>
+              <td><strong>Organizations Served</strong></td>
+              <td>Baaseteen, SHND (Social Help and Development)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2>Table of Contents</h2>
+        <ol>
+          <li><a href="#vision">Product Vision &amp; Overview</a></li>
+          <li><a href="#problem">Problem Statement</a></li>
+          <li><a href="#goals">Goals &amp; Success Metrics</a></li>
+          <li><a href="#users">Target Users &amp; Personas</a></li>
+          <li><a href="#stories">User Stories</a></li>
+          <li>
+            <a href="#features">Feature Requirements</a>
+            <ul>
+              <li>6.1 Authentication &amp; Access Control</li>
+              <li>6.2 User &amp; Role Management</li>
+              <li>6.3 Case Identification</li>
+              <li>6.4 Case Management</li>
+              <li>6.5 Applicant Management</li>
+              <li>6.6 Counseling Forms</li>
+              <li>6.7 Cover Letters</li>
+              <li>6.8 Payment Management</li>
+              <li>6.9 Fund Utilization</li>
+              <li>6.10 Welfare Checklist</li>
+              <li>6.11 Workflow Management</li>
+              <li>6.12 Notification System</li>
+              <li>6.13 Reporting &amp; Analytics</li>
+              <li>6.14 Attachment Management</li>
+            </ul>
+          </li>
+          <li><a href="#flows">User Flows</a></li>
+          <li><a href="#ia">Information Architecture</a></li>
+          <li><a href="#tech">Technical Architecture Summary</a></li>
+          <li><a href="#data">Data Model Overview</a></li>
+          <li><a href="#perf">Performance &amp; Reliability</a></li>
+          <li><a href="#sec">Security &amp; Compliance</a></li>
+          <li><a href="#deploy">Deployment &amp; Infrastructure</a></li>
+          <li><a href="#constraints">Assumptions &amp; Constraints</a></li>
+          <li><a href="#risks">Risks &amp; Mitigation</a></li>
+          <li><a href="#roadmap">Out of Scope &amp; Future Roadmap</a></li>
+          <li><a href="#glossary">Glossary</a></li>
+        </ol>
+        <hr />
+      </div>
+
+      <!-- SECTION 1 -->
+      <div class="section">
+        <h2 id="vision">1. Product Vision &amp; Overview</h2>
+
+        <h3>1.1 Vision Statement</h3>
+        <p>
+          FACTS aims to be the definitive digital platform for welfare case
+          management — eliminating fragmented paper-based processes, enforcing
+          consistent multi-level approval workflows, and providing every
+          stakeholder with real-time visibility from the moment a case is
+          identified through to financial disbursement and fund utilization
+          tracking.
+        </p>
+
+        <h3>1.2 Product Summary</h3>
+        <p>
+          FACTS is a full-stack web application built for Baaseteen and SHND
+          organizations. It digitizes the entire welfare case lifecycle: from
+          eligibility screening and applicant profiling through counseling,
+          multi-authority approvals, financial disbursement scheduling, and
+          ongoing quarterly reassessment. The system enforces role-scoped
+          access, automated notifications, SLA tracking, and comprehensive audit
+          trails at every step.
+        </p>
+
+        <p><strong>Key Capabilities at a Glance:</strong></p>
+        <table>
+          <thead>
+            <tr>
+              <th>Capability</th>
+              <th>What It Does</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Case Identification</td>
+              <td>
+                Pre-assessment eligibility screening with ITS integration,
+                income evaluation, and auto-case creation on approval
+              </td>
+            </tr>
+            <tr>
+              <td>Case Management</td>
+              <td>
+                Full lifecycle tracking with configurable multi-stage approval
+                workflows, comments, and audit trails
+              </td>
+            </tr>
+            <tr>
+              <td>Applicant Profiles</td>
+              <td>
+                Rich applicant records auto-populated from the ITS API including
+                photos, family details, and contact info
+              </td>
+            </tr>
+            <tr>
+              <td>Counseling Forms</td>
+              <td>
+                Multi-section digital forms (7 sections) replacing paper-based
+                counseling documentation
+              </td>
+            </tr>
+            <tr>
+              <td>Cover Letters</td>
+              <td>
+                Automated PDF generation for case cover letters with submission
+                workflows
+              </td>
+            </tr>
+            <tr>
+              <td>Payment Schedules</td>
+              <td>
+                Yearly disbursement plans with monthly repayment tracking and
+                confirmation
+              </td>
+            </tr>
+            <tr>
+              <td>Fund Utilization</td>
+              <td>
+                Quarterly reassessment reports with configurable dynamic form
+                builder and photo documentation
+              </td>
+            </tr>
+            <tr>
+              <td>Welfare Checklist</td>
+              <td>
+                Configurable checklist categories and items with per-case
+                completion tracking
+              </td>
+            </tr>
+            <tr>
+              <td>RBAC</td>
+              <td>
+                Granular role-based access at resource + action level with
+                Jamiat/Jamaat organizational scoping
+              </td>
+            </tr>
+            <tr>
+              <td>SLA Tracking</td>
+              <td>
+                Per-stage SLA values with automated breach detection and in-app
+                alerts
+              </td>
+            </tr>
+            <tr>
+              <td>Notifications</td>
+              <td>
+                In-app alerts for status changes, assignments, and SLA warnings
+              </td>
+            </tr>
+            <tr>
+              <td>Analytics Dashboard</td>
+              <td>
+                Role-specific dashboards with case pipeline views and activity
+                feeds
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>1.3 Product Positioning</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>For</strong></td>
+              <td>Baaseteen and SHND welfare organizations</td>
+            </tr>
+            <tr>
+              <td><strong>Who</strong></td>
+              <td>
+                Administrators, DCMs, Counselors, Welfare Reviewers, ZI
+                Officers, Executive Approvers, Finance staff
+              </td>
+            </tr>
+            <tr>
+              <td><strong>FACTS is</strong></td>
+              <td>A web-based case management and welfare tracking system</td>
+            </tr>
+            <tr>
+              <td><strong>That</strong></td>
+              <td>
+                Centralizes every step of the welfare case lifecycle from
+                screening to fund monitoring
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Unlike</strong></td>
+              <td>
+                Manual paper registers, disconnected spreadsheets, and ad-hoc
+                email approvals
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Our Product</strong></td>
+              <td>
+                Provides a unified, role-scoped platform with configurable
+                workflows, automated PDF generation, real-time notifications,
+                and SLA enforcement
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <hr />
+      </div>
+
+      <!-- SECTION 2 -->
+      <div class="section">
+        <h2 id="problem">2. Problem Statement</h2>
+
+        <h3>2.1 Current Challenges</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Challenge</th>
+              <th>Impact</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Paper-based case intake</strong></td>
+              <td>
+                Eligibility assessments were manual; no central record of who
+                was screened, their income, or their outcome
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Disconnected approval chain</strong></td>
+              <td>
+                Cases moved between counselors, welfare reviewers, ZI, and
+                executives via email and in-person; no trackable audit trail
+              </td>
+            </tr>
+            <tr>
+              <td><strong>No standardized counseling forms</strong></td>
+              <td>
+                Each counselor used their own format; comparison across cases
+                was impossible
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Manual financial tracking</strong></td>
+              <td>
+                Payment disbursements and repayment schedules were tracked in
+                spreadsheets susceptible to errors and loss
+              </td>
+            </tr>
+            <tr>
+              <td><strong>No fund utilization visibility</strong></td>
+              <td>
+                There was no systematic way to track how disbursed funds were
+                used quarter-by-quarter
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Organizational scope confusion</strong></td>
+              <td>
+                Staff in one Jamiat could view or act on cases belonging to
+                another, violating data boundaries
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Duplicate case risk</strong></td>
+              <td>
+                No enforcement preventing an applicant from having multiple
+                concurrent active cases
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Zero SLA enforcement</strong></td>
+              <td>
+                Cases could sit at a stage indefinitely with no system-level
+                warnings or escalation
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>2.2 Desired Outcome</h3>
+        <p>A single platform where:</p>
+        <ul>
+          <li>
+            <strong>Field workers</strong> can screen applicants and submit
+            eligibility assessments digitally with ITS auto-fill
+          </li>
+          <li>
+            <strong>Counselors</strong> can complete structured multi-section
+            forms and attach supporting documents
+          </li>
+          <li>
+            <strong>Welfare reviewers, ZI officers, and executives</strong> can
+            approve or return cases through a traceable workflow
+          </li>
+          <li>
+            <strong>Finance staff</strong> can manage payment schedules and
+            confirm disbursements
+          </li>
+          <li>
+            <strong>Administrators</strong> can configure workflows, roles,
+            master data, and monitor every case from a single dashboard
+          </li>
+          <li>
+            <strong>All users</strong> receive real-time notifications and see
+            only the data relevant to their organizational scope
+          </li>
+        </ul>
+        <hr />
+      </div>
+
+      <!-- SECTION 3 -->
+      <div class="section">
+        <h2 id="goals">3. Goals &amp; Success Metrics</h2>
+
+        <h3>3.1 Product Goals</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Goal</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>G-1</td>
+              <td>Digitize the full welfare case lifecycle end-to-end</td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>G-2</td>
+              <td>
+                Enforce configurable multi-level approval workflows with audit
+                trails
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>G-3</td>
+              <td>
+                Ensure organizational data scoping (Jamiat/Jamaat isolation)
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>G-4</td>
+              <td>Prevent duplicate active cases per ITS number</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>G-5</td>
+              <td>Provide real-time SLA tracking and breach alerts</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>G-6</td>
+              <td>
+                Automate PDF generation for cover letters and quarterly reports
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>G-7</td>
+              <td>
+                Enable quarterly fund utilization tracking per disbursed case
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>G-8</td>
+              <td>
+                Deliver role-specific dashboards with actionable analytics
+              </td>
+              <td>Medium</td>
+            </tr>
+            <tr>
+              <td>G-9</td>
+              <td>
+                Support bulk data import/export via Excel for all master
+                entities
+              </td>
+              <td>Medium</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>3.2 Key Performance Indicators (KPIs)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>KPI</th>
+              <th>Target</th>
+              <th>Measurement Method</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>System uptime</td>
+              <td>≥ 99.5%</td>
+              <td>Server monitoring</td>
+            </tr>
+            <tr>
+              <td>Case lifecycle fully digital</td>
+              <td>100% of new cases</td>
+              <td>Database case records</td>
+            </tr>
+            <tr>
+              <td>Average page load time</td>
+              <td>&lt; 3 seconds</td>
+              <td>API response monitoring</td>
+            </tr>
+            <tr>
+              <td>Duplicate case violations</td>
+              <td>0 per month</td>
+              <td>One-active-case-per-ITS enforcement log</td>
+            </tr>
+            <tr>
+              <td>SLA breach notifications sent</td>
+              <td>100% of breached stages</td>
+              <td>Notification records</td>
+            </tr>
+            <tr>
+              <td>Counseling form digital completion</td>
+              <td>100% of assigned cases</td>
+              <td>Form completion records</td>
+            </tr>
+            <tr>
+              <td>ITS auto-fill success rate</td>
+              <td>≥ 90%</td>
+              <td>API fetch logs</td>
+            </tr>
+            <tr>
+              <td>Report generation time</td>
+              <td>&lt; 10 seconds</td>
+              <td>PDF generation timing</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>3.3 Success Criteria</h3>
+        <ul>
+          <li>
+            All case identifications, approvals, and closures occur within the
+            platform — zero paper-based processing
+          </li>
+          <li>
+            Every case progresses through traceable workflow stages with
+            timestamped comments
+          </li>
+          <li>
+            Organizational scoping prevents any user from viewing out-of-scope
+            Jamiat/Jamaat data
+          </li>
+          <li>
+            Payment schedules and disbursements are tracked in-system for every
+            approved case
+          </li>
+          <li>
+            Quarterly fund utilization reports are submitted and stored
+            digitally for all active disbursed cases
+          </li>
+          <li>
+            Administrators can configure workflow stages, roles, and master data
+            without code changes
+          </li>
+        </ul>
+        <hr />
+      </div>
+
+      <!-- SECTION 4 -->
+      <div class="section">
+        <h2 id="users">4. Target Users &amp; Personas</h2>
+
+        <h3>4.1 Administrator / Super Admin</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Role</strong></td>
+              <td>System Administrator</td>
+            </tr>
+            <tr>
+              <td><strong>Goals</strong></td>
+              <td>
+                Configure and oversee all system operations; manage users,
+                roles, master data, and workflows
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Key Tasks</strong></td>
+              <td>
+                User CRUD, role/permission management, workflow stage
+                configuration, master data management, dashboard oversight
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Technical Skill</strong></td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td><strong>Access Level</strong></td>
+              <td>Full system access — no Jamiat/Jamaat scope restrictions</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>4.2 DCM — Deputy Case Manager</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Role</strong></td>
+              <td>Case management lead</td>
+            </tr>
+            <tr>
+              <td><strong>Goals</strong></td>
+              <td>
+                Create and assign cases, oversee counselors, submit cases to
+                welfare review
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Key Tasks</strong></td>
+              <td>
+                Case creation, counselor assignment, cover letter submission,
+                case resubmission after rework
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Technical Skill</strong></td>
+              <td>Moderate</td>
+            </tr>
+            <tr>
+              <td><strong>Access Level</strong></td>
+              <td>Jamiat-scoped — sees cases in assigned Jamiats only</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>4.3 Counselor</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Role</strong></td>
+              <td>Welfare counseling practitioner</td>
+            </tr>
+            <tr>
+              <td><strong>Goals</strong></td>
+              <td>
+                Complete detailed multi-section counseling forms for assigned
+                cases
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Key Tasks</strong></td>
+              <td>
+                Fill counseling form sections, capture digital signatures,
+                upload attachments, mark forms complete
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Technical Skill</strong></td>
+              <td>Low to Moderate</td>
+            </tr>
+            <tr>
+              <td><strong>Access Level</strong></td>
+              <td>Jamaat-scoped — sees cases in assigned Jamaats only</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>4.4 Welfare Reviewer</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Role</strong></td>
+              <td>Welfare department reviewer</td>
+            </tr>
+            <tr>
+              <td><strong>Goals</strong></td>
+              <td>
+                Review counseling quality, complete welfare checklist, approve
+                or send cases for rework
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Key Tasks</strong></td>
+              <td>
+                Checklist review, welfare approve/reject/rework, forward to ZI
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Technical Skill</strong></td>
+              <td>Moderate</td>
+            </tr>
+            <tr>
+              <td><strong>Access Level</strong></td>
+              <td>Jamiat-scoped</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>4.5 ZI — Zonal Incharge</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Role</strong></td>
+              <td>Zonal-level approver</td>
+            </tr>
+            <tr>
+              <td><strong>Goals</strong></td>
+              <td>
+                Review welfare-approved cases and provide approval or rejection
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Key Tasks</strong></td>
+              <td>
+                ZI approve/reject with comments, forwarding to executive levels
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Technical Skill</strong></td>
+              <td>Low to Moderate</td>
+            </tr>
+            <tr>
+              <td><strong>Access Level</strong></td>
+              <td>Scoped to assigned zones</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>4.6 Executive Management</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Role</strong></td>
+              <td>Senior organizational leaders (up to 5 levels)</td>
+            </tr>
+            <tr>
+              <td><strong>Goals</strong></td>
+              <td>
+                Final approval or rework decisions at their assigned executive
+                level
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Key Tasks</strong></td>
+              <td>
+                Executive approve/rework, view case summaries and cover letters
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Technical Skill</strong></td>
+              <td>Low</td>
+            </tr>
+            <tr>
+              <td><strong>Access Level</strong></td>
+              <td>
+                Read-only on case data; approval actions scoped to their level
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>4.7 Finance Staff</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Attribute</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Role</strong></td>
+              <td>Financial operations team</td>
+            </tr>
+            <tr>
+              <td><strong>Goals</strong></td>
+              <td>Manage payment schedules and confirm actual disbursements</td>
+            </tr>
+            <tr>
+              <td><strong>Key Tasks</strong></td>
+              <td>
+                Create/edit payment schedules, confirm disbursement with dates,
+                track repayments
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Technical Skill</strong></td>
+              <td>Moderate</td>
+            </tr>
+            <tr>
+              <td><strong>Access Level</strong></td>
+              <td>Payment management module; case read access</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>4.8 User Distribution</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Role</th>
+              <th>Estimated Count</th>
+              <th>Access Scope</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Super Admin / Admin</td>
+              <td>2–5</td>
+              <td>Full system access</td>
+            </tr>
+            <tr>
+              <td>DCM</td>
+              <td>10–20</td>
+              <td>Assigned Jamiats</td>
+            </tr>
+            <tr>
+              <td>Counselor</td>
+              <td>20–50</td>
+              <td>Assigned Jamaats</td>
+            </tr>
+            <tr>
+              <td>Welfare Reviewer</td>
+              <td>5–15</td>
+              <td>Assigned Jamiats</td>
+            </tr>
+            <tr>
+              <td>ZI / Executive</td>
+              <td>5–15</td>
+              <td>Zonal / Executive level</td>
+            </tr>
+            <tr>
+              <td>Finance</td>
+              <td>3–10</td>
+              <td>Payment management</td>
+            </tr>
+          </tbody>
+        </table>
+        <hr />
+      </div>
+
+      <!-- SECTION 5 -->
+      <div class="section">
+        <h2 id="stories">5. User Stories</h2>
+
+        <h3>5.1 Authentication &amp; Access</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>As a...</th>
+              <th>I want to...</th>
+              <th>So that...</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>US-A-001</td>
+              <td>Any User</td>
+              <td>Log in with username/email and password</td>
+              <td>I can securely access the system</td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>US-A-002</td>
+              <td>Any User</td>
+              <td>See a role-specific dashboard after login</td>
+              <td>I immediately see relevant cases and actions</td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>US-A-003</td>
+              <td>Any User</td>
+              <td>Log out and have my session destroyed</td>
+              <td>My account is protected on shared devices</td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>US-A-004</td>
+              <td>Admin</td>
+              <td>Register new users with role assignments</td>
+              <td>Staff can access the system with the right permissions</td>
+              <td>Critical</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>5.2 Case Identification</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>As a...</th>
+              <th>I want to...</th>
+              <th>So that...</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>US-CI-001</td>
+              <td>Field Worker</td>
+              <td>
+                Enter an applicant's ITS number and auto-fill their details
+              </td>
+              <td>I don't manually type data already in the system</td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>US-CI-002</td>
+              <td>Field Worker</td>
+              <td>Record income, family count, and assign a case type</td>
+              <td>Eligibility can be assessed consistently</td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>US-CI-003</td>
+              <td>Reviewer</td>
+              <td>Mark a screening as eligible or ineligible with remarks</td>
+              <td>Eligible ones auto-create a case for the DCM</td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>US-CI-004</td>
+              <td>Reviewer</td>
+              <td>
+                Edit income assessment fields on pending/ineligible records
+              </td>
+              <td>Errors can be corrected without creating duplicates</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>US-CI-005</td>
+              <td>System</td>
+              <td>Block duplicate ITS numbers from being screened twice</td>
+              <td>One active case per applicant is enforced</td>
+              <td>Critical</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>5.3 Case Management</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>As a...</th>
+              <th>I want to...</th>
+              <th>So that...</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>US-CM-001</td>
+              <td>DCM</td>
+              <td>Create and assign cases to counselors</td>
+              <td>Counseling begins promptly</td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>US-CM-002</td>
+              <td>Welfare Reviewer</td>
+              <td>Approve or return cases for rework</td>
+              <td>Only quality cases advance to ZI review</td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>US-CM-003</td>
+              <td>ZI / Executive</td>
+              <td>Approve or reject cases at my level</td>
+              <td>The case moves to the next stage or is returned</td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>US-CM-004</td>
+              <td>Any User</td>
+              <td>Add comments at any workflow stage</td>
+              <td>Context and reasoning are preserved in the audit trail</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>US-CM-005</td>
+              <td>Admin</td>
+              <td>Close a case with a reason and supporting documents</td>
+              <td>Case closure is formally recorded</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>US-CM-006</td>
+              <td>Any User</td>
+              <td>
+                See SLA status (on time / at risk / breached) for each case
+              </td>
+              <td>Delayed cases can be escalated before they breach</td>
+              <td>High</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>5.4 Counseling &amp; Cover Letters</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>As a...</th>
+              <th>I want to...</th>
+              <th>So that...</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>US-CF-001</td>
+              <td>Counselor</td>
+              <td>Fill multi-section counseling forms section by section</td>
+              <td>I can save progress without losing data</td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>US-CF-002</td>
+              <td>Counselor</td>
+              <td>Capture digital signatures within the declaration section</td>
+              <td>No physical paper signing is needed</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>US-CF-003</td>
+              <td>DCM</td>
+              <td>Generate a cover letter PDF with one click</td>
+              <td>Formatted cover letters are ready for submission</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>US-CF-004</td>
+              <td>Welfare Reviewer</td>
+              <td>Sign the cover letter form at the welfare stage</td>
+              <td>My approval is formally recorded</td>
+              <td>High</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>5.5 Financial &amp; Fund Utilization</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>As a...</th>
+              <th>I want to...</th>
+              <th>So that...</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>US-FIN-001</td>
+              <td>Finance</td>
+              <td>
+                Create a payment schedule with yearly disbursement amounts
+              </td>
+              <td>The repayment plan is clear from the start</td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>US-FIN-002</td>
+              <td>Finance</td>
+              <td>Confirm a disbursement with the actual date</td>
+              <td>Records reflect real payment activity</td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>US-FIN-003</td>
+              <td>DCM / Counselor</td>
+              <td>Submit quarterly fund utilization reports with photos</td>
+              <td>The organization tracks how funds are being used</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>US-FIN-004</td>
+              <td>Admin</td>
+              <td>Export fund utilization reports as PDF</td>
+              <td>Reports can be shared with leadership offline</td>
+              <td>Medium</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>5.6 Administration</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>As a...</th>
+              <th>I want to...</th>
+              <th>So that...</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>US-ADM-001</td>
+              <td>Admin</td>
+              <td>
+                Configure workflow stages per case type with role assignments
+              </td>
+              <td>Approval pipelines match each program's needs</td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>US-ADM-002</td>
+              <td>Admin</td>
+              <td>Import users and Jamiat/Jamaat data from Excel</td>
+              <td>Large datasets can be onboarded efficiently</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>US-ADM-003</td>
+              <td>Admin</td>
+              <td>Set SLA values per workflow stage</td>
+              <td>Automated breach alerts are calibrated correctly</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>US-ADM-004</td>
+              <td>Admin</td>
+              <td>Manage the fund utilization form builder</td>
+              <td>
+                Quarterly report questions can evolve without developer changes
+              </td>
+              <td>Medium</td>
+            </tr>
+          </tbody>
+        </table>
+        <hr />
+      </div>
+
+      <!-- SECTION 6 -->
+      <div class="section">
+        <h2 id="features">6. Feature Requirements</h2>
+
+        <h3>6.1 Authentication &amp; Access Control</h3>
+        <p>
+          <strong>Purpose:</strong> Securely authenticate users and enforce
+          role-based, organizationally-scoped access across the platform.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Description</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>JWT authentication</td>
+              <td>
+                Stateless JWT tokens (24-hour expiry) issued on login; verified
+                on every request
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>bcrypt password storage</td>
+              <td>
+                All passwords hashed with bcryptjs; minimum 6 characters
+                enforced on change
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Multi-identifier login</td>
+              <td>
+                Users can authenticate with either username or email address
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Role-based access control</td>
+              <td>
+                Permissions defined at resource + action level (e.g.,
+                <code>cases:create</code>,
+                <code>case_identification:approve</code>)
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Organizational scope enforcement</td>
+              <td>
+                Jamiat-scope users see only Jamiat-assigned cases; Jamaat-scope
+                users see only Jamaat-assigned cases
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Multi-role assignment</td>
+              <td>
+                Users can hold multiple roles simultaneously; primary display
+                role can be toggled
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Token user-status check</td>
+              <td>
+                Every authenticated request checks whether the user account is
+                still active
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Rate limiting on login</td>
+              <td>
+                Brute-force protection on the login endpoint via
+                <code>express-rate-limit</code>
+              </td>
+              <td>Medium</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>6.2 User &amp; Role Management</h3>
+        <p>
+          <strong>Purpose:</strong> Allow administrators to create, configure,
+          and manage all user accounts and permission roles.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Description</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>User CRUD</td>
+              <td>
+                Create/read/update/delete users with name, email, phone, ITS
+                number, photo (base64), and role assignments
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Role CRUD</td>
+              <td>
+                Create/edit roles with display name, description, and granular
+                permission sets
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Permission assignment</td>
+              <td>
+                15 resources × multiple actions; assigned at role level and
+                enforced by middleware
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Counseling form stage permissions</td>
+              <td>
+                Per-role read/update access configurable per counseling form
+                stage
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Executive level assignment</td>
+              <td>
+                Assign users to numbered executive approval levels (1–5);
+                Admin/Super Admin only
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Activate/deactivate users</td>
+              <td>Toggle user status; deactivated users cannot authenticate</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Bulk import via Excel</td>
+              <td>
+                Import users from .xlsx/.xls with per-row validation and error
+                reporting
+              </td>
+              <td>Medium</td>
+            </tr>
+            <tr>
+              <td>ITS API sync</td>
+              <td>
+                Fetch and update contact details from the external ITS system
+                for users with ITS numbers
+              </td>
+              <td>Medium</td>
+            </tr>
+            <tr>
+              <td>Export to Excel</td>
+              <td>Download user lists filtered by role or status</td>
+              <td>Medium</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>6.3 Case Identification</h3>
+        <p>
+          <strong>Purpose:</strong> Pre-assess applicant eligibility before
+          creating a full case, ensuring only eligible candidates enter the
+          workflow.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Description</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>ITS auto-fill</td>
+              <td>
+                Enter ITS number → system fetches name, age, gender, photo,
+                contact, Jamiat/Jamaat from DB or external API
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Duplicate ITS detection</td>
+              <td>
+                System checks if ITS number already has an existing case
+                identification record and blocks re-entry
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Income assessment</td>
+              <td>
+                Record individual income, family income, total family members,
+                earning members, and case type assignment
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Eligible / Ineligible review</td>
+              <td>
+                Authorized reviewers mark records as eligible (auto-creates a
+                case) or ineligible with remarks
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Edit assessment fields</td>
+              <td>
+                Edit income fields and eligible_in on pending or ineligible
+                records; changes logged to audit table
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Revert to pending</td>
+              <td>Revert an ineligible record back to pending for re-review</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Income change audit log</td>
+              <td>
+                Every income field modification is recorded with old value, new
+                value, changed_by, and timestamp
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Filter and search</td>
+              <td>
+                Filter by status, case type, Jamiat, Jamaat; search by ITS or
+                full name with pagination
+              </td>
+              <td>High</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>6.4 Case Management</h3>
+        <p>
+          <strong>Purpose:</strong> Manage the full lifecycle of welfare cases
+          from creation to closure through configurable multi-stage workflows.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Description</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Case creation</td>
+              <td>
+                Create cases manually or auto-generate from eligible case
+                identifications; assigns auto-incremented case number (e.g.,
+                BS-0001)
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Case assignment</td>
+              <td>
+                Assign DCM user and counselor per case; restrict visible cases
+                by Jamiat/Jamaat scope
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Workflow actions</td>
+              <td>
+                Approve, reject, rework, resubmit — each action advances or
+                returns the case to a defined stage
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Multi-level executive approval</td>
+              <td>
+                Cases route through up to 5 configurable executive levels; next
+                level determined automatically
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Stage-specific comments</td>
+              <td>
+                Users add general or workflow-step comments; all comments
+                time-stamped and stored per case
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Status history</td>
+              <td>
+                Every status transition is logged with from/to status,
+                changed_by, and timestamp
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>SLA tracking</td>
+              <td>
+                Each stage has configurable SLA value and warning threshold;
+                system calculates on_time / at_risk / breached
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Case closure</td>
+              <td>
+                Close a case with a reason and 1–10 supporting documents (PDF,
+                DOC, DOCX, XLS, XLSX, JPG, PNG, max 10 MB each)
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Duplicate case flag</td>
+              <td>
+                Cases are flagged if the same ITS number has multiple active
+                cases
+              </td>
+              <td>Medium</td>
+            </tr>
+            <tr>
+              <td>Filter and search</td>
+              <td>
+                Filter by status, case type, assigned DCM, counselor, Jamiat,
+                Jamaat, workflow stage, duplicate flag
+              </td>
+              <td>High</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>6.5 Applicant Management</h3>
+        <p>
+          <strong>Purpose:</strong> Maintain rich applicant profiles that serve
+          as the foundation for case counseling and financial planning.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Description</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Applicant profiles</td>
+              <td>
+                Full profiles: personal details, contact, photo (base64),
+                address, Jamiat/Jamaat affiliation
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>ITS auto-fetch</td>
+              <td>
+                Fetch applicant data from external ITS API by ITS number;
+                fallback to local DB if already stored
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Bulk import from Excel</td>
+              <td>
+                Import multiple ITS numbers at once; system fetches details from
+                ITS API for each
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Bulk fetch from API</td>
+              <td>
+                Trigger batch API fetch for all pending applicants without
+                details
+              </td>
+              <td>Medium</td>
+            </tr>
+            <tr>
+              <td>One-active-case enforcement</td>
+              <td>
+                System checks for existing active cases when creating new ones;
+                blocks creation if found
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Export template</td>
+              <td>
+                Download pre-formatted Excel template for ITS number bulk import
+              </td>
+              <td>Low</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>6.6 Counseling Forms</h3>
+        <p>
+          <strong>Purpose:</strong> Replace paper-based counseling documentation
+          with a structured, section-by-section digital form linked to each
+          case.
+        </p>
+
+        <h4>6.6.1 Form Sections</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Section</th>
+              <th>Key Content</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Personal Details</td>
+              <td>
+                ITS, name, age, education, Jamiat/Jamaat, contact, address,
+                occupation
+              </td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Family Details</td>
+              <td>
+                Family structure, wellbeing areas
+                (food/housing/health/education/deeni), income &amp; expense
+                breakdown, assets &amp; liabilities, family members table
+              </td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Assessment</td>
+              <td>
+                Applicant background, proposed business details, counselor
+                evaluation of demand/supply/competition
+              </td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>Financial Assistance</td>
+              <td>
+                Assistance required, self-funding, repayment schedule, QH
+                fields, support mentors
+              </td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>Economic Growth</td>
+              <td>
+                5-year revenue, expense, and profit projections; asset/liability
+                trajectory
+              </td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>Declaration</td>
+              <td>
+                Applicant, counselor, and TR Committee digital signatures with
+                date and confirmation text
+              </td>
+            </tr>
+            <tr>
+              <td>7</td>
+              <td>Attachments</td>
+              <td>
+                Workplace photos, quotations, income tax returns, PAN card,
+                Aadhar card, other documents
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4>6.6.2 Counseling Form Features</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Description</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Section-by-section save</td>
+              <td>
+                Each section saves independently via a PUT endpoint — partial
+                progress is never lost
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Digital signatures</td>
+              <td>
+                Signatures captured by upload or drawing pad; stored as base64
+                or file path
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Auto-populated fields</td>
+              <td>
+                Applicant info, counselor info, and financial data pre-filled
+                from linked case data
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Family members table</td>
+              <td>
+                Dynamic table for adding/removing family members with relation,
+                education, occupation, and income
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Form completion tracking</td>
+              <td>
+                System tracks which sections are complete; marks overall form
+                complete when all sections done
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Stage-level permissions</td>
+              <td>
+                Role-specific read/update access configurable per section via
+                <code>counseling_form_stage_permissions</code>
+              </td>
+              <td>High</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>6.7 Cover Letters</h3>
+        <p>
+          <strong>Purpose:</strong> Automate generation of formatted cover
+          letters that summarize the case for executive review.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Description</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Cover letter form</td>
+              <td>
+                Structured form with applicant summary, counselor info,
+                financial figures, projected income, and assistance amounts
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Multi-party signatures</td>
+              <td>
+                Welfare department, ZI, and Operations Head signatures with date
+                fields (upload or draw)
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>PDF generation</td>
+              <td>
+                Generate cover letter as PDF; stored and linked to the case
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Submit workflow</td>
+              <td>
+                Submitting the form advances the case; only authorized roles can
+                submit
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Download</td>
+              <td>Any authorized user can download the generated PDF</td>
+              <td>High</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>6.8 Payment Management</h3>
+        <p>
+          <strong>Purpose:</strong> Track all financial disbursements and
+          repayment plans for approved cases.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Description</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Payment schedule creation</td>
+              <td>
+                Define up to 5 yearly disbursements with disbursement year,
+                month, and amount; supports Qardan Hasana and Enayat (grant)
+                types
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Repayment schedule</td>
+              <td>
+                Auto-generate monthly repayment entries for Qardan Hasana based
+                on months and start date
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Disbursement confirmation</td>
+              <td>
+                Finance staff confirm actual disbursement with date; records
+                disbursed_by and disbursed_at
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Schedule editing</td>
+              <td>
+                Edit schedules before disbursement; locked after confirmation
+              </td>
+              <td>Medium</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>6.9 Fund Utilization</h3>
+        <p>
+          <strong>Purpose:</strong> Track how disbursed funds are utilized
+          quarter-by-quarter through configurable structured reports.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Description</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Quarterly reports</td>
+              <td>
+                Create/edit/delete fund utilization reports per case; one report
+                per quarter per year
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Dynamic form builder</td>
+              <td>
+                Admins define sections and questions (text, number, select, file
+                upload, table types) without code changes
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Auto-fill fields</td>
+              <td>
+                Known values (e.g., Mauze from applicant data) auto-populate
+                into matching form fields
+              </td>
+              <td>Medium</td>
+            </tr>
+            <tr>
+              <td>Photo documentation</td>
+              <td>
+                Upload photos per report categorized as: shop_site,
+                stock_equipment, applicant_work, other
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>File attachments per question</td>
+              <td>Upload supporting files linked to specific form questions</td>
+              <td>Medium</td>
+            </tr>
+            <tr>
+              <td>PDF report generation</td>
+              <td>
+                Generate PDF quarterly report via PDFKit or Puppeteer HTML
+                template
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Section/question reordering</td>
+              <td>
+                Drag-and-drop reorder for form sections and questions with
+                sort_order persistence
+              </td>
+              <td>Medium</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>6.10 Welfare Checklist</h3>
+        <p>
+          <strong>Purpose:</strong> Provide structured quality checklists for
+          welfare reviewers to assess counseling form completeness.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Description</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Category management</td>
+              <td>
+                Create/edit/delete checklist categories with sort order;
+                drag-and-drop reordering
+              </td>
+              <td>Medium</td>
+            </tr>
+            <tr>
+              <td>Item management</td>
+              <td>
+                Define checklist items per category with form_section reference,
+                compulsory flag, and description
+              </td>
+              <td>Medium</td>
+            </tr>
+            <tr>
+              <td>Per-case responses</td>
+              <td>
+                Submit YES/NO/NA responses per item with comments; overall
+                remarks field
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Completion status</td>
+              <td>
+                Track total vs filled items; calculate completion percentage per
+                case
+              </td>
+              <td>High</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>6.11 Workflow Management</h3>
+        <p>
+          <strong>Purpose:</strong> Enable administrators to configure approval
+          pipelines without code changes.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Description</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Stage CRUD</td>
+              <td>
+                Create/edit/soft-delete/restore workflow stages with name, key,
+                sort order, and case type association
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Role assignment to stages</td>
+              <td>
+                Assign roles to stages with per-role permission flags:
+                can_approve, can_reject, can_review, can_view, can_edit,
+                can_delete, can_create_case, can_fill_case
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>User assignment to stages</td>
+              <td>
+                Assign individual users to stages with same permission flags
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>SLA configuration</td>
+              <td>
+                Set SLA value + unit (hours/days/business_days/weeks/months) and
+                warning threshold per stage
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Status mappings</td>
+              <td>
+                Define which case statuses correspond to each workflow stage
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Stage reordering</td>
+              <td>Drag-and-drop reorder stages with persisted sort_order</td>
+              <td>Medium</td>
+            </tr>
+            <tr>
+              <td>Auto-advance on approve</td>
+              <td>
+                Configurable flag to automatically advance to next stage on
+                approval action
+              </td>
+              <td>Medium</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>6.12 Notification System</h3>
+        <p>
+          <strong>Purpose:</strong> Keep all users informed about case changes,
+          assignments, and SLA alerts in real time.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Trigger Event</th>
+              <th>Recipients</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Case status changed</td>
+              <td>Assigned DCM and counselor</td>
+            </tr>
+            <tr>
+              <td>Case assigned to counselor</td>
+              <td>Assigned counselor</td>
+            </tr>
+            <tr>
+              <td>Workflow action taken (approve/reject)</td>
+              <td>Relevant stage participants</td>
+            </tr>
+            <tr>
+              <td>SLA breach / at-risk</td>
+              <td>Responsible role users</td>
+            </tr>
+          </tbody>
+        </table>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Description</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Notification list</td>
+              <td>
+                View all notifications with title, message, type, case
+                reference, and date
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Unread count badge</td>
+              <td>Live count in navigation bar</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Mark as read</td>
+              <td>Individual and bulk mark-as-read</td>
+              <td>Medium</td>
+            </tr>
+            <tr>
+              <td>SLA check trigger</td>
+              <td>
+                Admin-triggered SLA calculation via
+                <code>POST /api/notifications/check-sla</code>
+              </td>
+              <td>Medium</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>6.13 Reporting &amp; Analytics</h3>
+        <p>
+          <strong>Purpose:</strong> Provide role-appropriate dashboards and
+          exportable reports for decision-making.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Report</th>
+              <th>Description</th>
+              <th>Audience</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Overview Dashboard</td>
+              <td>
+                Total cases by status (draft, counseling, welfare review, ZI,
+                executive, finance) with pipeline counts
+              </td>
+              <td>All roles (filtered)</td>
+            </tr>
+            <tr>
+              <td>Recent Activities</td>
+              <td>
+                Latest status changes with case number, applicant name, and who
+                changed it
+              </td>
+              <td>All roles</td>
+            </tr>
+            <tr>
+              <td>Case Pipeline</td>
+              <td>
+                Case counts grouped by current status for visual pipeline
+                representation
+              </td>
+              <td>All roles</td>
+            </tr>
+            <tr>
+              <td>User Statistics</td>
+              <td>Total/active/inactive users broken down by role</td>
+              <td>Admin, DCM, ZI</td>
+            </tr>
+            <tr>
+              <td>Quarterly Report PDF</td>
+              <td>
+                Full fund utilization quarterly report as downloadable PDF
+              </td>
+              <td>Admin, Finance, DCM</td>
+            </tr>
+            <tr>
+              <td>Excel Export</td>
+              <td>Export users, Jamiat/Jamaat master data from the system</td>
+              <td>Admin</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>6.14 Attachment Management</h3>
+        <p>
+          <strong>Purpose:</strong> Manage file uploads across all case stages
+          with type validation and size limits.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Description</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Single file upload</td>
+              <td>
+                Upload one file per request; linked to a case with optional
+                stage tag
+              </td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Multi-file upload</td>
+              <td>Upload up to 10 files in one request</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>File type validation</td>
+              <td>
+                Allowed: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG; enforced by
+                Multer middleware
+              </td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>File size limit</td>
+              <td>Maximum 10 MB per file</td>
+              <td>Critical</td>
+            </tr>
+            <tr>
+              <td>Stage-tagged uploads</td>
+              <td>
+                Attachments can be tagged with the workflow stage at which they
+                were uploaded
+              </td>
+              <td>Medium</td>
+            </tr>
+            <tr>
+              <td>Download</td>
+              <td>Authorized users download attachments via secure endpoint</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td>Attachment statistics</td>
+              <td>
+                Total file count, total size, and per-stage breakdown per case
+              </td>
+              <td>Low</td>
+            </tr>
+          </tbody>
+        </table>
+        <hr />
+      </div>
+
+      <!-- SECTION 7 -->
+      <div class="section">
+        <h2 id="flows">7. User Flows</h2>
+
+        <h3>7.1 Case Identification → Case Creation Flow</h3>
+        <pre><code>Field Worker                   System                         Reviewer
+  │                              │                                │
+  ├── Enter ITS number ─────────►│                                │
+  │                              ├── Lookup DB; if not found      │
+  │                              ├── Fetch from ITS API           │
+  │◄── Auto-fill applicant ─────│                                │
+  │    (name, photo, contact)    │                                │
+  │                              │                                │
+  ├── Enter income/family data ─►│                                │
+  ├── Select "eligible_in" ─────►│                                │
+  ├── Submit identification ────►│                                │
+  │                              ├── Check for duplicate ITS      │
+  │                              ├── Save identification record   │
+  │◄── "Pending review" ────────│                                │
+  │                              │                                │
+  │                              │◄── Reviewer opens record ─────┤
+  │                              │◄── Marks as "eligible" ───────┤
+  │                              ├── Auto-create Case (BS-XXXX)  │
+  │                              ├── Assign to DCM queue         │
+  │                              │────────────────────────────────►│
+</code></pre>
+
+        <h3>7.2 Case Workflow — Counseling to Executive Approval</h3>
+        <pre><code>DCM                    Counselor              Welfare              ZI / Executive
+  │                       │                     │                       │
+  ├── Assign Counselor ──►│                     │                       │
+  │                       │                     │                       │
+  │                       ├── Fill Form ──────► │                       │
+  │                       │   (7 sections)       │                       │
+  │                       ├── Mark Complete ───►│                       │
+  │                       │                     │                       │
+  │◄──────────────────────│                     │                       │
+  ├── Submit to Welfare ──────────────────────►│                       │
+  │                                             │                       │
+  │                                             ├── Review checklist    │
+  │                                             ├── Welfare Approve ───►│
+  │                                             │   (or reject → DCM)   │
+  │                                             │                       │
+  │                                             │                       ├── ZI Approve
+  │                                             │                       ├── Executive L1 Approve
+  │                                             │                       ├── Executive L2 Approve
+  │                                             │                       └── → Finance Stage
+</code></pre>
+
+        <h3>7.3 Payment Schedule &amp; Disbursement Flow</h3>
+        <pre><code>Finance                        System
+  │                              │
+  ├── Open Payment Schedule ────►│
+  │                              ├── Load case financial data
+  │◄── Show schedule form ──────│
+  │                              │
+  ├── Enter disbursement ───────►│
+  │   (year, month, amount,      │
+  │    repayment months)         │
+  │                              ├── Generate repayment entries
+  │◄── Schedule saved ──────────│
+  │                              │
+  ├── Confirm Disbursement ─────►│
+  │   (actual_date)              ├── Mark is_disbursed = true
+  │                              ├── Record disbursed_by + at
+  │◄── Disbursement confirmed ──│
+</code></pre>
+
+        <h3>7.4 Fund Utilization Report Flow</h3>
+        <pre><code>Counselor / DCM                System                         Admin
+  │                              │                                │
+  ├── Open Fund Utilization ────►│                                │
+  │                              ├── Load form config             │
+  │                              │   (sections + questions)       │
+  │◄── Dynamic form rendered ───│                                │
+  │                              │                                │
+  ├── Fill responses ───────────►│                                │
+  ├── Upload photos ────────────►│ (shop, stock, work, other)     │
+  ├── Submit report ────────────►│                                │
+  │                              ├── Save report + responses      │
+  │◄── Report saved ────────────│                                │
+  │                              │                                │
+  ├── Request PDF ──────────────►│                                │
+  │                              ├── Aggregate report data        │
+  │                              ├── Build PDF via PDFKit/Puppet  │
+  │◄── PDF downloaded ──────────│                                │
+</code></pre>
+        <hr />
+      </div>
+
+      <!-- SECTION 8 -->
+      <div class="section">
+        <h2 id="ia">8. Information Architecture</h2>
+
+        <h3>8.1 Navigation Structure by Role</h3>
+        <p><strong>Super Admin / Admin:</strong></p>
+        <pre><code>Dashboard
+├── Case Identification
+├── Cases
+│   ├── All Cases
+│   ├── Case Details (→ Counseling Form, Cover Letter, Payment, Fund Utilization)
+│   └── Closure Management
+├── Applicants
+├── Users
+│   └── User Management
+├── Role Management
+│   └── Roles &amp; Permissions
+├── Master Data
+│   ├── Jamiat Management
+│   ├── Jamaat Management
+│   ├── Case Types
+│   ├── Workflow Stages
+│   ├── Executive Levels
+│   ├── Relations / Education / Occupations
+│   └── Fund Utilization Form Builder
+├── Welfare Checklist Admin
+├── Reports
+├── Notifications
+└── Profile
+</code></pre>
+
+        <p><strong>DCM / Counselor:</strong></p>
+        <pre><code>Dashboard
+├── Case Identification
+├── Cases (scoped to Jamiat/Jamaat)
+│   └── Case Details (→ Counseling Form, Cover Letter, Payment, Fund Utilization)
+├── Welfare Checklist
+├── Reports
+├── Notifications
+└── Profile
+</code></pre>
+
+        <p><strong>Welfare Reviewer / ZI / Executive:</strong></p>
+        <pre><code>Dashboard
+├── Cases (pending action at my stage)
+│   └── Case Details (read + approval actions)
+├── Welfare Checklist (review)
+├── Notifications
+└── Profile
+</code></pre>
+
+        <p><strong>Finance:</strong></p>
+        <pre><code>Dashboard
+├── Cases (pending disbursement)
+│   └── Payment Schedule Management
+├── Fund Utilization (view)
+├── Notifications
+└── Profile
+</code></pre>
+        <hr />
+      </div>
+
+      <!-- SECTION 9 -->
+      <div class="section">
+        <h2 id="tech">9. Technical Architecture Summary</h2>
+
+        <h3>9.1 Technology Stack</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Layer</th>
+              <th>Technology</th>
+              <th>Version / Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Backend</td>
+              <td>Node.js + Express.js</td>
+              <td>Node v16+ / Express v4.18</td>
+            </tr>
+            <tr>
+              <td>Frontend</td>
+              <td>React (functional components + hooks)</td>
+              <td>v18.2</td>
+            </tr>
+            <tr>
+              <td>Database</td>
+              <td>MySQL (InnoDB)</td>
+              <td>v8.0+</td>
+            </tr>
+            <tr>
+              <td>Authentication</td>
+              <td>JWT + bcryptjs</td>
+              <td>jsonwebtoken v9</td>
+            </tr>
+            <tr>
+              <td>State Management</td>
+              <td>React Query</td>
+              <td>v3.39</td>
+            </tr>
+            <tr>
+              <td>Forms</td>
+              <td>React Hook Form</td>
+              <td>v7.48</td>
+            </tr>
+            <tr>
+              <td>Styling</td>
+              <td>Tailwind CSS</td>
+              <td>v3.4</td>
+            </tr>
+            <tr>
+              <td>HTTP Client</td>
+              <td>Axios</td>
+              <td>v1.6</td>
+            </tr>
+            <tr>
+              <td>Routing</td>
+              <td>React Router</td>
+              <td>v6</td>
+            </tr>
+            <tr>
+              <td>Charts</td>
+              <td>Recharts</td>
+              <td>v2.8</td>
+            </tr>
+            <tr>
+              <td>File Upload</td>
+              <td>Multer</td>
+              <td>v1.4</td>
+            </tr>
+            <tr>
+              <td>PDF Generation</td>
+              <td>PDFKit + Puppeteer</td>
+              <td>v0.14 / v24</td>
+            </tr>
+            <tr>
+              <td>Excel</td>
+              <td>xlsx</td>
+              <td>v0.18</td>
+            </tr>
+            <tr>
+              <td>Validation</td>
+              <td>Joi</td>
+              <td>v17.11</td>
+            </tr>
+            <tr>
+              <td>Security</td>
+              <td>Helmet, CORS, express-rate-limit</td>
+              <td>Latest</td>
+            </tr>
+            <tr>
+              <td>Email</td>
+              <td>Nodemailer</td>
+              <td>v6.9 (optional)</td>
+            </tr>
+            <tr>
+              <td>Drag &amp; Drop</td>
+              <td>@dnd-kit</td>
+              <td>Latest</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>9.2 Architecture Pattern</h3>
+        <p>
+          FACTS follows a <strong>REST API + SPA</strong> architecture. The
+          Express backend exposes 150+ API endpoints organized by resource. The
+          React frontend consumes these endpoints via Axios with React Query
+          managing server-state caching. Authentication is stateless via JWT.
+        </p>
+
+        <pre><code>Browser (React SPA)
+  ↕ HTTP/HTTPS (Axios + React Query)
+Express API (Node.js)
+  ↕ Parameterized Queries (mysql2)
+MySQL Database (InnoDB)
+  ↕ Multer
+Filesystem (uploads/)
+  ↕ External HTTP
+ITS API (applicant data source)
+</code></pre>
+
+        <h3>9.3 Key Design Patterns</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Pattern</th>
+              <th>Usage</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>REST Resource Controllers</td>
+              <td>
+                25 route files; each resource is a self-contained Express router
+                with CRUD + actions
+              </td>
+            </tr>
+            <tr>
+              <td>JWT Middleware</td>
+              <td>
+                Every protected route verifies token and loads user +
+                permissions before handler runs
+              </td>
+            </tr>
+            <tr>
+              <td>Scope Filtering</td>
+              <td>
+                Middleware injects Jamiat/Jamaat scope into queries based on
+                user's assigned role
+              </td>
+            </tr>
+            <tr>
+              <td>Parameterized Queries</td>
+              <td>
+                All DB queries use <code>mysql2</code> parameterized binding —
+                no string concatenation
+              </td>
+            </tr>
+            <tr>
+              <td>Soft Deletes</td>
+              <td>
+                Workflow stages and roles use <code>is_active</code> flag;
+                records are never hard-deleted
+              </td>
+            </tr>
+            <tr>
+              <td>Junction Tables</td>
+              <td>
+                Many-to-many: user↔role, role↔workflow_stage,
+                user↔workflow_stage
+              </td>
+            </tr>
+            <tr>
+              <td>Audit Columns</td>
+              <td>
+                <code>created_by</code>, <code>updated_by</code>,
+                <code>created_at</code>, <code>updated_at</code> on all core
+                tables
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <hr />
+      </div>
+
+      <!-- SECTION 10 -->
+      <div class="section">
+        <h2 id="data">10. Data Model Overview</h2>
+
+        <h3>10.1 Core Entities</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Entity</th>
+              <th>Table</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>User</td>
+              <td><code>users</code></td>
+              <td>All user accounts with credentials and ITS reference</td>
+            </tr>
+            <tr>
+              <td>Role</td>
+              <td><code>roles</code></td>
+              <td>Role definitions with display name and permission JSON</td>
+            </tr>
+            <tr>
+              <td>User Role</td>
+              <td><code>user_roles</code></td>
+              <td>User-to-role assignments with Jamiat/Jamaat scope</td>
+            </tr>
+            <tr>
+              <td>Role Permission</td>
+              <td><code>role_permissions</code></td>
+              <td>Granular resource + action permission records per role</td>
+            </tr>
+            <tr>
+              <td>Case</td>
+              <td><code>cases</code></td>
+              <td>
+                Core case records with status, workflow stage, and assignment
+              </td>
+            </tr>
+            <tr>
+              <td>Applicant</td>
+              <td><code>applicants</code></td>
+              <td>Applicant profiles linked to cases</td>
+            </tr>
+            <tr>
+              <td>Case Identification</td>
+              <td><code>case_identifications</code></td>
+              <td>Pre-assessment eligibility records</td>
+            </tr>
+            <tr>
+              <td>Counseling Form</td>
+              <td><code>counseling_forms</code></td>
+              <td>Composite form record linking 7 section sub-tables</td>
+            </tr>
+            <tr>
+              <td>Cover Letter Form</td>
+              <td><code>cover_letter_forms</code></td>
+              <td>Cover letter data with multi-party signatures</td>
+            </tr>
+            <tr>
+              <td>Payment Schedule</td>
+              <td><code>payment_schedules</code></td>
+              <td>Yearly disbursement plans per case</td>
+            </tr>
+            <tr>
+              <td>Payment Repayment</td>
+              <td><code>payment_schedule_repayments</code></td>
+              <td>Monthly repayment entries per schedule</td>
+            </tr>
+            <tr>
+              <td>Fund Utilization Report</td>
+              <td><code>fund_utilization_reports</code></td>
+              <td>Quarterly reassessment reports per case</td>
+            </tr>
+            <tr>
+              <td>Workflow Stage</td>
+              <td><code>workflow_stages</code></td>
+              <td>Configurable approval stage definitions with SLA</td>
+            </tr>
+            <tr>
+              <td>Status History</td>
+              <td><code>status_history</code></td>
+              <td>Immutable log of every case status transition</td>
+            </tr>
+            <tr>
+              <td>Notification</td>
+              <td><code>notifications</code></td>
+              <td>In-app notification records per user</td>
+            </tr>
+            <tr>
+              <td>Case Attachment</td>
+              <td><code>case_attachments</code></td>
+              <td>File upload metadata linked to cases</td>
+            </tr>
+            <tr>
+              <td>Welfare Checklist</td>
+              <td>
+                <code>welfare_checklist_items</code> / <code>_responses</code>
+              </td>
+              <td>Configurable checklist items and per-case responses</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>10.2 Counseling Form Sub-Tables</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Section</th>
+              <th>Table</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Personal Details</td>
+              <td><code>personal_details</code></td>
+            </tr>
+            <tr>
+              <td>Family Details</td>
+              <td><code>family_details</code> + <code>family_members</code></td>
+            </tr>
+            <tr>
+              <td>Assessment</td>
+              <td>
+                <code>assessment</code> +
+                <code>assessment_products_services</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Financial Assistance</td>
+              <td>
+                <code>financial_assistance</code> +
+                <code>financial_assistance_timeline</code> +
+                <code>financial_assistance_mentors</code> +
+                <code>financial_assistance_action_plan</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Economic Growth</td>
+              <td>
+                <code>economic_growth</code> +
+                <code>economic_growth_projections</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Declaration</td>
+              <td><code>declaration</code></td>
+            </tr>
+            <tr>
+              <td>Attachments</td>
+              <td><code>attachments</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>10.3 Entity Relationship (Simplified)</h3>
+        <pre><code>Users ─── user_roles ─── Roles ─── role_permissions
+  │
+  ├── Cases ────────────── Applicants
+  │     │
+  │     ├── Counseling Forms (7 sub-tables)
+  │     ├── Cover Letter Forms
+  │     ├── Case Attachments
+  │     ├── Status History
+  │     ├── Case Comments + Workflow Comments
+  │     ├── Payment Schedules ── Repayments
+  │     ├── Fund Utilization Reports ── Photos + Files
+  │     ├── Welfare Checklist Responses
+  │     └── Case Closure ── Closure Documents
+  │
+  ├── Case Identifications ── Income Change Logs
+  └── Notifications
+
+Workflow Stages ── workflow_stage_roles ── Roles
+               └── workflow_stage_users ── Users
+</code></pre>
+        <hr />
+      </div>
+
+      <!-- SECTION 11 -->
+      <div class="section">
+        <h2 id="perf">11. Performance &amp; Reliability</h2>
+
+        <h3>11.1 Performance Targets</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Operation</th>
+              <th style="text-align: center">Target Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Standard API response</td>
+              <td style="text-align: center">&lt; 500ms</td>
+            </tr>
+            <tr>
+              <td>Page load (React SPA)</td>
+              <td style="text-align: center">&lt; 3 seconds</td>
+            </tr>
+            <tr>
+              <td>Complex JOIN query (cases list)</td>
+              <td style="text-align: center">&lt; 2 seconds</td>
+            </tr>
+            <tr>
+              <td>PDF cover letter generation</td>
+              <td style="text-align: center">&lt; 5 seconds</td>
+            </tr>
+            <tr>
+              <td>Quarterly report PDF generation</td>
+              <td style="text-align: center">&lt; 10 seconds</td>
+            </tr>
+            <tr>
+              <td>Excel import (bulk users)</td>
+              <td style="text-align: center">&lt; 15 seconds</td>
+            </tr>
+            <tr>
+              <td>ITS API fetch (single)</td>
+              <td style="text-align: center">&lt; 3 seconds</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>11.2 Reliability Targets</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Requirement</th>
+              <th>Target</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>System uptime</td>
+              <td>≥ 99.5% (excluding planned maintenance)</td>
+            </tr>
+            <tr>
+              <td>Data integrity</td>
+              <td>
+                InnoDB foreign key constraints + parameterized queries on all
+                operations
+              </td>
+            </tr>
+            <tr>
+              <td>Error handling</td>
+              <td>
+                Structured JSON error responses; no stack traces exposed to
+                clients in production
+              </td>
+            </tr>
+            <tr>
+              <td>Audit trail completeness</td>
+              <td>
+                100% of status changes, income edits, and approval actions
+                logged
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>11.3 Optimization Strategies</h3>
+        <ul>
+          <li>
+            MySQL connection pool (10 connections) via <code>mysql2</code> to
+            avoid connection overhead
+          </li>
+          <li>
+            React Query client-side caching with configurable stale times per
+            resource
+          </li>
+          <tr>
+            <td>
+              Pagination with <code>LIMIT</code> / <code>OFFSET</code> on all
+              list endpoints
+            </td>
+          </tr>
+          <li>
+            Specific column selection in queries; no <code>SELECT *</code> on
+            production tables
+          </li>
+          <li>
+            ITS API results cached in the local DB to avoid repeated external
+            calls
+          </li>
+          <li>
+            Multer file size limits enforced server-side before reaching
+            business logic
+          </li>
+        </ul>
+        <hr />
+      </div>
+
+      <!-- SECTION 12 -->
+      <div class="section">
+        <h2 id="sec">12. Security &amp; Compliance</h2>
+
+        <h3>12.1 Authentication Security</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Measure</th>
+              <th>Implementation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Password hashing</td>
+              <td>bcryptjs — no plain-text passwords stored</td>
+            </tr>
+            <tr>
+              <td>JWT tokens</td>
+              <td>
+                Signed with strong secret; 24-hour expiry; verified on every
+                request
+              </td>
+            </tr>
+            <tr>
+              <td>User-status check</td>
+              <td>
+                Token verification also checks <code>is_active = 1</code> —
+                deactivated users are blocked immediately
+              </td>
+            </tr>
+            <tr>
+              <td>Login rate limiting</td>
+              <td>
+                Configurable max attempts per IP window via
+                <code>express-rate-limit</code>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>12.2 Data Protection</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Threat</th>
+              <th>Protection</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>SQL Injection</td>
+              <td>
+                100% parameterized queries via <code>mysql2</code> — no string
+                concatenation in SQL
+              </td>
+            </tr>
+            <tr>
+              <td>XSS</td>
+              <td>
+                React's JSX escapes output by default; API responses are JSON
+                only
+              </td>
+            </tr>
+            <tr>
+              <td>CSRF</td>
+              <td>Stateless JWT eliminates session cookie CSRF vectors</td>
+            </tr>
+            <tr>
+              <td>Unauthorized access</td>
+              <td>
+                RBAC middleware on every route; scope filtering injects
+                Jamiat/Jamaat constraints into DB queries
+              </td>
+            </tr>
+            <tr>
+              <td>Input validation</td>
+              <td>Joi schema validation on all POST/PUT request bodies</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>12.3 File Security</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Measure</th>
+              <th>Implementation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>File type validation</td>
+              <td>
+                Multer MIME-type + extension whitelist (PDF, DOC, DOCX, XLS,
+                XLSX, JPG, PNG)
+              </td>
+            </tr>
+            <tr>
+              <td>File size limit</td>
+              <td>
+                10 MB per file enforced by Multer before file is written to disk
+              </td>
+            </tr>
+            <tr>
+              <td>Isolated storage</td>
+              <td>
+                Files stored in <code>uploads/</code> directory; never served
+                directly — only via authenticated download endpoint
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>12.4 Infrastructure Security</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Measure</th>
+              <th>Implementation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>HTTP security headers</td>
+              <td>
+                Helmet middleware sets Content-Security-Policy, X-Frame-Options,
+                etc.
+              </td>
+            </tr>
+            <tr>
+              <td>CORS</td>
+              <td>Restricted to configured frontend origin only</td>
+            </tr>
+            <tr>
+              <td>Environment secrets</td>
+              <td>
+                DB credentials and JWT secret in <code>.env</code>; never
+                committed to version control
+              </td>
+            </tr>
+            <tr>
+              <td>HTTPS</td>
+              <td>Required in production via Nginx SSL termination</td>
+            </tr>
+          </tbody>
+        </table>
+        <hr />
+      </div>
+
+      <!-- SECTION 13 -->
+      <div class="section">
+        <h2 id="deploy">13. Deployment &amp; Infrastructure</h2>
+
+        <h3>13.1 Production Environment</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Specification</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Runtime</td>
+              <td>Node.js v16+ with PM2 process manager</td>
+            </tr>
+            <tr>
+              <td>Database</td>
+              <td>MySQL 8.0+ (InnoDB engine)</td>
+            </tr>
+            <tr>
+              <td>Web Server / Proxy</td>
+              <td>Nginx (SSL termination, static file serving, API proxy)</td>
+            </tr>
+            <tr>
+              <td>Frontend</td>
+              <td>React production build served as static files via Nginx</td>
+            </tr>
+            <tr>
+              <td>File Storage</td>
+              <td>
+                Local filesystem <code>uploads/</code> directory (S3 in roadmap)
+              </td>
+            </tr>
+            <tr>
+              <td>OS</td>
+              <td>Ubuntu 22.04 LTS recommended</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>13.2 Deployment Architecture</h3>
+        <pre><code>Client Browser
+    │ HTTPS
+Nginx (port 443)
+    ├── /           → React build (static)
+    ├── /api        → Express API (port 5000, PM2)
+    └── /uploads    → Express file serving
+         │
+    MySQL (local or managed DB)
+    uploads/ (local filesystem)
+    ITS External API (outbound)
+</code></pre>
+
+        <h3>13.3 Local Development</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Setup</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Backend</td>
+              <td>
+                <code>cd backend &amp;&amp; npm run dev</code> (nodemon on port
+                5000)
+              </td>
+            </tr>
+            <tr>
+              <td>Frontend</td>
+              <td>
+                <code>cd frontend &amp;&amp; npm start</code> (React dev server
+                on port 3000)
+              </td>
+            </tr>
+            <tr>
+              <td>Database</td>
+              <td>
+                Local MySQL; import
+                <code>database/baaseteen_production_database.sql</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Combined</td>
+              <td>
+                <code>npm run dev</code> from root (concurrently launches both)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <hr />
+      </div>
+
+      <!-- SECTION 14 -->
+      <div class="section">
+        <h2 id="constraints">14. Assumptions &amp; Constraints</h2>
+
+        <h3>14.1 Assumptions</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Assumption</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>A-1</td>
+              <td>
+                Users have access to modern web browsers (Chrome, Firefox,
+                Safari, Edge)
+              </td>
+            </tr>
+            <tr>
+              <td>A-2</td>
+              <td>
+                The external ITS API is accessible from the server network at
+                runtime
+              </td>
+            </tr>
+            <tr>
+              <td>A-3</td>
+              <td>
+                Each applicant has a unique ITS number that serves as their
+                primary identifier
+              </td>
+            </tr>
+            <tr>
+              <td>A-4</td>
+              <td>
+                Organizational hierarchy follows a two-level structure: Jamiat
+                (parent) → Jamaat (child)
+              </td>
+            </tr>
+            <tr>
+              <td>A-5</td>
+              <td>
+                Assessment scoring for Qardan Hasana follows fixed repayment
+                structures
+              </td>
+            </tr>
+            <tr>
+              <td>A-6</td>
+              <td>
+                Concurrent users will not exceed 100 at any time in the current
+                deployment
+              </td>
+            </tr>
+            <tr>
+              <td>A-7</td>
+              <td>
+                File storage will remain within server disk capacity; S3
+                migration planned for scale
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>14.2 Constraints</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Constraint</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>C-1</td>
+              <td>
+                Technology stack is Node.js + React + MySQL — no framework
+                migration planned
+              </td>
+            </tr>
+            <tr>
+              <td>C-2</td>
+              <td>
+                File storage is local filesystem only; no cloud object storage
+                currently integrated
+              </td>
+            </tr>
+            <tr>
+              <td>C-3</td>
+              <td>
+                PDF generation requires PDFKit or Puppeteer; Puppeteer needs
+                Chromium on the server
+              </td>
+            </tr>
+            <tr>
+              <td>C-4</td>
+              <td>
+                ITS API is an external dependency; outages degrade auto-fill
+                functionality but do not block system use
+              </td>
+            </tr>
+            <tr>
+              <td>C-5</td>
+              <td>
+                Single-server deployment — no load balancing or horizontal
+                scaling currently
+              </td>
+            </tr>
+            <tr>
+              <td>C-6</td>
+              <td>
+                Email notifications require SMTP configuration; optional and
+                disabled by default
+              </td>
+            </tr>
+            <tr>
+              <td>C-7</td>
+              <td>
+                No real-time WebSocket support; notifications require page
+                refresh or manual polling
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <hr />
+      </div>
+
+      <!-- SECTION 15 -->
+      <div class="section">
+        <h2 id="risks">15. Risks &amp; Mitigation</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Risk</th>
+              <th style="text-align: center">Likelihood</th>
+              <th style="text-align: center">Impact</th>
+              <th>Mitigation Strategy</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>R-1</td>
+              <td>Data loss / DB corruption</td>
+              <td style="text-align: center">Low</td>
+              <td style="text-align: center">Critical</td>
+              <td>
+                Automated DB backups; InnoDB foreign keys; parameterized queries
+                throughout
+              </td>
+            </tr>
+            <tr>
+              <td>R-2</td>
+              <td>ITS API downtime</td>
+              <td style="text-align: center">Medium</td>
+              <td style="text-align: center">Medium</td>
+              <td>
+                Graceful fallback to local DB; manual data entry remains
+                available
+              </td>
+            </tr>
+            <tr>
+              <td>R-3</td>
+              <td>Unauthorized cross-Jamiat data access</td>
+              <td style="text-align: center">Low</td>
+              <td style="text-align: center">High</td>
+              <td>
+                Scope filtering enforced in middleware on every query; tested
+                per role
+              </td>
+            </tr>
+            <tr>
+              <td>R-4</td>
+              <td>Duplicate active cases per applicant</td>
+              <td style="text-align: center">Medium</td>
+              <td style="text-align: center">High</td>
+              <td>
+                Server-side one-active-case-per-ITS enforcement before case
+                creation
+              </td>
+            </tr>
+            <tr>
+              <td>R-5</td>
+              <td>File upload abuse</td>
+              <td style="text-align: center">Medium</td>
+              <td style="text-align: center">Medium</td>
+              <td>
+                Multer type/size validation; files stored outside web root;
+                served via authenticated endpoint
+              </td>
+            </tr>
+            <tr>
+              <td>R-6</td>
+              <td>Performance degradation at scale</td>
+              <td style="text-align: center">Medium</td>
+              <td style="text-align: center">Medium</td>
+              <td>
+                DB indexing on all FKs and search fields; pagination; React
+                Query caching
+              </td>
+            </tr>
+            <tr>
+              <td>R-7</td>
+              <td>Puppeteer PDF failures</td>
+              <td style="text-align: center">Low</td>
+              <td style="text-align: center">Medium</td>
+              <td>
+                PDFKit as alternative generator; error handling returns clear
+                failure message
+              </td>
+            </tr>
+            <tr>
+              <td>R-8</td>
+              <td>SLA misconfiguration</td>
+              <td style="text-align: center">Medium</td>
+              <td style="text-align: center">Low</td>
+              <td>
+                Admin UI for SLA editing; SLA calculation isolated in
+                <code>slaCalculator.js</code> utility
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <hr />
+      </div>
+
+      <!-- SECTION 16 -->
+      <div class="section">
+        <h2 id="roadmap">16. Out of Scope &amp; Future Roadmap</h2>
+
+        <h3>16.1 Currently Out of Scope</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Native mobile app</td>
+              <td>Responsive web design serves mobile needs adequately</td>
+            </tr>
+            <tr>
+              <td>SMS notifications</td>
+              <td>Email + in-app notifications satisfy current requirements</td>
+            </tr>
+            <tr>
+              <td>Video conferencing</td>
+              <td>External tools used for live counseling sessions</td>
+            </tr>
+            <tr>
+              <td>Cloud file storage (S3)</td>
+              <td>Local filesystem is sufficient at current scale</td>
+            </tr>
+            <tr>
+              <td>Multi-tenant architecture</td>
+              <td>Single-organization deployment only</td>
+            </tr>
+            <tr>
+              <td>Public applicant portal</td>
+              <td>
+                All intake is handled by field workers on behalf of applicants
+              </td>
+            </tr>
+            <tr>
+              <td>Advanced BI dashboards</td>
+              <td>
+                Simple analytics are sufficient; dedicated BI tools can connect
+                to DB if needed
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>16.2 Future Roadmap Considerations</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Priority</th>
+              <th>Feature</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>High</td>
+              <td>Email / SMS alerts</td>
+              <td>
+                Send notifications via email or SMS for critical workflow events
+              </td>
+            </tr>
+            <tr>
+              <td>High</td>
+              <td>Cloud file storage (S3)</td>
+              <td>
+                Move uploaded files to S3 for scalability, redundancy, and CDN
+                delivery
+              </td>
+            </tr>
+            <tr>
+              <td>High</td>
+              <td>REST API public documentation</td>
+              <td>
+                OpenAPI/Swagger documentation for third-party integrations
+              </td>
+            </tr>
+            <tr>
+              <td>Medium</td>
+              <td>Advanced analytics</td>
+              <td>
+                Charts, trends, and KPI tracking for case volumes, SLA
+                performance, and disbursements
+              </td>
+            </tr>
+            <tr>
+              <td>Medium</td>
+              <td>Self-service password reset</td>
+              <td>Email-based password reset without admin intervention</td>
+            </tr>
+            <tr>
+              <td>Medium</td>
+              <td>Applicant self-service portal</td>
+              <td>
+                Allow applicants to view their case status via a secure
+                read-only portal
+              </td>
+            </tr>
+            <tr>
+              <td>Low</td>
+              <td>WebSocket notifications</td>
+              <td>Replace polling with real-time push via WebSocket</td>
+            </tr>
+            <tr>
+              <td>Low</td>
+              <td>Native mobile app</td>
+              <td>
+                React Native app for field workers to perform case
+                identification offline
+              </td>
+            </tr>
+            <tr>
+              <td>Low</td>
+              <td>Multi-language support</td>
+              <td>Interface translations for Urdu and other languages</td>
+            </tr>
+          </tbody>
+        </table>
+        <hr />
+      </div>
+
+      <!-- SECTION 17 -->
+      <div class="section">
+        <h2 id="glossary">17. Glossary</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Term</th>
+              <th>Definition</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>FACTS</strong></td>
+              <td>File and Case Tracking System — this platform</td>
+            </tr>
+            <tr>
+              <td><strong>PRD</strong></td>
+              <td>Product Requirements Document — this document</td>
+            </tr>
+            <tr>
+              <td><strong>Baaseteen</strong></td>
+              <td>Primary welfare organization operating this system</td>
+            </tr>
+            <tr>
+              <td><strong>SHND</strong></td>
+              <td>
+                Social Help and Development — secondary organization served by
+                FACTS
+              </td>
+            </tr>
+            <tr>
+              <td><strong>ITS</strong></td>
+              <td>
+                Institutional Information System — external system providing
+                applicant identity data
+              </td>
+            </tr>
+            <tr>
+              <td><strong>ITS Number</strong></td>
+              <td>
+                Unique 8-digit identifier assigned to each community member by
+                the ITS system
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Case</strong></td>
+              <td>
+                A welfare application linked to a single applicant, progressing
+                through workflow stages
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Case Identification</strong></td>
+              <td>
+                Pre-assessment eligibility screening record created before a
+                full case is opened
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Jamiat</strong></td>
+              <td>Top-level organizational unit (zone/region)</td>
+            </tr>
+            <tr>
+              <td><strong>Jamaat</strong></td>
+              <td>Sub-unit under a Jamiat (local congregation/group)</td>
+            </tr>
+            <tr>
+              <td><strong>DCM</strong></td>
+              <td>
+                Deputy Case Manager — staff member responsible for creating and
+                managing cases
+              </td>
+            </tr>
+            <tr>
+              <td><strong>ZI</strong></td>
+              <td>Zonal Incharge — approver at the zonal level</td>
+            </tr>
+            <tr>
+              <td><strong>Enayat</strong></td>
+              <td>Grant-type financial assistance (non-repayable)</td>
+            </tr>
+            <tr>
+              <td><strong>Qardan Hasana (QH)</strong></td>
+              <td>Interest-free loan-type financial assistance (repayable)</td>
+            </tr>
+            <tr>
+              <td><strong>Manzoori</strong></td>
+              <td>
+                Sanction — the final approval stage before financial
+                disbursement
+              </td>
+            </tr>
+            <tr>
+              <td><strong>RBAC</strong></td>
+              <td>
+                Role-Based Access Control — restricting system access based on
+                user roles
+              </td>
+            </tr>
+            <tr>
+              <td><strong>SLA</strong></td>
+              <td>
+                Service Level Agreement — maximum time a case should remain at a
+                workflow stage
+              </td>
+            </tr>
+            <tr>
+              <td><strong>JWT</strong></td>
+              <td>
+                JSON Web Token — stateless authentication token issued at login
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Fund Utilization</strong></td>
+              <td>
+                Quarterly tracking of how disbursed financial assistance is
+                being used by the applicant
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Counseling Form</strong></td>
+              <td>
+                Multi-section digital form documenting the full welfare
+                counseling assessment
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Cover Letter</strong></td>
+              <td>
+                Summary document generated for executive review of the case
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <hr />
+        <p><strong>— End of Product Requirements Document —</strong></p>
+        <p>
+          <strong>FACTS — File &amp; Case Tracking System</strong><br />
+          <strong>Version 3.7 — April 23, 2025</strong>
+        </p>
+      </div>
+
+      <div class="doc-footer">
+        <strong>FACTS — File &amp; Case Tracking System</strong> &mdash; Product
+        Requirements Document v3.7 &mdash; April 23, 2025<br />
+        <em>End of Document</em>
+      </div>
+    </div>
+  </body>
+</html>
