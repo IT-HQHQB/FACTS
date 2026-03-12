@@ -1,0 +1,3802 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FACTS — System Architecture &amp; Design Document</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+      @page {
+        size: A4;
+        margin: 18mm 16mm 18mm 16mm;
+      }
+
+      :root {
+        --navy: #1a2a3a;
+        --navy-light: #243447;
+        --gold: #d4af37;
+        --accent-blue: #2563eb;
+        --accent-blue-light: #eff6ff;
+        --bg: #ffffff;
+        --bg-alt: #f8fafc;
+        --bg-section: #f1f5f9;
+        --text: #1e293b;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --border-strong: #cbd5e1;
+        --radius: 6px;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        font-size: 11px;
+        line-height: 1.55;
+        color: var(--text);
+        background: white;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ===== COVER PAGE ===== */
+      .cover-page {
+        background: linear-gradient(
+          145deg,
+          #0f2027 0%,
+          var(--navy) 40%,
+          #1a3a4a 100%
+        );
+        color: white;
+        width: 100%;
+        height: 297mm;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 40px;
+        page-break-after: always;
+        position: relative;
+        overflow: hidden;
+      }
+      .cover-page::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(
+            ellipse at 25% 30%,
+            rgba(37, 99, 235, 0.08) 0%,
+            transparent 55%
+          ),
+          radial-gradient(
+            ellipse at 75% 70%,
+            rgba(212, 175, 55, 0.05) 0%,
+            transparent 55%
+          );
+      }
+      .cover-logo {
+        width: 72px;
+        height: 72px;
+        background: linear-gradient(135deg, var(--accent-blue), #1d4ed8);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: 800;
+        color: white;
+        margin-bottom: 32px;
+        position: relative;
+        box-shadow: 0 6px 24px rgba(37, 99, 235, 0.3);
+      }
+      .cover-title {
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin-bottom: 6px;
+        position: relative;
+      }
+      .cover-subtitle {
+        font-size: 18px;
+        font-weight: 300;
+        color: #60a5fa;
+        margin-bottom: 8px;
+        position: relative;
+      }
+      .cover-standard {
+        font-size: 11px;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.4);
+        margin-bottom: 36px;
+        position: relative;
+        letter-spacing: 0.5px;
+      }
+      .cover-meta {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        max-width: 520px;
+        width: 100%;
+      }
+      .cover-meta-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: var(--radius);
+        padding: 12px 16px;
+      }
+      .cover-meta-label {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: rgba(255, 255, 255, 0.45);
+        margin-bottom: 3px;
+      }
+      .cover-meta-value {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .cover-badge {
+        position: relative;
+        margin-top: 32px;
+        background: rgba(22, 163, 106, 0.12);
+        border: 1px solid rgba(22, 163, 106, 0.25);
+        color: #4ade80;
+        padding: 5px 18px;
+        border-radius: 16px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .cover-footer {
+        position: absolute;
+        bottom: 30px;
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.3);
+        letter-spacing: 0.5px;
+      }
+
+      /* ===== TOC PAGE ===== */
+      .toc-page {
+        width: 100%;
+        min-height: 297mm;
+        padding: 24mm 20mm;
+        page-break-after: always;
+        display: flex;
+        flex-direction: column;
+      }
+      .toc-header {
+        border-bottom: 2px solid var(--accent-blue);
+        padding-bottom: 10px;
+        margin-bottom: 28px;
+      }
+      .toc-header h1 {
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--navy);
+        border: none;
+        padding: 0;
+        margin: 0;
+      }
+      .toc-header p {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 4px;
+        margin-bottom: 0;
+      }
+      .toc-group {
+        margin-bottom: 20px;
+      }
+      .toc-group-label {
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: var(--accent-blue);
+        margin-bottom: 8px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid var(--border);
+      }
+      .toc-entry {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        padding: 3px 0;
+      }
+      .toc-entry a {
+        text-decoration: none;
+        color: var(--text);
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .toc-entry a:hover {
+        color: var(--accent-blue);
+      }
+      .toc-dots {
+        flex: 1;
+        border-bottom: 1px dotted var(--border-strong);
+        margin: 0 6px;
+        margin-bottom: 2px;
+      }
+      .toc-sub {
+        padding-left: 16px;
+      }
+      .toc-sub .toc-entry a {
+        font-weight: 400;
+        color: var(--text-muted);
+        font-size: 10.5px;
+      }
+      .toc-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 32px;
+      }
+
+      /* ===== CONTENT ===== */
+      .content-wrapper {
+        max-width: 178mm;
+        margin: 0 auto;
+        padding: 0;
+      }
+
+      .section {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      /* ===== HEADINGS ===== */
+      h1 {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--navy);
+        margin: 20px 0 8px;
+        padding-bottom: 6px;
+        border-bottom: 2px solid var(--accent-blue);
+        page-break-after: avoid;
+      }
+
+      h2 {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--navy);
+        margin: 16px 0 8px;
+        padding: 7px 10px;
+        background: var(--bg-section);
+        border-left: 3px solid var(--accent-blue);
+        border-radius: 0 var(--radius) var(--radius) 0;
+        page-break-after: avoid;
+      }
+
+      h3 {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--navy-light);
+        margin: 12px 0 6px;
+        page-break-after: avoid;
+      }
+
+      h4 {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--accent-blue);
+        margin: 10px 0 4px;
+        page-break-after: avoid;
+      }
+
+      /* ===== TEXT ===== */
+      p {
+        margin: 0 0 6px;
+      }
+
+      ul,
+      ol {
+        margin: 4px 0 8px;
+        padding-left: 20px;
+      }
+      li {
+        margin-bottom: 2px;
+        line-height: 1.5;
+      }
+      li strong {
+        color: var(--navy);
+      }
+
+      /* ===== TABLES ===== */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 6px 0 12px;
+        font-size: 10.5px;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        page-break-inside: auto;
+      }
+      thead {
+        background: var(--navy);
+      }
+      thead th {
+        color: white;
+        font-weight: 600;
+        text-align: left;
+        padding: 6px 8px;
+        font-size: 9.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        border: none;
+      }
+      tbody tr {
+        border-bottom: 1px solid var(--border);
+      }
+      tbody tr:nth-child(even) {
+        background: #fafbfc;
+      }
+      td {
+        padding: 5px 8px;
+        vertical-align: top;
+        border: none;
+        line-height: 1.45;
+        word-break: break-word;
+      }
+      td:first-child {
+        font-weight: 500;
+        color: var(--navy);
+      }
+      td strong {
+        color: var(--navy);
+      }
+
+      /* ===== CODE BLOCKS ===== */
+      pre {
+        background: var(--navy);
+        color: #a6d189;
+        padding: 12px 14px;
+        border-radius: var(--radius);
+        overflow-x: auto;
+        font-family: "Cascadia Code", "Consolas", monospace;
+        font-size: 9.5px;
+        line-height: 1.45;
+        margin: 6px 0 12px;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      code {
+        font-family: "Cascadia Code", "Consolas", monospace;
+        font-size: 10px;
+        background: var(--bg-section);
+        padding: 1px 4px;
+        border-radius: 3px;
+        color: var(--accent-blue);
+      }
+      pre code {
+        background: none;
+        padding: 0;
+        color: inherit;
+        font-size: 9.5px;
+      }
+
+      hr {
+        border: none;
+        height: 1px;
+        background: var(--border-strong);
+        margin: 14px 0;
+      }
+
+      em {
+        color: var(--text-muted);
+      }
+
+      .doc-footer {
+        text-align: center;
+        padding: 16px 10px;
+        color: var(--text-muted);
+        font-size: 10px;
+        border-top: 2px solid var(--accent-blue);
+        margin-top: 24px;
+        page-break-before: avoid;
+      }
+      .doc-footer strong {
+        color: var(--navy);
+      }
+
+      /* ===== WORKFLOW DIAGRAM ===== */
+      .wf-container {
+        background: var(--bg-section);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px 18px;
+        margin: 8px 0 12px;
+      }
+      .wf-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 6px;
+      }
+      .wf-node {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 5px 10px;
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--navy);
+        white-space: nowrap;
+      }
+      .wf-node.active {
+        background: var(--accent-blue-light);
+        border-color: var(--accent-blue);
+        color: var(--accent-blue);
+      }
+      .wf-node.terminal {
+        background: var(--navy);
+        color: white;
+        border-color: var(--navy);
+      }
+      .wf-node.start {
+        background: #fefce8;
+        border-color: #ca8a04;
+        color: #78350f;
+      }
+      .wf-arrow {
+        color: var(--text-muted);
+        font-size: 14px;
+        padding: 0 2px;
+      }
+      .wf-down {
+        padding: 0 0 2px 30px;
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+      .wf-note {
+        font-size: 9.5px;
+        color: var(--text-muted);
+        margin-top: 8px;
+        font-style: italic;
+      }
+
+      /* ===== GRID CARDS ===== */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin: 8px 0 12px;
+      }
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+        margin: 8px 0 12px;
+      }
+      .card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px 14px;
+      }
+      .card-title {
+        font-size: 9.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--accent-blue);
+        margin-bottom: 6px;
+      }
+      .card p {
+        font-size: 10.5px;
+        margin-bottom: 0;
+        color: var(--text-muted);
+      }
+      .card ul {
+        font-size: 10.5px;
+        color: var(--text-muted);
+        margin: 0;
+        padding-left: 14px;
+      }
+
+      /* ===== INFO BOXES ===== */
+      .box {
+        border-radius: var(--radius);
+        padding: 10px 14px;
+        margin: 8px 0 12px;
+        border-left: 3px solid;
+        font-size: 10.5px;
+      }
+      .box-info {
+        background: #eff6ff;
+        border-color: var(--accent-blue);
+      }
+      .box-warn {
+        background: #fefce8;
+        border-color: #ca8a04;
+      }
+      .box-success {
+        background: #f0fdf4;
+        border-color: #16a34a;
+      }
+      .box-navy {
+        background: #f0f9ff;
+        border-color: var(--navy);
+      }
+      .box strong {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 9.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--navy);
+      }
+
+      dl {
+        margin: 8px 0;
+      }
+      dt {
+        font-weight: 600;
+        color: var(--navy-light);
+        font-size: 11px;
+        margin-top: 8px;
+      }
+      dd {
+        margin-left: 14px;
+        color: var(--text-muted);
+        font-size: 10.5px;
+      }
+
+      /* ===== PRINT ===== */
+      @media print {
+        body {
+          background: white;
+        }
+        .cover-page {
+          height: 297mm;
+          background: linear-gradient(
+            145deg,
+            #0f2027 0%,
+            var(--navy) 40%,
+            #1a3a4a 100%
+          ) !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .toc-page {
+          page-break-after: always;
+        }
+        thead {
+          background: var(--navy) !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        thead th {
+          color: white !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        tbody tr:nth-child(even) {
+          background: #fafbfc !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        h2 {
+          background: var(--bg-section) !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        pre {
+          background: var(--navy) !important;
+          color: #a6d189 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .wf-container {
+          background: var(--bg-section) !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .wf-node.active {
+          background: var(--accent-blue-light) !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .wf-node.terminal {
+          background: var(--navy) !important;
+          color: white !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .box-info {
+          background: #eff6ff !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .box-warn {
+          background: #fefce8 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .box-success {
+          background: #f0fdf4 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .cover-logo {
+          background: linear-gradient(
+            135deg,
+            var(--accent-blue),
+            #1d4ed8
+          ) !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        h1,
+        h2,
+        h3,
+        h4 {
+          page-break-after: avoid;
+        }
+        .section {
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+        table {
+          page-break-inside: auto;
+        }
+        tr {
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+        pre {
+          page-break-inside: avoid;
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ==================== COVER PAGE ==================== -->
+    <div class="cover-page">
+      <div class="cover-logo">SAD</div>
+      <div class="cover-title">FACTS Case Management System</div>
+      <div class="cover-subtitle">
+        System Architecture &amp; Design Document
+      </div>
+      <div class="cover-standard">
+        Baaseteen / SHND &mdash; Internal Technical Reference
+      </div>
+      <div class="cover-meta">
+        <div class="cover-meta-item">
+          <div class="cover-meta-label">Document Version</div>
+          <div class="cover-meta-value">3.7</div>
+        </div>
+        <div class="cover-meta-item">
+          <div class="cover-meta-label">System Version</div>
+          <div class="cover-meta-value">FACTS v3.7</div>
+        </div>
+        <div class="cover-meta-item">
+          <div class="cover-meta-label">Date</div>
+          <div class="cover-meta-value">April 23, 2025</div>
+        </div>
+        <div class="cover-meta-item">
+          <div class="cover-meta-label">Status</div>
+          <div class="cover-meta-value">Final Draft</div>
+        </div>
+        <div class="cover-meta-item">
+          <div class="cover-meta-label">Classification</div>
+          <div class="cover-meta-value">Internal / Restricted</div>
+        </div>
+        <div class="cover-meta-item">
+          <div class="cover-meta-label">Organization</div>
+          <div class="cover-meta-value">Baaseteen / SHND</div>
+        </div>
+      </div>
+      <div class="cover-badge">&bull; Architecture Reference &mdash; v3.7</div>
+      <div class="cover-footer">
+        Prepared by FACTS System Team &middot; Classification: Internal /
+        Restricted
+      </div>
+    </div>
+
+    <!-- ==================== TABLE OF CONTENTS PAGE ==================== -->
+    <div class="toc-page">
+      <div class="toc-header">
+        <h1>Table of Contents</h1>
+        <p>
+          FACTS System Architecture &amp; Design Document &mdash; Version 3.7
+        </p>
+      </div>
+
+      <div class="toc-columns">
+        <div>
+          <div class="toc-group">
+            <div class="toc-group-label">Document Info</div>
+            <div class="toc-entry">
+              <a href="#s1">1. Document Overview</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-sub">
+              <div class="toc-entry">
+                <a href="#s1">1.1 Purpose</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s1">1.2 Scope</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s1">1.3 Assumptions &amp; Constraints</a>
+                <div class="toc-dots"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="toc-group">
+            <div class="toc-group-label">Overview</div>
+            <div class="toc-entry">
+              <a href="#s2">2. System Overview</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-sub">
+              <div class="toc-entry">
+                <a href="#s2">2.1 System Description</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s2">2.2 System Context</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s2">2.3 Stakeholders</a>
+                <div class="toc-dots"></div>
+              </div>
+            </div>
+            <div class="toc-entry">
+              <a href="#s3">3. Architecture Goals &amp; Principles</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-sub">
+              <div class="toc-entry">
+                <a href="#s3">3.1 Goals</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s3">3.2 Principles</a>
+                <div class="toc-dots"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="toc-group">
+            <div class="toc-group-label">4 · Architecture Views</div>
+            <div class="toc-entry">
+              <a href="#s4-1">4.1 Logical View</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-sub">
+              <div class="toc-entry">
+                <a href="#s4-1">4.1.1 Backend Module Map</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s4-1">4.1.2 Frontend Module Map</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s4-1">4.1.3 Approval Workflow</a>
+                <div class="toc-dots"></div>
+              </div>
+            </div>
+            <div class="toc-entry">
+              <a href="#s4-2">4.2 Physical / Deployment View</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-sub">
+              <div class="toc-entry">
+                <a href="#s4-2">4.2.1 Deployment Architecture</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s4-2">4.2.2 Nginx Configuration</a>
+                <div class="toc-dots"></div>
+              </div>
+            </div>
+            <div class="toc-entry">
+              <a href="#s4-3">4.3 Process View</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-sub">
+              <div class="toc-entry">
+                <a href="#s4-3">4.3.1 Request Lifecycle</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s4-3">4.3.2 Concurrency &amp; Connections</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s4-3">4.3.3 Error Handling</a>
+                <div class="toc-dots"></div>
+              </div>
+            </div>
+            <div class="toc-entry">
+              <a href="#s4-4">4.4 Development View</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-sub">
+              <div class="toc-entry">
+                <a href="#s4-4">4.4.1 Technology Stack</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s4-4">4.4.2 Project Structure</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s4-4">4.4.3 Coding Conventions</a>
+                <div class="toc-dots"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="toc-group">
+            <div class="toc-group-label">5–6 · Data &amp; Security</div>
+            <div class="toc-entry">
+              <a href="#s5">5. Data Architecture</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-sub">
+              <div class="toc-entry">
+                <a href="#s5">5.1 Entity Groups</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s5">5.2 Key Relationships</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s5">5.3 Schema Design Patterns</a>
+                <div class="toc-dots"></div>
+              </div>
+            </div>
+            <div class="toc-entry">
+              <a href="#s6">6. Security Architecture</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-sub">
+              <div class="toc-entry">
+                <a href="#s6">6.1 Authentication &amp; Authorization</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s6">6.2 Data Security</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s6">6.3 Network Security</a>
+                <div class="toc-dots"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="toc-group">
+            <div class="toc-group-label">
+              7–9 · Integration &amp; Resilience
+            </div>
+            <div class="toc-entry">
+              <a href="#s7">7. Integration &amp; Interfaces</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-sub">
+              <div class="toc-entry">
+                <a href="#s7">7.1 External Integrations (ITS, SMTP)</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s7">7.2 Internal API Design Conventions</a>
+                <div class="toc-dots"></div>
+              </div>
+            </div>
+            <div class="toc-entry">
+              <a href="#s8">8. Performance &amp; Scalability</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-sub">
+              <div class="toc-entry">
+                <a href="#s8">8.1 Performance Targets</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s8">8.2 Scalability Design</a>
+                <div class="toc-dots"></div>
+              </div>
+            </div>
+            <div class="toc-entry">
+              <a href="#s9">9. Availability &amp; Resilience</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-sub">
+              <div class="toc-entry">
+                <a href="#s9">9.1 Redundancy &amp; Failover</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s9">9.2 Backup &amp; Disaster Recovery</a>
+                <div class="toc-dots"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="toc-group">
+            <div class="toc-group-label">10–12 · Operations</div>
+            <div class="toc-entry">
+              <a href="#s10">10. Deployment &amp; Operations</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-sub">
+              <div class="toc-entry">
+                <a href="#s10">10.1 Deployment Environments</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s10">10.2 Production Deployment Steps</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s10">10.3 Monitoring &amp; Alerting</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s10">10.4 Maintenance Schedule</a>
+                <div class="toc-dots"></div>
+              </div>
+            </div>
+            <div class="toc-entry">
+              <a href="#s12">12. Technical Infrastructure</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-sub">
+              <div class="toc-entry">
+                <a href="#s12">12.1 Hosting Strategy</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s12">12.2 Infrastructure Configuration</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s12">12.3 Monitoring &amp; Logging</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#s12">12.4 CI/CD Pipeline</a>
+                <div class="toc-dots"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="toc-group">
+            <div class="toc-group-label">Appendices</div>
+            <div class="toc-entry">
+              <a href="#app-a">Appendix A &mdash; Glossary</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-entry">
+              <a href="#app-b">Appendix B &mdash; API Endpoint Index</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-sub">
+              <div class="toc-entry">
+                <a href="#app-b">Authentication &amp; Users</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#app-b">Cases &amp; Workflow</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#app-b">Identification, Applicants &amp; Forms</a>
+                <div class="toc-dots"></div>
+              </div>
+              <div class="toc-entry">
+                <a href="#app-b">Admin, Master Data &amp; Reports</a>
+                <div class="toc-dots"></div>
+              </div>
+            </div>
+            <div class="toc-entry">
+              <a href="#app-c">Appendix C &mdash; DB Table Reference</a>
+              <div class="toc-dots"></div>
+            </div>
+            <div class="toc-entry">
+              <a href="#app-d">Appendix D &mdash; Document Change Log</a>
+              <div class="toc-dots"></div>
+            </div>
+          </div>
+
+          <div
+            class="toc-group"
+            style="
+              margin-top: 24px;
+              padding: 12px 14px;
+              background: var(--bg-section);
+              border-radius: var(--radius);
+              border: 1px solid var(--border);
+            "
+          >
+            <div
+              style="
+                font-size: 9px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: var(--text-muted);
+                margin-bottom: 6px;
+              "
+            >
+              Document Metadata
+            </div>
+            <div
+              style="
+                font-size: 10.5px;
+                color: var(--text-muted);
+                line-height: 1.7;
+              "
+            >
+              <strong style="color: var(--navy)">System:</strong> FACTS File
+              &amp; Case Tracking System<br />
+              <strong style="color: var(--navy)">Organizations:</strong>
+              Baaseteen &amp; SHND<br />
+              <strong style="color: var(--navy)">Version:</strong> SAD v3.7 /
+              System v3.7<br />
+              <strong style="color: var(--navy)">Standard:</strong> 4+1
+              Architectural View Model<br />
+              <strong style="color: var(--navy)">Backend:</strong> 150+
+              endpoints, 25 modules<br />
+              <strong style="color: var(--navy)">Database:</strong> 60+ tables
+              (MySQL 8.0)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== DOCUMENT BODY ==================== -->
+    <div class="content-wrapper">
+      <h1>System Architecture and Design Document</h1>
+      <h1>FACTS — File and Case Tracking System</h1>
+      <hr />
+      <p>
+        <strong>Document Version:</strong> 3.7<br />
+        <strong>System Version:</strong> FACTS v3.7<br />
+        <strong>Date:</strong> April 23, 2025<br />
+        <strong>Prepared By:</strong> FACTS System Team<br />
+        <strong>Status:</strong> Final Draft<br />
+        <strong>Classification:</strong> Internal / Restricted<br />
+        <strong>Organizations:</strong> Baaseteen &amp; SHND
+      </p>
+      <hr />
+
+      <!-- ===== SECTION 1 ===== -->
+      <div class="section" id="s1">
+        <h2>1. Document Overview</h2>
+
+        <h3>1.1 Purpose</h3>
+        <p>
+          This System Architecture and Design Document (SAD) is the
+          authoritative technical reference for the FACTS (File and Case
+          Tracking System). It is intended to communicate structural decisions,
+          design rationale, and operational guidelines to engineers, architects,
+          administrators, and technical stakeholders involved in building,
+          deploying, maintaining, or extending the system.
+        </p>
+        <p>
+          The document covers end-to-end architecture including logical
+          decomposition into modules, physical deployment topology, data
+          modeling, security controls, integration patterns, performance
+          targets, and operational procedures.
+        </p>
+
+        <h3>1.2 Scope</h3>
+        <p>
+          This document covers the complete FACTS platform deployed for the
+          Baaseteen and SHND welfare organizations. System scope includes:
+        </p>
+        <ul>
+          <li>
+            Backend REST API (Node.js / Express.js) — 150+ endpoints across 25
+            route modules
+          </li>
+          <li>
+            Frontend Single-Page Application (React 18) — 31 page components
+            with role-adaptive UI
+          </li>
+          <li>MySQL 8.0 relational database — 60+ normalized tables</li>
+          <li>
+            File storage for case attachments, digital signatures, photos, and
+            generated PDFs
+          </li>
+          <li>
+            Integration with the external ITS (Institutional Information System)
+            API
+          </li>
+          <li>Optional SMTP email notification pipeline</li>
+        </ul>
+        <p>
+          <strong>Out of scope:</strong> Third-party ITS platform internals,
+          SMTP relay infrastructure, and any future mobile application layer.
+        </p>
+
+        <h3>1.3 Assumptions and Constraints</h3>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Assumptions</div>
+            <ul>
+              <li>
+                Node.js v16+ and MySQL v8.0+ available in target environment
+              </li>
+              <li>
+                External ITS API accessible over HTTPS with valid credentials
+              </li>
+              <li>
+                Users access via modern web browser (Chrome, Firefox, Edge)
+              </li>
+              <li>File uploads do not exceed 10 MB per file</li>
+              <li>Concurrent users per deployment ≤ 500</li>
+            </ul>
+          </div>
+          <div class="card">
+            <div class="card-title">Constraints</div>
+            <ul>
+              <li>
+                Jamiat/Jamaat organizational scoping required for data isolation
+              </li>
+              <li>JWT tokens expire after 24 hours; no refresh token in v1</li>
+              <li>
+                PDF generation requires Puppeteer (Chromium binary dependency)
+              </li>
+              <li>
+                MySQL connection pool capped at 10 concurrent connections per
+                instance
+              </li>
+              <li>
+                Base64-encoded photos stored directly in DB (no object storage
+                in v1)
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SECTION 2 ===== -->
+      <div class="section" id="s2">
+        <h2>2. System Overview</h2>
+
+        <h3>2.1 System Description</h3>
+        <p>
+          FACTS is a comprehensive welfare case management platform designed to
+          digitize and govern the full lifecycle of financial assistance cases
+          for Baaseteen and SHND organizations. It replaces paper-based
+          counseling forms, manual approval chains, and fragmented tracking
+          spreadsheets with a unified, role-aware digital workflow.
+        </p>
+        <p>
+          A case begins with an eligibility screening (Case Identification),
+          progresses through a structured counseling phase, then traverses a
+          multi-tier approval pipeline — Welfare Review → ZI Approval → KG
+          Review → Operations Lead → Cover Letter Generation → Executive
+          Approval → Manzoori Sanction — before reaching Financial Disbursement
+          and periodic Fund Utilization tracking, ultimately closing with
+          documented evidence of aid completion.
+        </p>
+
+        <h3>2.2 System Context</h3>
+        <div class="grid-3">
+          <div class="card" style="border-color: var(--accent-blue)">
+            <div class="card-title">External: ITS API</div>
+            <p>
+              Institutional Information System. Provides applicant biographical
+              data, photos, Jamiat/Jamaat affiliations by ITS number. Read-only
+              HTTPS REST integration.
+            </p>
+          </div>
+          <div class="card" style="border-color: var(--navy)">
+            <div class="card-title">FACTS Platform</div>
+            <p>
+              Core system: Express.js API + React SPA + MySQL. Manages all case
+              data, workflows, approvals, documents, notifications, and reports.
+            </p>
+          </div>
+          <div class="card" style="border-color: #ca8a04">
+            <div class="card-title">External: SMTP Relay</div>
+            <p>
+              Optional email delivery (Gmail SMTP or equivalent). Receives
+              outbound notification payloads from the FACTS notification
+              service.
+            </p>
+          </div>
+        </div>
+        <p style="font-size: 10.5px; color: var(--text-muted)">
+          <strong>User Roles:</strong> Super Admin, Admin, DCM (Deputy
+          Counseling Manager), Counselor, Welfare Reviewer, ZI (Zonal Incharge),
+          KG Reviewer, Operations Lead, Executive Management, Finance Officer,
+          Report Viewer
+        </p>
+
+        <h3>2.3 Stakeholders</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Stakeholder</th>
+              <th>Role</th>
+              <th>System Interaction</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Super Admin</td>
+              <td>Platform owner</td>
+              <td>
+                Full system access, role/permission configuration, master data
+                management
+              </td>
+            </tr>
+            <tr>
+              <td>Admin</td>
+              <td>Operational administrator</td>
+              <td>User management, case oversight, reporting</td>
+            </tr>
+            <tr>
+              <td>DCM</td>
+              <td>Case manager</td>
+              <td>
+                Case assignment, counseling form oversight, cover letter
+                submission
+              </td>
+            </tr>
+            <tr>
+              <td>Counselor</td>
+              <td>Field counselor</td>
+              <td>
+                Fill counseling forms, capture signatures, attach documents
+              </td>
+            </tr>
+            <tr>
+              <td>Welfare Reviewer</td>
+              <td>First-tier reviewer</td>
+              <td>
+                Review cases, complete welfare checklist, approve/reject/rework
+              </td>
+            </tr>
+            <tr>
+              <td>ZI / KG / Ops Lead</td>
+              <td>Mid-tier approvers</td>
+              <td>
+                Review and approve/reject cases at their assigned workflow stage
+              </td>
+            </tr>
+            <tr>
+              <td>Executive Management</td>
+              <td>Senior approver</td>
+              <td>Multi-level executive approval hierarchy (up to 5 levels)</td>
+            </tr>
+            <tr>
+              <td>Finance Officer</td>
+              <td>Disbursement manager</td>
+              <td>Confirm disbursements, manage payment schedules</td>
+            </tr>
+            <tr>
+              <td>IT/DevOps Team</td>
+              <td>Infrastructure owner</td>
+              <td>Deployment, monitoring, backup, security patching</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== SECTION 3 ===== -->
+      <div class="section" id="s3">
+        <h2>3. Architecture Goals and Principles</h2>
+        <div class="grid-2">
+          <div>
+            <h3>3.1 Goals</h3>
+            <dl>
+              <dt>Correctness &amp; Auditability</dt>
+              <dd>
+                Every state transition, approval, and data edit is logged.
+                Status history, workflow comments, and income audit logs provide
+                a complete audit trail.
+              </dd>
+              <dt>Role-Based Access Control</dt>
+              <dd>
+                All resources protected by a fine-grained permission model
+                (resource + action). Organizational scoping (Jamiat/Jamaat)
+                further restricts data visibility.
+              </dd>
+              <dt>Workflow Configurability</dt>
+              <dd>
+                Approval stages, role assignments, SLA thresholds, and checklist
+                items are database-driven — configurable without code changes.
+              </dd>
+              <dt>Performance &amp; Responsiveness</dt>
+              <dd>
+                API responses within 300ms for paginated list endpoints, 500ms
+                for complex aggregations under normal load.
+              </dd>
+              <dt>Data Integrity</dt>
+              <dd>
+                Foreign-key constraints, parameterized queries, and
+                transactional operations protect relational integrity across 60+
+                tables.
+              </dd>
+            </dl>
+          </div>
+          <div>
+            <h3>3.2 Principles</h3>
+            <dl>
+              <dt>Separation of Concerns</dt>
+              <dd>
+                API routes, business logic, and database access are structurally
+                separated. Frontend pages, components, and contexts
+                independently organized.
+              </dd>
+              <dt>Fail Safely</dt>
+              <dd>
+                Errors return structured JSON with meaningful status codes.
+                Unhandled exceptions caught by global middleware without
+                exposing stack traces to clients.
+              </dd>
+              <dt>Least Privilege</dt>
+              <dd>
+                Tokens carry minimal claims. Every request revalidates
+                permission and organizational scope against the live database.
+              </dd>
+              <dt>Minimal External Dependencies</dt>
+              <dd>
+                System avoids cloud-vendor lock-in. Core functionality runs on
+                any Linux server with Node.js and MySQL.
+              </dd>
+              <dt>Progressive Enhancement</dt>
+              <dd>
+                System degrades gracefully if optional services (SMTP,
+                Puppeteer) are unavailable; core case management remains
+                functional.
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SECTION 4.1 ===== -->
+      <div class="section" id="s4-1">
+        <h2>4.1 Logical View — Modules &amp; Component Interaction</h2>
+
+        <h3>4.1.1 Backend Module Map</h3>
+        <p>
+          The backend is organized into 25 route modules, each encapsulating a
+          bounded domain. All follow the pattern:
+          <code
+            >express.Router → middleware chain → DB query → JSON response</code
+          >.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Module</th>
+              <th>Route Prefix</th>
+              <th>Core Responsibility</th>
+              <th>Key Dependencies</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Auth</td>
+              <td><code>/api/auth</code></td>
+              <td>
+                Login, JWT issuance, registration, profile, password management
+              </td>
+              <td>bcryptjs, jsonwebtoken</td>
+            </tr>
+            <tr>
+              <td>Users</td>
+              <td><code>/api/users</code></td>
+              <td>
+                User CRUD, role assignment, ITS contact sync, Excel
+                import/export
+              </td>
+              <td>xlsx, ITS API</td>
+            </tr>
+            <tr>
+              <td>Cases</td>
+              <td><code>/api/cases</code></td>
+              <td>
+                Case CRUD, all workflow action handlers, comments, payment
+                schedules, closure
+              </td>
+              <td>notificationService, slaCalculator</td>
+            </tr>
+            <tr>
+              <td>Case Identifications</td>
+              <td><code>/api/case-identifications</code></td>
+              <td>
+                Pre-assessment eligibility screening, income audit logging
+              </td>
+              <td>activeCasePerIts</td>
+            </tr>
+            <tr>
+              <td>Applicants</td>
+              <td><code>/api/applicants</code></td>
+              <td>Applicant profiles, ITS lookup, bulk import/fetch</td>
+              <td>ITS API, xlsx</td>
+            </tr>
+            <tr>
+              <td>Counseling Forms</td>
+              <td><code>/api/counseling-forms</code></td>
+              <td>Multi-section form data management (7 sub-tables)</td>
+              <td>counseling_form_stage_permissions</td>
+            </tr>
+            <tr>
+              <td>Cover Letters</td>
+              <td><code>/api/cover-letters</code></td>
+              <td>PDF cover letter generation and download</td>
+              <td>Puppeteer</td>
+            </tr>
+            <tr>
+              <td>Cover Letter Forms</td>
+              <td><code>/api/cover-letter-forms</code></td>
+              <td>Cover letter form data and submission workflow</td>
+              <td>Cases, notificationService</td>
+            </tr>
+            <tr>
+              <td>Attachments</td>
+              <td><code>/api/attachments</code></td>
+              <td>
+                Multipart file upload (Multer), download, delete, statistics
+              </td>
+              <td>Multer, fs</td>
+            </tr>
+            <tr>
+              <td>Workflow Stages</td>
+              <td><code>/api/workflow-stages</code></td>
+              <td>
+                Stage definitions, role/user assignments, SLA config, ordering
+              </td>
+              <td>roles, users</td>
+            </tr>
+            <tr>
+              <td>Welfare Checklist</td>
+              <td><code>/api/welfare-checklist</code></td>
+              <td>
+                Checklist categories, items, per-case responses, completion
+                tracking
+              </td>
+              <td>cases</td>
+            </tr>
+            <tr>
+              <td>Fund Utilization</td>
+              <td><code>/api/cases/:id/fund-utilization</code></td>
+              <td>Quarterly reassessment reports, photo/file uploads</td>
+              <td>fundUtilizationMaster</td>
+            </tr>
+            <tr>
+              <td>Fund Utilization Master</td>
+              <td><code>/api/fund-utilization-master</code></td>
+              <td>
+                Dynamic form builder — sections and questions configuration
+              </td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Dashboard</td>
+              <td><code>/api/dashboard</code></td>
+              <td>
+                Role-filtered aggregate statistics, pipeline data, recent
+                activities
+              </td>
+              <td>cases, users</td>
+            </tr>
+            <tr>
+              <td>Notifications</td>
+              <td><code>/api/notifications</code></td>
+              <td>In-app notifications, read state, SLA check trigger</td>
+              <td>notificationService</td>
+            </tr>
+            <tr>
+              <td>Roles / Permissions</td>
+              <td><code>/api/roles</code>, <code>/api/permissions</code></td>
+              <td>RBAC role and permission management, access verification</td>
+              <td>role_permissions, user_roles</td>
+            </tr>
+            <tr>
+              <td>Quarterly Report PDF</td>
+              <td><code>/api/cases/:id/quarterly-report</code></td>
+              <td>PDF generation for fund utilization quarterly reports</td>
+              <td>PDFKit, quarterlyReportPdfData</td>
+            </tr>
+            <tr>
+              <td>Master Data</td>
+              <td><code>/api/jamiat</code>, <code>/api/jamaat</code>, etc.</td>
+              <td>
+                Reference data CRUD: Jamiat, Jamaat, Case Types, Relations,
+                Education Levels, Occupations, Executive Levels
+              </td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>4.1.2 Frontend Module Map</h3>
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-title">Page Modules (31)</div>
+            <p>
+              Login, Dashboard, Cases, CaseDetails, CaseIdentification,
+              Applicants, Users, RoleManagement, JamiatMaster, WorkflowStages,
+              WelfareChecklist, FundUtilization, PaymentSchedulePage, Reports,
+              Profile, Notifications, and 15 master-data pages.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-title">Domain Components (10)</div>
+            <p>
+              CounselingForm (multi-section), CoverLetterForm, FundUtilization
+              components, PaymentSchedule, WelfareChecklistForm, BusinessAssets,
+              FileUpload, SignaturePad, CaseSLAStatus, WorkflowComments.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-title">UI Library (16)</div>
+            <p>
+              Button, Card, Modal, Table, Alert, Badge, Input, Select,
+              SearchableSelect, MultiSelect, Pagination, Toast, Tabs, Spinner,
+              WorkflowProgress — all custom-built with Tailwind CSS.
+            </p>
+          </div>
+        </div>
+
+        <h3>4.1.3 Approval Workflow Data Flow</h3>
+        <div
+          class="wf-container"
+          style="
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0;
+            padding: 24px 32px;
+          "
+        >
+          <!-- Row 1: Case Identification (Screening) -->
+          <div style="display: flex; align-items: center; gap: 0">
+            <div class="wf-node start" style="min-width: 140px">
+              Case Identification<br /><span
+                style="font-size: 11px; opacity: 0.8"
+                >(Screening)</span
+              >
+            </div>
+            <div class="wf-arrow" style="margin: 0 8px">—</div>
+            <span style="font-size: 12px; color: #555; margin-right: 8px"
+              >Eligible</span
+            >
+            <div class="wf-arrow" style="margin: 0 8px">→</div>
+            <div class="wf-node active" style="min-width: 140px">
+              Case Auto-Created
+            </div>
+          </div>
+
+          <div class="wf-down" style="margin-left: 70px">↓</div>
+
+          <!-- Row 2: Draft Stage → Counseling Form Fill → Welfare Review -->
+          <div style="display: flex; align-items: center; gap: 0">
+            <div class="wf-node" style="min-width: 140px">
+              Draft Stage<br /><span style="font-size: 11px; opacity: 0.8"
+                >(DCM assigns)</span
+              >
+            </div>
+            <div class="wf-arrow" style="margin: 0 8px">→</div>
+            <div class="wf-node" style="min-width: 140px">
+              Counseling<br />Form Fill
+            </div>
+            <div class="wf-arrow" style="margin: 0 8px">→</div>
+            <div class="wf-node" style="min-width: 140px">
+              Welfare<br />Review
+            </div>
+          </div>
+
+          <div class="wf-down" style="margin-left: 70px">↓</div>
+
+          <!-- Row 3: ZI Approval → KG Review → Operations Lead -->
+          <div style="display: flex; align-items: center; gap: 0">
+            <div class="wf-node" style="min-width: 140px">ZI Approval</div>
+            <div class="wf-arrow" style="margin: 0 8px">→</div>
+            <div class="wf-node" style="min-width: 140px">KG Review</div>
+            <div class="wf-arrow" style="margin: 0 8px">→</div>
+            <div class="wf-node" style="min-width: 140px">
+              Operations<br />Lead
+            </div>
+          </div>
+
+          <div class="wf-down" style="margin-left: 70px">↓</div>
+
+          <!-- Row 4: Cover Letter Generation → Executive Approval → Manzoori (Sanction) -->
+          <div style="display: flex; align-items: center; gap: 0">
+            <div class="wf-node" style="min-width: 140px">
+              Cover Letter<br />Generation
+            </div>
+            <div class="wf-arrow" style="margin: 0 8px">→</div>
+            <div class="wf-node" style="min-width: 140px">
+              Executive Approval<br /><span
+                style="font-size: 11px; opacity: 0.8"
+                >(Multi-level)</span
+              >
+            </div>
+            <div class="wf-arrow" style="margin: 0 8px">→</div>
+            <div class="wf-node" style="min-width: 140px">
+              Manzoori<br /><span style="font-size: 11px; opacity: 0.8"
+                >(Sanction)</span
+              >
+            </div>
+          </div>
+
+          <div class="wf-down" style="margin-left: 70px">↓</div>
+
+          <!-- Row 5: Financial Disbursement → Payment Schedule Tracking → Fund Utilization (Quarterly) -->
+          <div style="display: flex; align-items: center; gap: 0">
+            <div class="wf-node" style="min-width: 140px">
+              Financial<br />Disbursement
+            </div>
+            <div class="wf-arrow" style="margin: 0 8px">→</div>
+            <div class="wf-node" style="min-width: 140px">
+              Payment Schedule<br />Tracking
+            </div>
+            <div class="wf-arrow" style="margin: 0 8px">→</div>
+            <div class="wf-node" style="min-width: 140px">
+              Fund Utilization<br /><span style="font-size: 11px; opacity: 0.8"
+                >(Quarterly)</span
+              >
+            </div>
+          </div>
+
+          <div class="wf-down" style="margin-left: 310px">↓</div>
+
+          <!-- Row 6: Case Closure (terminal, centred under Fund Utilization) -->
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 0;
+              margin-left: 240px;
+            "
+          >
+            <div class="wf-node terminal" style="min-width: 140px">
+              Case Closure
+            </div>
+          </div>
+
+          <p class="wf-note" style="margin-top: 20px">
+            At each approval stage, cases may be rejected or returned for rework
+            to a prior stage. In-app notifications are dispatched on every
+            transition.
+          </p>
+        </div>
+      </div>
+
+      <!-- ===== SECTION 4.2 ===== -->
+      <div class="section" id="s4-2">
+        <h2>4.2 Physical View — Deployment &amp; Network Design</h2>
+
+        <h3>4.2.1 Deployment Architecture</h3>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Component Placement</div>
+            <dl style="font-size: 10.5px">
+              <dt>Web Server (Nginx)</dt>
+              <dd>
+                Serves React build (static files), terminates SSL,
+                reverse-proxies <code>/api</code> and <code>/uploads</code> to
+                Node.js on port 5000.
+              </dd>
+              <dt>Application Server (Node.js)</dt>
+              <dd>
+                Single Express process managed by PM2. Listens on port 5000
+                (localhost only). Cluster mode available for multi-core servers.
+              </dd>
+              <dt>Database Server (MySQL 8.0)</dt>
+              <dd>
+                Same host for small deployments or dedicated VM. Uses InnoDB
+                engine; connection pool size: 10.
+              </dd>
+              <dt>File Storage</dt>
+              <dd>
+                Local <code>./uploads/</code> directory. Served via Express
+                static middleware at <code>/uploads/*</code>.
+              </dd>
+            </dl>
+          </div>
+          <div class="card">
+            <div class="card-title">Network Topology</div>
+            <dl style="font-size: 10.5px">
+              <dt>Public Ports</dt>
+              <dd>
+                443 (HTTPS), 80 (HTTP → HTTPS redirect). All other ports closed
+                by firewall.
+              </dd>
+              <dt>Internal Ports</dt>
+              <dd>
+                5000 (Node.js API, localhost only), 3306 (MySQL, localhost
+                only).
+              </dd>
+              <dt>SSL Termination</dt>
+              <dd>
+                Nginx handles TLS 1.2+. Certificates via Let's Encrypt (certbot)
+                or organization CA.
+              </dd>
+              <dt>ITS API Egress</dt>
+              <dd>
+                Outbound HTTPS to ITS endpoint. Must be whitelisted in egress
+                firewall rules.
+              </dd>
+            </dl>
+          </div>
+        </div>
+
+        <h3>4.2.2 Nginx Configuration Summary</h3>
+        <pre><code>server {
+  listen 443 ssl http2;
+  server_name your-domain.com;
+
+  # Frontend — serve React build
+  location / {
+    root /var/www/FACTS/frontend/build;
+    try_files $uri $uri/ /index.html;   # SPA fallback
+  }
+
+  # Backend API proxy
+  location /api {
+    proxy_pass http://localhost:5000;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Host $host;
+  }
+
+  # File uploads passthrough
+  location /uploads {
+    proxy_pass http://localhost:5000/uploads;
+  }
+
+  client_max_body_size 10M;
+}</code></pre>
+      </div>
+
+      <!-- ===== SECTION 4.3 ===== -->
+      <div class="section" id="s4-3">
+        <h2>4.3 Process View — Operations &amp; Performance</h2>
+
+        <h3>4.3.1 Request Lifecycle</h3>
+        <p>
+          Every HTTP request passes through the following Express middleware
+          chain:
+        </p>
+        <ol>
+          <li>
+            <strong>CORS</strong> — Validates <code>Origin</code> against
+            <code>FRONTEND_URL</code>
+          </li>
+          <li>
+            <strong>Helmet</strong> — Sets security-related HTTP response
+            headers
+          </li>
+          <li>
+            <strong>express-rate-limit</strong> — Per-IP rate limit on
+            <code>/api/auth/login</code>
+          </li>
+          <li><strong>express.json()</strong> — Parses JSON request bodies</li>
+          <li>
+            <strong>auth middleware</strong> — Verifies JWT, loads user from DB,
+            checks <code>is_active</code>
+          </li>
+          <li>
+            <strong>permission middleware</strong> — Validates
+            <code>resource:action</code> and Jamiat/Jamaat scope
+          </li>
+          <li>
+            <strong>Route handler</strong> — Business logic and DB queries
+          </li>
+          <li>
+            <strong>Error handler</strong> — Catches thrown errors, returns
+            structured JSON
+          </li>
+        </ol>
+
+        <h3>4.3.2 Concurrency &amp; Connection Management</h3>
+        <div class="box box-navy">
+          <strong>MySQL Connection Pool</strong>
+          Configured with a maximum of 10 simultaneous connections. Requests
+          queue when the pool is exhausted. For higher concurrency, increase the
+          pool size in <code>config/database.js</code> and align MySQL server's
+          <code>max_connections</code> accordingly.
+        </div>
+        <p>
+          Node.js handles requests asynchronously via the event loop. All
+          database operations use async/await with <code>mysql2/promise</code>.
+          File I/O (Multer uploads, PDF generation) is non-blocking via Node's
+          libuv thread pool.
+        </p>
+
+        <h3>4.3.3 Error Handling &amp; Fault Tolerance</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Error Class</th>
+              <th>Handling Strategy</th>
+              <th>Client Response</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Validation errors</td>
+              <td>Joi schema validation before DB access</td>
+              <td>400 + field-level error message</td>
+            </tr>
+            <tr>
+              <td>Auth failures</td>
+              <td>JWT verify + active user DB check</td>
+              <td>401 / 403 JSON error</td>
+            </tr>
+            <tr>
+              <td>DB constraint violations</td>
+              <td>mysql2 error code inspection</td>
+              <td>409 / 400 JSON error</td>
+            </tr>
+            <tr>
+              <td>File upload errors</td>
+              <td>Multer error handler middleware</td>
+              <td>400 + Multer error message</td>
+            </tr>
+            <tr>
+              <td>PDF generation failure</td>
+              <td>try/catch around Puppeteer/PDFKit</td>
+              <td>500 + "PDF generation failed"</td>
+            </tr>
+            <tr>
+              <td>External ITS API timeout</td>
+              <td>Axios timeout + catch, fallback to DB</td>
+              <td>503 or cached DB data</td>
+            </tr>
+            <tr>
+              <td>Unhandled exceptions</td>
+              <td>Global Express error middleware</td>
+              <td>500 + generic message (no stack trace)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== SECTION 4.4 ===== -->
+      <div class="section" id="s4-4">
+        <h2>4.4 Development View — Code &amp; Environment</h2>
+
+        <h3>4.4.1 Technology Stack</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Layer</th>
+              <th>Technology</th>
+              <th>Version</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Backend Runtime</td>
+              <td>Node.js</td>
+              <td>v16+</td>
+              <td>JavaScript runtime for API server</td>
+            </tr>
+            <tr>
+              <td>Backend Framework</td>
+              <td>Express.js</td>
+              <td>v4.18</td>
+              <td>HTTP routing, middleware, request handling</td>
+            </tr>
+            <tr>
+              <td>Database</td>
+              <td>MySQL (InnoDB)</td>
+              <td>v8.0+</td>
+              <td>Relational data storage with FK constraints</td>
+            </tr>
+            <tr>
+              <td>DB Client</td>
+              <td>mysql2/promise</td>
+              <td>—</td>
+              <td>Async MySQL driver with connection pooling</td>
+            </tr>
+            <tr>
+              <td>Authentication</td>
+              <td>jsonwebtoken + bcryptjs</td>
+              <td>v9 / v2</td>
+              <td>JWT issuance; password hashing (bcrypt, 10 rounds)</td>
+            </tr>
+            <tr>
+              <td>Frontend Framework</td>
+              <td>React</td>
+              <td>v18.2</td>
+              <td>Component-based SPA with hooks</td>
+            </tr>
+            <tr>
+              <td>Server State</td>
+              <td>React Query</td>
+              <td>v3.39</td>
+              <td>API data caching, mutations, background refetch</td>
+            </tr>
+            <tr>
+              <td>Forms</td>
+              <td>React Hook Form</td>
+              <td>v7.48</td>
+              <td>Performant form state and validation</td>
+            </tr>
+            <tr>
+              <td>Styling</td>
+              <td>Tailwind CSS</td>
+              <td>v3.4</td>
+              <td>Utility-first CSS framework</td>
+            </tr>
+            <tr>
+              <td>HTTP Client</td>
+              <td>Axios</td>
+              <td>v1.6</td>
+              <td>API calls from frontend with interceptors</td>
+            </tr>
+            <tr>
+              <td>Routing</td>
+              <td>React Router</td>
+              <td>v6</td>
+              <td>SPA client-side routing with protected routes</td>
+            </tr>
+            <tr>
+              <td>PDF Generation</td>
+              <td>PDFKit + Puppeteer</td>
+              <td>v0.14 / v24</td>
+              <td>PDFKit for data reports; Puppeteer for HTML→PDF</td>
+            </tr>
+            <tr>
+              <td>File Uploads</td>
+              <td>Multer</td>
+              <td>v1.4</td>
+              <td>Multipart form data processing</td>
+            </tr>
+            <tr>
+              <td>Excel I/O</td>
+              <td>xlsx (SheetJS)</td>
+              <td>v0.18</td>
+              <td>Bulk import/export for users, applicants, Jamiat</td>
+            </tr>
+            <tr>
+              <td>Validation</td>
+              <td>Joi</td>
+              <td>v17.11</td>
+              <td>Schema validation for request bodies</td>
+            </tr>
+            <tr>
+              <td>Security</td>
+              <td>Helmet, express-rate-limit</td>
+              <td>—</td>
+              <td>HTTP header hardening, login rate limiting</td>
+            </tr>
+            <tr>
+              <td>Email</td>
+              <td>Nodemailer</td>
+              <td>v6.9</td>
+              <td>Optional SMTP notification dispatch</td>
+            </tr>
+            <tr>
+              <td>Charts</td>
+              <td>Recharts</td>
+              <td>v2.8</td>
+              <td>Dashboard analytics visualizations</td>
+            </tr>
+            <tr>
+              <td>Drag &amp; Drop</td>
+              <td>@dnd-kit</td>
+              <td>—</td>
+              <td>Workflow stage reordering UI</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>4.4.2 Project Structure</h3>
+        <pre><code>FACTS/
+├── backend/
+│   ├── config/database.js          # MySQL connection pool (max: 10)
+│   ├── middleware/
+│   │   ├── auth.js                 # JWT verification + scope injection
+│   │   └── permissionMiddleware.js # resource:action permission checks
+│   ├── routes/                     # 25 route modules (one domain per file)
+│   ├── services/
+│   │   ├── emailService.js         # SMTP email dispatch via Nodemailer
+│   │   └── notificationService.js  # In-app notification creation
+│   ├── utils/
+│   │   ├── activeCasePerIts.js     # Enforce 1 active case per ITS number
+│   │   ├── slaCalculator.js        # SLA deadline computation
+│   │   └── quarterlyReportPdfKit.js# PDFKit quarterly report builder
+│   └── index.js                    # Express server entry point
+│
+└── frontend/src/
+    ├── components/
+    │   ├── Layout/                 # App shell (sidebar, header, nav)
+    │   ├── [Domain components]     # CounselingForm, PaymentSchedule…
+    │   └── ui/                     # 16 reusable UI primitives
+    ├── pages/                      # 31 full-page views
+    ├── contexts/AuthContext.js     # Global auth state management
+    └── utils/permissionUtils.js    # usePermission hook</code></pre>
+
+        <h3>4.4.3 Coding Conventions</h3>
+        <ul>
+          <li>
+            All backend queries use parameterized statements via mysql2 — no
+            dynamic SQL string construction
+          </li>
+          <li>
+            Frontend components use functional style exclusively (no class
+            components); state managed via hooks
+          </li>
+          <li>
+            API responses follow consistent envelope: success returns data
+            payload, errors return <code>{ "error": "message" }</code>
+          </li>
+          <li>
+            Environment-specific config lives exclusively in <code>.env</code>;
+            never hardcoded in source
+          </li>
+          <li>
+            Route files are single-concern; shared logic lives in
+            <code>utils/</code> or <code>services/</code>
+          </li>
+        </ul>
+      </div>
+
+      <!-- ===== SECTION 5 ===== -->
+      <div class="section" id="s5">
+        <h2>5. Data Architecture and Design</h2>
+
+        <h3>5.1 Entity Groups</h3>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Identity &amp; Access</div>
+            <p>
+              <code>users</code>, <code>roles</code>, <code>user_roles</code>,
+              <code>role_permissions</code>,
+              <code>counseling_form_stage_permissions</code>
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-title">Case Core</div>
+            <p>
+              <code>cases</code>, <code>applicants</code>,
+              <code>case_types</code>, <code>statuses</code>,
+              <code>case_identifications</code>,
+              <code>case_identification_income_logs</code>
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-title">Counseling Form</div>
+            <p>
+              <code>counseling_forms</code>, <code>personal_details</code>,
+              <code>family_details</code>, <code>family_members</code>,
+              <code>assessment</code>,
+              <code>assessment_products_services</code>,
+              <code>financial_assistance</code> (+ 5 child tables),
+              <code>economic_growth</code>,
+              <code>economic_growth_projections</code>,
+              <code>declaration</code>, <code>attachments</code>
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-title">Workflow &amp; Approval</div>
+            <p>
+              <code>workflow_stages</code>, <code>workflow_stage_roles</code>,
+              <code>workflow_stage_users</code>, <code>workflow_comments</code>,
+              <code>status_history</code>, <code>executive_levels</code>,
+              <code>cover_letters</code>, <code>cover_letter_forms</code>
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-title">Finance &amp; Fund</div>
+            <p>
+              <code>payment_schedules</code>,
+              <code>payment_schedule_repayments</code>,
+              <code>business_assets</code>,
+              <code>fund_utilization_reports</code>,
+              <code>fund_utilization_photos</code>,
+              <code>fund_utilization_files</code>,
+              <code>fund_utilization_sections</code>,
+              <code>fund_utilization_questions</code>
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-title">Organization &amp; Support</div>
+            <p>
+              <code>jamiat</code>, <code>jamaat</code>, <code>relations</code>,
+              <code>education_levels</code>, <code>occupations</code>,
+              <code>notifications</code>, <code>case_attachments</code>,
+              <code>case_comments</code>, <code>case_closures</code>,
+              <code>welfare_checklist_categories/items/responses</code>,
+              <code>system_settings</code>
+            </p>
+          </div>
+        </div>
+
+        <h3>5.2 Key Relationships</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Parent Table</th>
+              <th>Child Tables</th>
+              <th>Relationship</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>cases</code></td>
+              <td>
+                <code>counseling_forms</code>, <code>cover_letter_forms</code>,
+                <code>payment_schedules</code>, <code>case_attachments</code>,
+                <code>status_history</code>,
+                <code>fund_utilization_reports</code>,
+                <code>case_closures</code>
+              </td>
+              <td>One case → many child records</td>
+            </tr>
+            <tr>
+              <td><code>counseling_forms</code></td>
+              <td>
+                <code>personal_details</code>, <code>family_details</code>,
+                <code>assessment</code>, <code>financial_assistance</code>,
+                <code>economic_growth</code>, <code>declaration</code>,
+                <code>attachments</code>
+              </td>
+              <td>One form → one record per section (FK IDs)</td>
+            </tr>
+            <tr>
+              <td><code>financial_assistance</code></td>
+              <td>
+                <code>fa_timeline</code>, <code>fa_action_plan</code>,
+                <code>fa_mentors</code>, <code>fa_qh_repayment_schedule</code>,
+                <code>fa_timeline_assistance</code>
+              </td>
+              <td>One FA record → many detail rows</td>
+            </tr>
+            <tr>
+              <td><code>workflow_stages</code></td>
+              <td>
+                <code>workflow_stage_roles</code>,
+                <code>workflow_stage_users</code>
+              </td>
+              <td>Stage → many role/user permission assignments</td>
+            </tr>
+            <tr>
+              <td><code>jamiat</code></td>
+              <td><code>jamaat</code></td>
+              <td>One Jamiat → many Jamaat</td>
+            </tr>
+            <tr>
+              <td><code>users</code></td>
+              <td><code>user_roles</code></td>
+              <td>Many-to-many via user_roles (with scope columns)</td>
+            </tr>
+            <tr>
+              <td><code>fund_utilization_sections</code></td>
+              <td><code>fund_utilization_questions</code></td>
+              <td>
+                Section → many questions (hierarchical via parent_question_id)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>5.3 Schema Design Patterns</h3>
+        <ul>
+          <li>
+            <strong>Soft deletes:</strong> Roles, workflow stages, and checklist
+            items use <code>is_active</code> boolean to preserve referential
+            integrity and audit history rather than physical deletion.
+          </li>
+          <li>
+            <strong>JSON columns:</strong>
+            <code>workflow_history</code> (cases),
+            <code>associated_statuses</code> (workflow_stages),
+            <code>responses_json</code> (fund_utilization_reports) store
+            variable-structure data without schema migrations.
+          </li>
+          <li>
+            <strong>Base64 photos:</strong> Stored as <code>longtext</code> in
+            database (v1 constraint). Recommendation: migrate to object storage
+            path reference in v2 for scale.
+          </li>
+          <li>
+            <strong>Audit logging:</strong>
+            <code>case_identification_income_logs</code> captures before/after
+            values for income edits. <code>status_history</code> captures every
+            case status transition with actor and timestamp.
+          </li>
+          <li>
+            <strong>SLA fields:</strong> <code>workflow_stages.sla_value</code>,
+            <code>sla_unit</code>, <code>sla_warning_value</code>,
+            <code>sla_warning_unit</code> drive the automated SLA calculator per
+            stage.
+          </li>
+          <li>
+            <strong>Dynamic forms:</strong>
+            <code>fund_utilization_sections</code> and
+            <code>fund_utilization_questions</code> allow admin-configurable
+            form structure without code changes.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ===== SECTION 6 ===== -->
+      <div class="section" id="s6">
+        <h2>6. Security Architecture and Design</h2>
+
+        <h3>6.1 Authentication &amp; Authorization</h3>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Authentication Flow</div>
+            <ol style="font-size: 10.5px; padding-left: 14px">
+              <li>
+                User submits credentials to <code>POST /api/auth/login</code>
+              </li>
+              <li>
+                bcryptjs compares password against stored hash (10 salt rounds)
+              </li>
+              <li>
+                On success: signed JWT issued with
+                <code>{ userId, role, iat, exp }</code>
+              </li>
+              <li>
+                Token lifetime: 24 hours (configurable via
+                <code>JWT_EXPIRES_IN</code>)
+              </li>
+              <li>
+                Client sends <code>Authorization: Bearer &lt;token&gt;</code> on
+                every request
+              </li>
+              <li>
+                Auth middleware reloads user from DB and checks
+                <code>is_active = 1</code> on every request
+              </li>
+            </ol>
+          </div>
+          <div class="card">
+            <div class="card-title">Authorization Layers</div>
+            <p style="font-size: 10.5px">
+              <strong>Layer 1 — RBAC:</strong> Permissions stored as
+              <code>resource:action</code> pairs in
+              <code>role_permissions</code>. Effective permissions resolved from
+              all assigned roles and injected into
+              <code>req.user.permissions</code>.
+            </p>
+            <p style="font-size: 10.5px; margin-top: 6px">
+              <strong>Layer 2 — Organizational Scope:</strong>
+              <code>user_roles</code> stores <code>jamiat_ids</code> and
+              <code>jamaat_ids</code> per role. Middleware filters case queries
+              to the user's authorized organizations.
+            </p>
+            <p style="font-size: 10.5px; margin-top: 6px">
+              <strong>Layer 3 — Stage Permissions:</strong>
+              <code>counseling_form_stage_permissions</code> controls per-role
+              read/update access at the form section level.
+            </p>
+          </div>
+        </div>
+
+        <h3>6.2 Data Security</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Control</th>
+              <th>Implementation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Password Storage</td>
+              <td>
+                bcryptjs, 10 salt rounds — no plaintext passwords ever stored
+              </td>
+            </tr>
+            <tr>
+              <td>Transport Encryption</td>
+              <td>TLS 1.2+ enforced at Nginx layer for all client traffic</td>
+            </tr>
+            <tr>
+              <td>Data at Rest</td>
+              <td>
+                MySQL tablespace encryption (AES-256) recommended for production
+                deployments
+              </td>
+            </tr>
+            <tr>
+              <td>SQL Injection Prevention</td>
+              <td>100% parameterized queries via mysql2 prepared statements</td>
+            </tr>
+            <tr>
+              <td>Input Validation</td>
+              <td>Joi schema validation on all POST/PUT request bodies</td>
+            </tr>
+            <tr>
+              <td>File Upload Security</td>
+              <td>
+                Multer enforces MIME type whitelist and 10 MB per-file size
+                limit
+              </td>
+            </tr>
+            <tr>
+              <td>Sensitive Configuration</td>
+              <td>
+                DB credentials, JWT secret, SMTP password in <code>.env</code> —
+                never committed to source control
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>6.3 Network Security</h3>
+        <ul>
+          <li>
+            <strong>Helmet.js</strong> sets Content-Security-Policy,
+            X-Frame-Options, HSTS, and other protective HTTP headers on all API
+            responses
+          </li>
+          <li>
+            <strong>CORS</strong> restricts
+            <code>Access-Control-Allow-Origin</code> to the configured
+            <code>FRONTEND_URL</code> only
+          </li>
+          <li>
+            <strong>Rate Limiting</strong> on <code>/api/auth/login</code> via
+            express-rate-limit; trusted IPs whitelisted via
+            <code>LOGIN_RATE_LIMIT_SKIP_IPS</code>
+          </li>
+          <li>
+            <strong>Firewall:</strong> Only ports 80, 443, and 22 (SSH)
+            externally accessible. MySQL (3306) and Node.js (5000) must be bound
+            to localhost only
+          </li>
+          <li>
+            <strong>Egress:</strong> ITS API calls are outbound only;
+            credentials stored in environment variables
+          </li>
+        </ul>
+      </div>
+
+      <!-- ===== SECTION 7 ===== -->
+      <div class="section" id="s7">
+        <h2>7. Integration and Interface Design</h2>
+
+        <h3>7.1 External System Integrations</h3>
+        <h4>ITS (Institutional Information System) API</h4>
+        <div class="box box-info">
+          <strong
+            >Integration Pattern: Outbound REST (HTTPS GET), Read-Only,
+            On-Demand</strong
+          >
+          FACTS calls the ITS API to fetch applicant biographical data by ITS
+          number. Results are cached in the <code>applicants</code> table. If
+          the ITS API is unavailable, FACTS falls back to the cached DB record
+          or returns a 503.
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Trigger</th>
+              <th>FACTS Endpoint</th>
+              <th>Fallback</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>New case identification lookup</td>
+              <td><code>GET /api/applicants/lookup/:itsNumber</code></td>
+              <td>Returns DB record if exists</td>
+            </tr>
+            <tr>
+              <td>Bulk applicant ITS fetch</td>
+              <td><code>POST /api/applicants/bulk-fetch</code></td>
+              <td>Marks failed records with error summary</td>
+            </tr>
+            <tr>
+              <td>User contact sync by role</td>
+              <td><code>POST /api/users/fetch-contact-from-api</code></td>
+              <td>Reports per-user error list</td>
+            </tr>
+            <tr>
+              <td>Case ID creation (public endpoint)</td>
+              <td>
+                <code>GET /api/applicants/fetch-from-api/:itsNumber</code>
+              </td>
+              <td>503 if ITS unreachable</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4>SMTP Email (Optional)</h4>
+        <p>
+          The <code>emailService.js</code> module uses Nodemailer with SMTP
+          transport. Triggered by <code>notificationService.js</code> on case
+          status transitions. If <code>EMAIL_HOST</code> is not configured, the
+          system operates without email delivery — all notifications remain
+          in-app only.
+        </p>
+
+        <h3>7.2 Internal API Design Conventions</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Convention</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Base URL</td>
+              <td><code>https://domain.com/api</code></td>
+            </tr>
+            <tr>
+              <td>Authentication</td>
+              <td>
+                <code>Authorization: Bearer &lt;JWT&gt;</code> header on all
+                protected endpoints
+              </td>
+            </tr>
+            <tr>
+              <td>Data Format</td>
+              <td>
+                JSON request/response bodies;
+                <code>Content-Type: application/json</code>
+              </td>
+            </tr>
+            <tr>
+              <td>File Uploads</td>
+              <td>
+                <code>multipart/form-data</code> for all file upload endpoints
+              </td>
+            </tr>
+            <tr>
+              <td>Pagination</td>
+              <td>
+                Query params <code>page</code> (default 1),
+                <code>limit</code> (default 10–20). Response includes
+                <code>pagination.total</code> and <code>pages</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Success codes</td>
+              <td>200 (OK), 201 (Created)</td>
+            </tr>
+            <tr>
+              <td>Error codes</td>
+              <td>
+                400 (Bad Request), 401 (Unauthorized), 403 (Forbidden), 404 (Not
+                Found), 409 (Conflict), 500 (Server Error)
+              </td>
+            </tr>
+            <tr>
+              <td>Error envelope</td>
+              <td><code>{ "error": "descriptive message" }</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== SECTION 8 ===== -->
+      <div class="section" id="s8">
+        <h2>8. Performance, Scalability, and Optimization</h2>
+
+        <h3>8.1 Performance Targets</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Endpoint Type</th>
+              <th>Target Response Time</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Authentication (login)</td>
+              <td>&lt; 200 ms</td>
+              <td>bcrypt comparison ~100ms at 10 rounds</td>
+            </tr>
+            <tr>
+              <td>List endpoints (paginated)</td>
+              <td>&lt; 300 ms</td>
+              <td>Cases, users, notifications with default limit=10</td>
+            </tr>
+            <tr>
+              <td>Single record fetch</td>
+              <td>&lt; 150 ms</td>
+              <td>Case detail, user by ID</td>
+            </tr>
+            <tr>
+              <td>Workflow actions</td>
+              <td>&lt; 400 ms</td>
+              <td>Status update + notification creation</td>
+            </tr>
+            <tr>
+              <td>PDF generation (cover letter)</td>
+              <td>&lt; 3 s</td>
+              <td>Puppeteer HTML→PDF; Chromium startup overhead</td>
+            </tr>
+            <tr>
+              <td>Excel import (100 rows)</td>
+              <td>&lt; 2 s</td>
+              <td>SheetJS parse + batch DB inserts</td>
+            </tr>
+            <tr>
+              <td>Dashboard overview</td>
+              <td>&lt; 500 ms</td>
+              <td>Multiple aggregate COUNT queries</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>8.2 Scalability Design</h3>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Vertical Scaling</div>
+            <p>
+              Increase server CPU/RAM. Node.js benefits from more heap for
+              Puppeteer. MySQL benefits significantly from a larger InnoDB
+              buffer pool (target 70–80% of available RAM).
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-title">Horizontal Scaling</div>
+            <p>
+              PM2 cluster mode: <code>pm2 start index.js -i max</code> spawns
+              one process per CPU core. JWT is stateless so no sticky sessions
+              needed. Requires shared MySQL and shared file storage (NFS or
+              object store).
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-title">Database Optimization</div>
+            <p>
+              Key indexes on: <code>cases.status</code>,
+              <code>cases.jamiat_id</code>, <code>cases.applicant_id</code>,
+              <code>applicants.its_number</code>,
+              <code>notifications.user_id + is_read</code>. All list endpoints
+              paginated — never unbounded SELECT.
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-title">Caching Strategy</div>
+            <p>
+              Frontend: React Query caches server data with configurable
+              <code>staleTime</code>. Master data (case types, Jamiat) refetched
+              infrequently. Backend: No server-side cache in v1; Redis can be
+              added in v2 for session/rate-limit state.
+            </p>
+          </div>
+        </div>
+        <div class="box box-warn">
+          <strong>Base64 Photo Storage Warning</strong>
+          Storing photos as Base64 longtext inflates row sizes significantly.
+          For deployments with &gt;1,000 applicants, migrate photos to file
+          system paths or S3-compatible object storage and store only the URL in
+          the DB.
+        </div>
+      </div>
+
+      <!-- ===== SECTION 9 ===== -->
+      <div class="section" id="s9">
+        <h2>9. System Availability and Resilience Design</h2>
+
+        <h3>9.1 Redundancy &amp; Failover</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Redundancy Strategy</th>
+              <th>RTO Target</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Application Server</td>
+              <td>
+                PM2 auto-restart on crash or systemd
+                <code>Restart=on-failure</code>
+              </td>
+              <td>&lt; 30 seconds</td>
+            </tr>
+            <tr>
+              <td>Database</td>
+              <td>
+                MySQL primary + read replica replication; manual failover
+                promotion
+              </td>
+              <td>&lt; 5 minutes</td>
+            </tr>
+            <tr>
+              <td>Nginx</td>
+              <td>
+                systemd auto-restart; keepalived for dual-Nginx HA if required
+              </td>
+              <td>&lt; 30 seconds</td>
+            </tr>
+            <tr>
+              <td>File Storage</td>
+              <td>
+                RAID or replicated NFS for <code>/uploads</code>; daily rsync to
+                backup location
+              </td>
+              <td>&lt; 1 hour (restore)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>9.2 Backup &amp; Disaster Recovery</h3>
+        <div class="box box-success">
+          <strong>Recommended Backup Schedule</strong>
+          Daily full MySQL dump with 30-day retention. Weekly off-site copy.
+          Uploads directory synced daily to secondary storage via rsync or cloud
+          backup agent.
+        </div>
+        <pre><code># Daily MySQL backup cron (example — runs at 2 AM)
+0 2 * * * mysqldump -u root -p baaseteen_cms \
+  --single-transaction --quick \
+  | gzip > /backups/facts_$(date +%F).sql.gz
+
+# Retain last 30 backups, delete older
+find /backups -name "facts_*.sql.gz" -mtime +30 -delete</code></pre>
+        <p>
+          Recovery procedure: restore from latest dump (<code
+            >mysql baaseteen_cms &lt; backup.sql</code
+          >), restore uploads directory, restart Node.js service. Full recovery
+          test recommended quarterly.
+        </p>
+      </div>
+
+      <!-- ===== SECTION 10 ===== -->
+      <div class="section" id="s10">
+        <h2>10. Deployment, Operations, and Maintenance</h2>
+
+        <h3>10.1 Deployment Environments</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Environment</th>
+              <th>Purpose</th>
+              <th>Configuration Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Development</td>
+              <td>Local engineer workstation</td>
+              <td>
+                <code>NODE_ENV=development</code>; React dev server (port 3000);
+                backend nodemon (port 5000); local MySQL
+              </td>
+            </tr>
+            <tr>
+              <td>Staging</td>
+              <td>Pre-production validation</td>
+              <td>
+                Mirrors production config; anonymized data; all releases tested
+                here before production
+              </td>
+            </tr>
+            <tr>
+              <td>Production</td>
+              <td>Live system</td>
+              <td>
+                <code>NODE_ENV=production</code>; React build served by Nginx;
+                PM2/systemd; SSL; strong JWT secret
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>10.2 Production Deployment Steps</h3>
+        <ol>
+          <li>
+            Build React frontend:
+            <code>cd frontend &amp;&amp; npm run build</code>
+          </li>
+          <li>
+            Copy build to web root: <code>/var/www/FACTS/frontend/build/</code>
+          </li>
+          <li>
+            Pull latest backend, install deps:
+            <code>npm install --production</code>
+          </li>
+          <li>
+            Apply DB migrations:
+            <code>mysql baaseteen_cms &lt; migrations/&lt;file&gt;.sql</code>
+          </li>
+          <li>Restart application: <code>pm2 restart facts-backend</code></li>
+          <li>Verify health: <code>curl https://domain.com/health</code></li>
+        </ol>
+
+        <h3>10.3 Monitoring &amp; Alerting</h3>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Application Monitoring</div>
+            <ul>
+              <li>
+                PM2 built-in: <code>pm2 monit</code> for real-time process stats
+              </li>
+              <li>
+                Health endpoint: <code>GET /health</code> returns server status
+              </li>
+              <li>Error logging: stdout/stderr via PM2 log files</li>
+              <li>
+                Recommended: Grafana + Prometheus Node.js exporter for metrics
+                dashboards
+              </li>
+            </ul>
+          </div>
+          <div class="card">
+            <div class="card-title">SLA Monitoring</div>
+            <ul>
+              <li>
+                Built-in SLA calculator computes
+                <code>on_time / at_risk / breached</code> per case stage
+              </li>
+              <li>
+                Admin trigger:
+                <code>POST /api/notifications/check-sla</code> creates alerts
+              </li>
+              <li>Recommended: schedule SLA check cron every 4 hours</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3>10.4 Maintenance Schedule</h3>
+        <ul>
+          <li>
+            <strong>Monthly:</strong> <code>npm audit</code> on backend and
+            frontend; apply security patches; <code>OPTIMIZE TABLE</code> on
+            high-write tables (notifications, status_history)
+          </li>
+          <li>
+            <strong>Weekly:</strong> Review PM2 error logs; check backup
+            completion; verify SSL cert expiry dates
+          </li>
+          <li>
+            <strong>Quarterly:</strong> Full disaster recovery test; review and
+            rotate JWT secret; test SMTP delivery
+          </li>
+        </ul>
+      </div>
+
+      <!-- ===== SECTION 12 ===== -->
+      <div class="section" id="s12">
+        <h2>
+          12. Technical Architecture for Hosting, Development &amp;
+          Infrastructure
+        </h2>
+
+        <h3>12.1 Hosting Strategy</h3>
+        <p>
+          FACTS is designed as a self-hosted, on-premises or private-cloud
+          application. This ensures full data sovereignty for sensitive welfare
+          case information and avoids recurring cloud vendor costs for
+          small-to-medium scale deployments.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Resource</th>
+              <th>Minimum Specification</th>
+              <th>Recommended</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>CPU</td>
+              <td>2 vCPU</td>
+              <td>4 vCPU (Puppeteer PDF generation is CPU-intensive)</td>
+            </tr>
+            <tr>
+              <td>RAM</td>
+              <td>4 GB</td>
+              <td>8 GB (InnoDB buffer pool + Chromium memory)</td>
+            </tr>
+            <tr>
+              <td>Storage</td>
+              <td>50 GB SSD</td>
+              <td>200 GB SSD (attachments + DB growth over time)</td>
+            </tr>
+            <tr>
+              <td>OS</td>
+              <td>Ubuntu 22.04 LTS</td>
+              <td>Ubuntu 22.04 LTS (LTS support until 2027)</td>
+            </tr>
+            <tr>
+              <td>Network</td>
+              <td>100 Mbps</td>
+              <td>1 Gbps for optimal file upload performance</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>12.2 Infrastructure Configuration</h3>
+        <h4>Compute</h4>
+        <ul>
+          <li>
+            PM2 cluster mode: <code>pm2 start index.js -i max</code> — utilizes
+            all CPU cores
+          </li>
+          <li>
+            Puppeteer requires Chromium:
+            <code>apt-get install chromium-browser</code>
+          </li>
+          <li>
+            Set <code>NODE_OPTIONS=--max-old-space-size=2048</code> for large
+            PDF generation workloads
+          </li>
+        </ul>
+        <h4>Database</h4>
+        <ul>
+          <li>
+            Enable <code>innodb_file_per_table=1</code> for easier per-table
+            management
+          </li>
+          <li>
+            Set <code>innodb_buffer_pool_size</code> to 60–70% of server RAM
+          </li>
+          <li>
+            Enable binary logging (<code>log_bin</code>) for point-in-time
+            recovery
+          </li>
+          <li>
+            Create a dedicated application DB user with minimum privileges:
+            SELECT, INSERT, UPDATE, DELETE on FACTS DB only
+          </li>
+        </ul>
+        <h4>Storage</h4>
+        <ul>
+          <li>
+            Upload directory: <code>/var/www/FACTS/backend/uploads/</code> must
+            be writable by the Node.js process user
+          </li>
+          <li>
+            Mount uploads on a separate logical volume to prevent disk-full
+            events from crashing the OS
+          </li>
+        </ul>
+
+        <h3>12.3 Monitoring and Logging</h3>
+        <pre><code># PM2 log paths
+~/.pm2/logs/facts-backend-out.log    # stdout
+~/.pm2/logs/facts-backend-error.log  # stderr
+
+# Nginx logs
+/var/log/nginx/access.log
+/var/log/nginx/error.log
+
+# MySQL slow query log (add to /etc/mysql/my.cnf)
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow.log
+long_query_time = 1    # log queries over 1 second</code></pre>
+
+        <h3>12.4 Development &amp; CI/CD Pipeline</h3>
+        <div class="box box-navy">
+          <strong>Recommended Pipeline Stages</strong>
+          (1) Install dependencies → (2) Backend unit tests → (3) Frontend lint
+          + build → (4) Deploy to staging → (5) Smoke tests → (6) Manual
+          approval → (7) Deploy to production
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>Tool</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Version Control</td>
+              <td>Git (GitHub / GitLab)</td>
+              <td>Feature branches → PR review → merge to main</td>
+            </tr>
+            <tr>
+              <td>CI — Test</td>
+              <td>GitHub Actions / GitLab CI</td>
+              <td><code>npm test</code> for backend and frontend unit tests</td>
+            </tr>
+            <tr>
+              <td>CI — Build</td>
+              <td>Same CI runner</td>
+              <td><code>cd frontend &amp;&amp; npm run build</code></td>
+            </tr>
+            <tr>
+              <td>CD — Staging</td>
+              <td>SSH deploy / rsync action</td>
+              <td>Deploy to staging, run DB migrations, restart PM2</td>
+            </tr>
+            <tr>
+              <td>CD — Production</td>
+              <td>Manual trigger (protected branch)</td>
+              <td>Same steps as staging after smoke test pass</td>
+            </tr>
+            <tr>
+              <td>Secrets Management</td>
+              <td>GitHub Secrets / GitLab Variables</td>
+              <td>JWT_SECRET, DB password, SSH keys — never in repository</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr />
+
+      <!-- ===== APPENDIX A ===== -->
+      <div class="section" id="app-a">
+        <h2>Appendix A — Glossary</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Term</th>
+              <th>Definition</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>FACTS</td>
+              <td>
+                File and Case Tracking System — the platform documented in this
+                SAD
+              </td>
+            </tr>
+            <tr>
+              <td>ITS</td>
+              <td>
+                Institutional Information System — external platform providing
+                member data by ITS number
+              </td>
+            </tr>
+            <tr>
+              <td>ITS Number</td>
+              <td>
+                8-digit unique identifier assigned to each Dawoodi Bohra
+                community member
+              </td>
+            </tr>
+            <tr>
+              <td>DCM</td>
+              <td>
+                Deputy Counseling Manager — primary case manager responsible for
+                case assignment and counseling oversight
+              </td>
+            </tr>
+            <tr>
+              <td>ZI</td>
+              <td>
+                Zonal Incharge — regional supervisor performing first-tier case
+                approval after welfare review
+              </td>
+            </tr>
+            <tr>
+              <td>KG Review</td>
+              <td>
+                Second approval tier after ZI Approval in the workflow pipeline
+              </td>
+            </tr>
+            <tr>
+              <td>Jamiat</td>
+              <td>
+                Top-level organizational unit (regional organization) in the
+                Baaseteen/SHND structure
+              </td>
+            </tr>
+            <tr>
+              <td>Jamaat</td>
+              <td>
+                Sub-organizational unit (local congregation) belonging to a
+                Jamiat
+              </td>
+            </tr>
+            <tr>
+              <td>Mauze</td>
+              <td>
+                Geographic locality designation used within Jamiat/Jamaat
+                context
+              </td>
+            </tr>
+            <tr>
+              <td>Manzoori</td>
+              <td>
+                Final sanction/approval stage before financial disbursement
+              </td>
+            </tr>
+            <tr>
+              <td>Enayat</td>
+              <td>Non-repayable grant component of financial assistance</td>
+            </tr>
+            <tr>
+              <td>Qardan Hasana (QH)</td>
+              <td>
+                Interest-free repayable loan component of financial assistance
+              </td>
+            </tr>
+            <tr>
+              <td>SLA</td>
+              <td>
+                Service Level Agreement — maximum time a case should remain at a
+                given workflow stage
+              </td>
+            </tr>
+            <tr>
+              <td>RBAC</td>
+              <td>
+                Role-Based Access Control — permission model assigning rights by
+                user role
+              </td>
+            </tr>
+            <tr>
+              <td>JWT</td>
+              <td>
+                JSON Web Token — stateless authentication token signed with
+                HMAC-SHA256
+              </td>
+            </tr>
+            <tr>
+              <td>SAD</td>
+              <td>System Architecture and Design document (this document)</td>
+            </tr>
+            <tr>
+              <td>PM2</td>
+              <td>
+                Production Process Manager for Node.js — manages restart,
+                clustering, and logging
+              </td>
+            </tr>
+            <tr>
+              <td>SPA</td>
+              <td>
+                Single-Page Application — the React frontend that loads once and
+                updates dynamically
+              </td>
+            </tr>
+            <tr>
+              <td>Baaseteen</td>
+              <td>Primary welfare organization served by FACTS</td>
+            </tr>
+            <tr>
+              <td>SHND</td>
+              <td>
+                Social Help and Development — secondary organization served by
+                FACTS
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== APPENDIX B ===== -->
+      <div class="section" id="app-b">
+        <h2>Appendix B — API Endpoint Index</h2>
+        <p>
+          Summary of all 150+ API endpoints grouped by module. Full
+          request/response schemas are in the separate
+          <em>FACTS API Schema Reference</em> document.
+        </p>
+
+        <h3>Authentication &amp; Users</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>Endpoint</th>
+              <th>Description</th>
+              <th>Auth Required</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>POST</td>
+              <td><code>/api/auth/login</code></td>
+              <td>Login, returns JWT token</td>
+              <td>No</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/api/auth/register</code></td>
+              <td>Create user (Admin only)</td>
+              <td>Admin</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/auth/profile</code></td>
+              <td>Current user profile + permissions</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/auth/change-password</code></td>
+              <td>Change own password</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/api/auth/logout</code></td>
+              <td>Invalidate session</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/users</code></td>
+              <td>List users (filtered, paginated)</td>
+              <td>users:read</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/api/users</code></td>
+              <td>Create user with role assignment</td>
+              <td>users:create</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/users/:id</code></td>
+              <td>Update user details</td>
+              <td>users:update</td>
+            </tr>
+            <tr>
+              <td>DELETE</td>
+              <td><code>/api/users/:id</code></td>
+              <td>Delete user permanently</td>
+              <td>users:delete</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/api/users/import-excel</code></td>
+              <td>Bulk import users from Excel</td>
+              <td>users:create</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/api/users/fetch-contact-from-api</code></td>
+              <td>Sync contact from ITS API by role</td>
+              <td>users:update</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Cases &amp; Workflow</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>Endpoint</th>
+              <th>Description</th>
+              <th>Auth Required</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/cases</code></td>
+              <td>List cases with filters and pagination</td>
+              <td>cases:read</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/api/cases</code></td>
+              <td>Create new case</td>
+              <td>cases:create</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/cases/:id</code></td>
+              <td>Full case detail with history and comments</td>
+              <td>Case access</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/cases/:id</code></td>
+              <td>Update case (assignment, status)</td>
+              <td>Case access</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/cases/:id/welfare-approve</code></td>
+              <td>Welfare department approval</td>
+              <td>welfare role</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/cases/:id/welfare-reject</code></td>
+              <td>Welfare rejection with comments</td>
+              <td>welfare role</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/cases/:id/zi-approve</code></td>
+              <td>ZI approval, advance stage</td>
+              <td>ZI role</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/cases/:id/zi-reject</code></td>
+              <td>ZI rejection back to welfare</td>
+              <td>ZI role</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/cases/:id/executive-approve</code></td>
+              <td>Executive multi-level approval</td>
+              <td>Executive role</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/cases/:id/executive-rework</code></td>
+              <td>Executive rework to welfare</td>
+              <td>Executive role</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/cases/:id/workflow-action</code></td>
+              <td>Generic approve/reject action</td>
+              <td>Stage role</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/api/cases/:id/close</code></td>
+              <td>Close case with closure documents</td>
+              <td>cases:close_case</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/cases/:id/payment-schedule</code></td>
+              <td>Get payment installment schedule</td>
+              <td>Case access</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/api/cases/:id/payment-schedule</code></td>
+              <td>Save payment schedule</td>
+              <td>Case access</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td>
+                <code
+                  >/api/cases/:id/payment-schedule/:sid/confirm-disbursement</code
+                >
+              </td>
+              <td>Confirm payment disbursement</td>
+              <td>Case access</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Case Identification, Applicants &amp; Forms</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>Endpoint</th>
+              <th>Description</th>
+              <th>Auth Required</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/case-identifications</code></td>
+              <td>List identifications with filters</td>
+              <td>case_identification:read</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/api/case-identifications</code></td>
+              <td>Create new eligibility identification</td>
+              <td>case_identification:create</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/case-identifications/:id/review</code></td>
+              <td>
+                Mark eligible or ineligible (auto-creates case if eligible)
+              </td>
+              <td>case_identification:approve</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/case-identifications/:id/edit</code></td>
+              <td>Edit assessment fields with audit log</td>
+              <td>case_identification:edit</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/applicants/lookup/:itsNumber</code></td>
+              <td>ITS number lookup (DB first, then external API)</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/api/applicants/bulk-fetch</code></td>
+              <td>Batch ITS API fetch for multiple applicants</td>
+              <td>applicants:update</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/counseling-forms/case/:id</code></td>
+              <td>Get full counseling form for a case</td>
+              <td>Case access</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/counseling-forms/:id/section/:section</code></td>
+              <td>Update individual form section</td>
+              <td>Stage permission</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/counseling-forms/:id/complete</code></td>
+              <td>Mark form as complete</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/api/cover-letters/generate/:id</code></td>
+              <td>Generate PDF cover letter from form data</td>
+              <td>Case access</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/cover-letter-forms/:id/submit</code></td>
+              <td>Submit cover letter form for approval</td>
+              <td>cover_letter_forms:submit</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Admin, Master Data &amp; Reports</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>Endpoint</th>
+              <th>Description</th>
+              <th>Auth Required</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/dashboard/overview</code></td>
+              <td>Role-filtered dashboard statistics</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/notifications</code></td>
+              <td>User notifications (paginated)</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/notifications/mark-all-read</code></td>
+              <td>Mark all notifications as read</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/api/attachments/upload/:caseId</code></td>
+              <td>Upload single file to case</td>
+              <td>Case access</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/api/attachments/upload-multiple/:caseId</code></td>
+              <td>Upload multiple files (max 10)</td>
+              <td>Case access</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/roles</code></td>
+              <td>List roles with permissions</td>
+              <td>Admin</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/workflow-stages</code></td>
+              <td>List configurable workflow stages</td>
+              <td>master:read</td>
+            </tr>
+            <tr>
+              <td>PUT</td>
+              <td><code>/api/workflow-stages/reorder</code></td>
+              <td>Reorder stages via drag-and-drop</td>
+              <td>master:update</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/welfare-checklist/items/grouped</code></td>
+              <td>Checklist items grouped by category</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td>POST</td>
+              <td><code>/api/welfare-checklist/responses/:caseId</code></td>
+              <td>Submit checklist responses for a case</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/cases/:id/fund-utilization</code></td>
+              <td>List fund utilization reports for case</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/cases/:id/quarterly-report/pdf</code></td>
+              <td>Download quarterly report PDF</td>
+              <td>fund_utilization:read</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/jamiat</code></td>
+              <td>List all Jamiat organizations</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td><code>/api/executive-levels</code></td>
+              <td>Executive hierarchy level definitions</td>
+              <td>Yes</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== APPENDIX C ===== -->
+      <div class="section" id="app-c">
+        <h2>Appendix C — Database Table Reference</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Table</th>
+              <th>PK</th>
+              <th>Key Columns</th>
+              <th>Group</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>users</code></td>
+              <td>id</td>
+              <td>
+                username, email, role, executive_level, is_active, photo
+                (longtext B64)
+              </td>
+              <td>Identity</td>
+            </tr>
+            <tr>
+              <td><code>roles</code></td>
+              <td>id</td>
+              <td>
+                name, display_name, permissions (JSON), is_system_role,
+                is_active
+              </td>
+              <td>Identity</td>
+            </tr>
+            <tr>
+              <td><code>user_roles</code></td>
+              <td>id</td>
+              <td>
+                user_id, role_id, jamiat_ids, jamaat_ids, is_active, expires_at
+              </td>
+              <td>Identity</td>
+            </tr>
+            <tr>
+              <td><code>role_permissions</code></td>
+              <td>id</td>
+              <td>role_id, resource, action</td>
+              <td>Identity</td>
+            </tr>
+            <tr>
+              <td><code>cases</code></td>
+              <td>id</td>
+              <td>
+                case_number, applicant_id, status, roles (DCM user_id),
+                current_workflow_stage_id, case_type_id, is_duplicate
+              </td>
+              <td>Case Core</td>
+            </tr>
+            <tr>
+              <td><code>applicants</code></td>
+              <td>id</td>
+              <td>
+                its_number (unique), full_name, gender, age, phone, jamiat_id,
+                jamaat_id, photo (B64)
+              </td>
+              <td>Case Core</td>
+            </tr>
+            <tr>
+              <td><code>case_identifications</code></td>
+              <td>id</td>
+              <td>
+                its_number, eligible_in (case_type FK), status
+                (pending/eligible/ineligible), individual_income, family_income,
+                reviewed_by
+              </td>
+              <td>Case Core</td>
+            </tr>
+            <tr>
+              <td><code>case_identification_income_logs</code></td>
+              <td>id</td>
+              <td>
+                case_identification_id, old/new_individual_income,
+                old/new_family_income, changed_by
+              </td>
+              <td>Case Core</td>
+            </tr>
+            <tr>
+              <td><code>counseling_forms</code></td>
+              <td>id</td>
+              <td>
+                case_id, is_complete, personal_details_id, family_details_id,
+                assessment_id, financial_assistance_id, economic_growth_id,
+                declaration_id, attachments_id
+              </td>
+              <td>Counseling</td>
+            </tr>
+            <tr>
+              <td><code>personal_details</code></td>
+              <td>id</td>
+              <td>
+                case_id, its_number, name, education, contact_number,
+                present_occupation, residential_address
+              </td>
+              <td>Counseling</td>
+            </tr>
+            <tr>
+              <td><code>family_details</code></td>
+              <td>id</td>
+              <td>
+                case_id, income totals (monthly/yearly by type), expense totals,
+                surplus/deficit, assets, liabilities_total
+              </td>
+              <td>Counseling</td>
+            </tr>
+            <tr>
+              <td><code>assessment</code></td>
+              <td>id</td>
+              <td>
+                case_id, background fields (education, work_experience, skills),
+                proposed_business fields, counselor_assessment fields
+              </td>
+              <td>Counseling</td>
+            </tr>
+            <tr>
+              <td><code>financial_assistance</code></td>
+              <td>id</td>
+              <td>
+                case_id, assistance_required, self_funding, rahen_available,
+                qh_fields (JSON), support_needed (JSON)
+              </td>
+              <td>Counseling</td>
+            </tr>
+            <tr>
+              <td><code>economic_growth</code></td>
+              <td>id</td>
+              <td>
+                case_id, revenue/expenses/profit projections (last_year +
+                year1–5 per metric, 90+ decimal columns)
+              </td>
+              <td>Counseling</td>
+            </tr>
+            <tr>
+              <td><code>declaration</code></td>
+              <td>id</td>
+              <td>
+                case_id, applicant_its, signature_type (upload/draw),
+                signature_file_path, counselor_signature, tr_committee fields
+              </td>
+              <td>Counseling</td>
+            </tr>
+            <tr>
+              <td><code>workflow_stages</code></td>
+              <td>id</td>
+              <td>
+                stage_name, stage_key, sort_order, sla_value, sla_unit,
+                sla_warning_value, associated_statuses (JSON), is_active
+              </td>
+              <td>Workflow</td>
+            </tr>
+            <tr>
+              <td><code>workflow_stage_roles</code></td>
+              <td>id</td>
+              <td>
+                workflow_stage_id, role_id, can_approve, can_reject, can_review,
+                can_view, can_edit, can_create_case, can_fill_case
+              </td>
+              <td>Workflow</td>
+            </tr>
+            <tr>
+              <td><code>status_history</code></td>
+              <td>id</td>
+              <td>
+                case_id, from_status, to_status, changed_by, comments,
+                created_at
+              </td>
+              <td>Workflow</td>
+            </tr>
+            <tr>
+              <td><code>cover_letter_forms</code></td>
+              <td>id</td>
+              <td>
+                case_id, applicant/counselor fields, financial figures,
+                requested/recommended/approved enayat+qardan, signature fields,
+                is_complete, is_approved
+              </td>
+              <td>Workflow</td>
+            </tr>
+            <tr>
+              <td><code>executive_levels</code></td>
+              <td>id</td>
+              <td>level_number, level_name, sort_order, is_active</td>
+              <td>Workflow</td>
+            </tr>
+            <tr>
+              <td><code>payment_schedules</code></td>
+              <td>id</td>
+              <td>
+                case_id, payment_type (qardan_hasana/enayat),
+                disbursement_year/month/amount, is_disbursed, disbursed_date,
+                disbursed_by
+              </td>
+              <td>Finance</td>
+            </tr>
+            <tr>
+              <td><code>business_assets</code></td>
+              <td>id</td>
+              <td>
+                case_id, 8 asset types × 6 time periods (last_year + year1–5) =
+                48 decimal columns
+              </td>
+              <td>Finance</td>
+            </tr>
+            <tr>
+              <td><code>fund_utilization_reports</code></td>
+              <td>id</td>
+              <td>case_id, quarter (q1–q4), year, responses_json (longtext)</td>
+              <td>Finance</td>
+            </tr>
+            <tr>
+              <td><code>fund_utilization_questions</code></td>
+              <td>id</td>
+              <td>
+                section_id, label, field_type, is_required, parent_question_id
+                (self-ref for conditionals), auto_fill_key
+              </td>
+              <td>Finance</td>
+            </tr>
+            <tr>
+              <td><code>jamiat</code></td>
+              <td>id</td>
+              <td>jamiat_id (string code), name, is_active</td>
+              <td>Organization</td>
+            </tr>
+            <tr>
+              <td><code>jamaat</code></td>
+              <td>id</td>
+              <td>jamaat_id (string code), jamiat_id (FK), name, is_active</td>
+              <td>Organization</td>
+            </tr>
+            <tr>
+              <td><code>notifications</code></td>
+              <td>id</td>
+              <td>
+                user_id, case_id, title, message, type
+                (info/warning/success/error), is_read
+              </td>
+              <td>Support</td>
+            </tr>
+            <tr>
+              <td><code>case_attachments</code></td>
+              <td>id</td>
+              <td>
+                case_id, file_name, file_path, file_type, file_size, stage,
+                uploaded_by
+              </td>
+              <td>Support</td>
+            </tr>
+            <tr>
+              <td><code>case_closures</code></td>
+              <td>id</td>
+              <td>case_id, reason, closed_by, created_at</td>
+              <td>Support</td>
+            </tr>
+            <tr>
+              <td><code>welfare_checklist_items</code></td>
+              <td>id</td>
+              <td>
+                category_id, form_section, checklist_detail, is_compulsory,
+                is_active
+              </td>
+              <td>Support</td>
+            </tr>
+            <tr>
+              <td><code>welfare_checklist_responses</code></td>
+              <td>id</td>
+              <td>
+                case_id, checklist_item_id, properly_filled (y/n), comments,
+                filled_by
+              </td>
+              <td>Support</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== APPENDIX D ===== -->
+      <div class="section" id="app-d">
+        <h2>Appendix D — Document Change Log</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Version</th>
+              <th>Date</th>
+              <th>Author</th>
+              <th>Changes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>3.7</td>
+              <td>April 23, 2025</td>
+              <td>System Team</td>
+              <td>
+                Initial release — complete architecture documentation for FACTS
+                v3.7 covering all 12 SAD sections and 4 appendices
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="box box-info" style="margin-top: 16px">
+          <strong>Document Maintenance Policy</strong>
+          This document should be updated whenever significant architectural
+          decisions are made, new integrations are added, major modules are
+          introduced, or deployment infrastructure changes materially. Increment
+          version, add change log entry, and circulate to all technical
+          stakeholders for review.
+        </div>
+      </div>
+
+      <div class="doc-footer">
+        <strong>FACTS Case Management System</strong> &mdash; System
+        Architecture &amp; Design Document v3.7 &mdash; April 23, 2025<br />
+        <em
+          >Prepared by FACTS System Team &middot; Classification: Internal /
+          Restricted &middot; Baaseteen &amp; SHND</em
+        >
+      </div>
+    </div>
+    <!-- end content-wrapper -->
+  </body>
+</html>
