@@ -1,4 +1,4 @@
-[text](../../Downloads/API_SCHEMAS.md)# FACTS - File and Case Tracking System
+# FACTS - File and Case Tracking System
 
 A comprehensive case management and welfare tracking system designed for Baaseteen and SHND (Social Help and Development) organizations. FACTS manages the complete lifecycle of welfare cases — from applicant identification and eligibility assessment through counseling, multi-level approval workflows, financial disbursement, and fund utilization tracking.
 
@@ -15,7 +15,7 @@ A comprehensive case management and welfare tracking system designed for Baasete
 - [Running the Application](#running-the-application)
 - [Default Credentials](#default-credentials)
 - [Modules](#modules)
-- [API Reference](#api-reference)
+- [API Reference](#api-reference) | [Full Request/Response Schemas](./API_SCHEMAS.md)
 - [User Roles and Permissions](#user-roles-and-permissions)
 - [Workflow Process](#workflow-process)
 - [Database Schema](#database-schema)
@@ -497,9 +497,9 @@ Reporting module with PDF export capabilities for quarterly reports and case sum
 
 Complete RBAC system with granular permissions at the resource + action level.
 
-**Resources (14):** users, cases, applicants, counseling_forms, payment_management, cover_letters, cover_letter_forms, notifications, reports, roles, dashboard, welfare_checklist, master, case_identification
+**Resources (15):** users, cases, applicants, counseling_forms, comments, payment_management, cover_letters, cover_letter_forms, notifications, reports, roles, dashboard, welfare_checklist, master, case_identification
 
-**Actions per resource:** create, read, update, delete, approve, edit, fill, view, close_case, submit (varies by resource)
+**Actions per resource:** create, read, update, delete, approve, edit, fill, view, close_case, submit, read_comments, write_comments (varies by resource)
 
 ### 14. Master Data
 
@@ -543,37 +543,37 @@ Administrative configuration tables: Case Types, Relations, Education Levels, Oc
 
 ### Cases (`/api/cases`)
 
-| Method | Endpoint                                             | Permission       | Description                      |
-| ------ | ---------------------------------------------------- | ---------------- | -------------------------------- |
-| GET    | `/`                                                  | cases:read       | List cases (filtered, paginated) |
-| GET    | `/:caseId`                                           | Case access      | Get case details                 |
-| POST   | `/`                                                  | cases:create     | Create new case                  |
-| PUT    | `/:caseId`                                           | Case access      | Update case                      |
-| DELETE | `/:caseId`                                           | cases:delete     | Delete case                      |
-| GET    | `/its/:itsNumber/active`                             | Auth             | Check active case by ITS         |
-| GET    | `/available-counselors`                              | Auth             | List available counselors        |
-| GET    | `/counselor-permissions/:id`                         | cases:read       | Counselor permissions            |
-| PUT    | `/:caseId/welfare-approve`                           | Auth             | Welfare approval                 |
-| PUT    | `/:caseId/welfare-reject`                            | Auth             | Welfare rejection                |
-| PUT    | `/:caseId/welfare-forward-rework`                    | Auth             | Forward for rework               |
-| PUT    | `/:caseId/resubmit-welfare`                          | Auth             | Resubmit after rework            |
-| PUT    | `/:caseId/zi-approve`                                | Auth             | ZI approval                      |
-| PUT    | `/:caseId/zi-reject`                                 | Auth             | ZI rejection                     |
-| PUT    | `/:caseId/executive-approve`                         | Auth             | Executive approval               |
-| PUT    | `/:caseId/executive-rework`                          | Auth             | Executive rework                 |
-| PUT    | `/:caseId/workflow-action`                           | Auth             | Generic workflow action          |
-| GET    | `/:caseId/comments`                                  | Auth             | Get case comments                |
-| POST   | `/:caseId/comments`                                  | Auth             | Add comment                      |
-| GET    | `/:caseId/workflow-comments/:step`                   | Auth             | Workflow step comments           |
-| POST   | `/:caseId/workflow-comments`                         | Auth             | Add workflow comment             |
-| GET    | `/:caseId/payment-schedule`                          | Case access      | Get payment schedule             |
-| POST   | `/:caseId/payment-schedule`                          | Case access      | Create payment schedule          |
-| POST   | `/:caseId/payment-schedule/:id/confirm-disbursement` | Case access      | Confirm payment                  |
-| POST   | `/:caseId/close`                                     | cases:close_case | Close case with docs             |
-| GET    | `/:caseId/closure`                                   | Auth             | Get closure details              |
-| GET    | `/:caseId/closure/document`                          | Auth             | Closure document                 |
-| GET    | `/:caseId/closure/documents/:docId`                  | Auth             | Download closure doc             |
-| GET    | `/status-diagnostics`                                | Admin            | Status diagnostics               |
+| Method | Endpoint                                             | Permission              | Description                      |
+| ------ | ---------------------------------------------------- | ----------------------- | -------------------------------- |
+| GET    | `/`                                                  | cases:read              | List cases (filtered, paginated) |
+| GET    | `/:caseId`                                           | Case access             | Get case details                 |
+| POST   | `/`                                                  | cases:create            | Create new case                  |
+| PUT    | `/:caseId`                                           | Case access             | Update case                      |
+| DELETE | `/:caseId`                                           | cases:delete            | Delete case                      |
+| GET    | `/its/:itsNumber/active`                             | Auth                    | Check active case by ITS         |
+| GET    | `/available-counselors`                              | Auth                    | List available counselors        |
+| GET    | `/counselor-permissions/:id`                         | cases:read              | Counselor permissions            |
+| PUT    | `/:caseId/welfare-approve`                           | Auth                    | Welfare approval                 |
+| PUT    | `/:caseId/welfare-reject`                            | Auth                    | Welfare rejection                |
+| PUT    | `/:caseId/welfare-forward-rework`                    | Auth                    | Forward for rework               |
+| PUT    | `/:caseId/resubmit-welfare`                          | Auth                    | Resubmit after rework            |
+| PUT    | `/:caseId/zi-approve`                                | Auth                    | ZI approval                      |
+| PUT    | `/:caseId/zi-reject`                                 | Auth                    | ZI rejection                     |
+| PUT    | `/:caseId/executive-approve`                         | Auth                    | Executive approval               |
+| PUT    | `/:caseId/executive-rework`                          | Auth                    | Executive rework                 |
+| PUT    | `/:caseId/workflow-action`                           | Auth                    | Generic workflow action          |
+| GET    | `/:caseId/comments`                                  | comments:read_comments  | Get case comments                |
+| POST   | `/:caseId/comments`                                  | comments:write_comments | Add comment                      |
+| GET    | `/:caseId/workflow-comments/:step`                   | comments:read_comments  | Workflow step comments           |
+| POST   | `/:caseId/workflow-comments`                         | comments:write_comments | Add workflow comment             |
+| GET    | `/:caseId/payment-schedule`                          | Case access             | Get payment schedule             |
+| POST   | `/:caseId/payment-schedule`                          | Case access             | Create payment schedule          |
+| POST   | `/:caseId/payment-schedule/:id/confirm-disbursement` | Case access             | Confirm payment                  |
+| POST   | `/:caseId/close`                                     | cases:close_case        | Close case with docs             |
+| GET    | `/:caseId/closure`                                   | Auth                    | Get closure details              |
+| GET    | `/:caseId/closure/document`                          | Auth                    | Closure document                 |
+| GET    | `/:caseId/closure/documents/:docId`                  | Auth                    | Download closure doc             |
+| GET    | `/status-diagnostics`                                | Admin                   | Status diagnostics               |
 
 ### Case Identifications (`/api/case-identifications`)
 
