@@ -1,0 +1,2193 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FACTS — KG Review User Journey</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap");
+      @page {
+        size: A4;
+        margin: 0;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --navy: #0f1e2e;
+        --navy-mid: #1a3050;
+        --teal: #0e7490;
+        --teal-lt: #06b6d4;
+        --gold: #c9a84c;
+        --gold-lt: #e8c97e;
+        --cream: #f8f5f0;
+        --text: #1e2d3d;
+        --muted: #5a7184;
+        --border: #d6e4ed;
+        --bg-soft: #eef5f9;
+        --red: #dc2626;
+        --green: #16a34a;
+        --amber: #d97706;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        color: var(--text);
+        background: #d8e4ed;
+        line-height: 1.6;
+      }
+      .cover,
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        background: #fff;
+        margin: 20px auto;
+        box-shadow: 0 6px 30px rgba(0, 0, 0, 0.15);
+        position: relative;
+        overflow: visible;
+      }
+      @media print {
+        body {
+          background: #fff;
+          margin: 0;
+          padding: 0;
+        }
+        .cover,
+        .page {
+          width: 100%;
+          min-height: unset;
+          height: auto;
+          max-height: none;
+          margin: 0;
+          padding: 12mm 18mm 14mm 18mm;
+          box-shadow: none;
+          border: none;
+          background: #fff;
+          overflow: visible;
+          break-before: page;
+          page-break-before: always;
+          position: static;
+        }
+        .cover {
+          background: var(--navy) !important;
+          padding: 0;
+          height: 297mm;
+          min-height: 297mm;
+          overflow: hidden;
+          position: relative;
+        }
+        .page-footer {
+          position: static !important;
+          left: auto !important;
+          right: auto !important;
+          bottom: auto !important;
+          margin-top: 16px;
+          padding-top: 5px;
+          border-top: 1px solid #e2ecf2;
+        }
+        .end-banner {
+          margin-top: 20px;
+        }
+        .step,
+        .sub-block,
+        .info-box,
+        .warning-box,
+        .flow-path,
+        .milestone-strip,
+        .workflow-table,
+        .dual-placeholder,
+        .img-placeholder,
+        .end-banner,
+        .toc-group,
+        .toc-intro-box,
+        .decision-box,
+        .context-strip {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        .section-break,
+        .toc-section-label,
+        .step-title,
+        .page-header {
+          break-after: avoid;
+          page-break-after: avoid;
+        }
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
+      /* COVER */
+      .cover {
+        background: var(--navy);
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+      }
+      .cover-top-band {
+        width: 100%;
+        background: var(--teal);
+        height: 6px;
+      }
+      .cover-accent-bar {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 72px;
+        background: linear-gradient(180deg, var(--gold) 0%, #7a5c1e 100%);
+        opacity: 0.85;
+      }
+      .cover-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(14, 116, 144, 0.07) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(14, 116, 144, 0.07) 1px, transparent 1px);
+        background-size: 18mm 18mm;
+      }
+      .cover-inner {
+        position: relative;
+        z-index: 2;
+        padding: 22mm 22mm 18mm 22mm;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        width: calc(100% - 72px);
+      }
+      .cover-logo-area {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 44px;
+      }
+      .cover-logo-box {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        border: 2px solid rgba(201, 168, 76, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .cover-brand {
+        display: flex;
+        flex-direction: column;
+      }
+      .cover-brand-name {
+        font-family: "Playfair Display", serif;
+        font-size: 22px;
+        font-weight: 900;
+        color: #fff;
+        letter-spacing: 0.04em;
+        line-height: 1;
+      }
+      .cover-brand-sub {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.45);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        margin-top: 4px;
+      }
+      .cover-divider {
+        width: 48px;
+        height: 2px;
+        background: var(--gold);
+        margin-bottom: 20px;
+      }
+      .cover-eyebrow {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--teal-lt);
+        margin-bottom: 12px;
+      }
+      .cover-title {
+        font-family: "Playfair Display", serif;
+        font-size: 38px;
+        font-weight: 900;
+        color: #fff;
+        line-height: 1.12;
+        margin-bottom: 10px;
+      }
+      .cover-subtitle {
+        font-size: 16px;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 36px;
+        max-width: 340px;
+        line-height: 1.5;
+      }
+      .cover-role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--gold);
+        color: var(--navy);
+        font-size: 13px;
+        font-weight: 700;
+        padding: 10px 22px;
+        border-radius: 40px;
+        letter-spacing: 0.04em;
+        margin-bottom: 48px;
+        width: fit-content;
+      }
+      .cover-desc {
+        font-size: 12.5px;
+        color: rgba(255, 255, 255, 0.5);
+        line-height: 1.7;
+        max-width: 360px;
+        margin-bottom: auto;
+      }
+      .cover-meta-row {
+        display: flex;
+        gap: 28px;
+        margin-top: 32px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .cover-meta-item {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .cover-meta-label {
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .cover-meta-value {
+        font-size: 11px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.65);
+      }
+      .cover-step-count {
+        position: absolute;
+        bottom: 24mm;
+        right: 14mm;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        transform: rotate(180deg);
+      }
+      .cover-step-count span {
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.35);
+      }
+      .cover-step-count strong {
+        font-family: "Playfair Display", serif;
+        font-size: 28px;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.15);
+      }
+      /* TOC */
+      .toc-page {
+        padding: 14mm 18mm 18mm 18mm;
+        display: flex;
+        flex-direction: column;
+      }
+      .toc-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--teal);
+        margin-bottom: 18px;
+      }
+      .toc-header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .toc-header-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--gold);
+      }
+      .toc-header-title {
+        font-family: "Playfair Display", serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--navy);
+      }
+      .toc-role-tag {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--teal);
+        background: rgba(14, 116, 144, 0.1);
+        padding: 4px 10px;
+        border-radius: 20px;
+      }
+      .toc-section-label {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 6px;
+      }
+      .toc-group {
+        margin-bottom: 10px;
+      }
+      .toc-item {
+        display: flex;
+        align-items: baseline;
+        padding: 4px 0;
+        border-bottom: 1px dotted #dce8ef;
+      }
+      .toc-item-num {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--gold);
+        width: 28px;
+        flex-shrink: 0;
+        font-family: "DM Mono", monospace;
+      }
+      .toc-item-title {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text);
+        flex: 1;
+      }
+      .toc-item-dots {
+        flex: 1;
+        border-bottom: 1px dotted #ccc;
+        margin: 0 6px;
+        max-width: 80px;
+      }
+      .toc-item-page {
+        font-size: 10.5px;
+        font-weight: 600;
+        color: var(--muted);
+        font-family: "DM Mono", monospace;
+        width: 28px;
+        text-align: right;
+      }
+      .toc-intro-box {
+        background: var(--bg-soft);
+        border-left: 4px solid var(--teal);
+        border-radius: 0 8px 8px 0;
+        padding: 12px 16px;
+        margin-bottom: 14px;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .toc-intro-box p {
+        font-size: 11.5px;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+      /* CONTENT */
+      .page {
+        padding: 11mm 18mm 20mm 18mm;
+        display: flex;
+        flex-direction: column;
+      }
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--teal);
+        margin-bottom: 14px;
+        flex-shrink: 0;
+      }
+      .page-header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .page-header-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--gold);
+        flex-shrink: 0;
+      }
+      .page-header-title {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .page-header-role {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--teal);
+        background: rgba(14, 116, 144, 0.1);
+        padding: 3px 9px;
+        border-radius: 20px;
+      }
+      .section-break {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        flex-shrink: 0;
+      }
+      .section-break-label {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--gold);
+        white-space: nowrap;
+      }
+      .section-break-line {
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, var(--gold), transparent);
+      }
+      .step {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 14px;
+        flex-shrink: 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .step-left {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex-shrink: 0;
+        width: 44px;
+      }
+      .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: var(--navy);
+        color: var(--gold);
+        font-size: 15px;
+        font-weight: 700;
+        font-family: "DM Mono", monospace;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        border: 1.5px solid rgba(201, 168, 76, 0.3);
+      }
+      .step-connector {
+        flex: 1;
+        width: 2px;
+        background: linear-gradient(180deg, var(--border), transparent);
+        margin-top: 4px;
+        min-height: 16px;
+      }
+      .step-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .step-title {
+        font-family: "Playfair Display", serif;
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--navy);
+        margin-bottom: 4px;
+        line-height: 1.3;
+      }
+      .step-desc {
+        font-size: 11.5px;
+        color: var(--muted);
+        margin-bottom: 8px;
+        line-height: 1.6;
+      }
+      .sub-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--navy);
+        margin: 8px 0 5px 0;
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+      .sub-block {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        margin-bottom: 4px;
+      }
+      .details-list {
+        list-style: none;
+        padding: 0;
+        margin-bottom: 10px;
+      }
+      .details-list li {
+        font-size: 11px;
+        color: #3d5166;
+        padding: 2.5px 0 2.5px 18px;
+        position: relative;
+        line-height: 1.55;
+      }
+      .details-list li::before {
+        content: "▸";
+        position: absolute;
+        left: 0;
+        color: var(--gold);
+        font-size: 10px;
+        top: 3.5px;
+      }
+      .details-list li strong {
+        color: var(--navy);
+        font-weight: 600;
+      }
+      .img-placeholder {
+        width: 100%;
+        max-height: 400px;
+        border: 1.5px dashed #b8cdd9;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #f4f9fc 0%, #eef5f9 100%);
+        margin-top: 8px;
+        margin-bottom: 4px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        position: relative;
+      }
+      .img-placeholder-inner {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 5px;
+        position: relative;
+        z-index: 1;
+        text-align: center;
+      }
+
+      .img-placeholder img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+      .info-box {
+        background: rgba(14, 116, 144, 0.06);
+        border-left: 3px solid var(--teal);
+        border-radius: 0 8px 8px 0;
+        padding: 9px 12px;
+        margin: 8px 0;
+        font-size: 11px;
+        color: #2a4a5e;
+        line-height: 1.6;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .info-box strong {
+        color: var(--teal);
+        font-weight: 600;
+        display: block;
+        margin-bottom: 2px;
+        font-size: 10.5px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .warning-box {
+        background: rgba(217, 119, 6, 0.06);
+        border-left: 3px solid var(--amber);
+        border-radius: 0 8px 8px 0;
+        padding: 9px 12px;
+        margin: 8px 0;
+        font-size: 11px;
+        color: #5a3a0a;
+        line-height: 1.6;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .warning-box strong {
+        color: var(--amber);
+        font-weight: 600;
+        display: block;
+        margin-bottom: 2px;
+        font-size: 10.5px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .perm-chip {
+        font-size: 9.5px;
+        font-weight: 600;
+        font-family: "DM Mono", monospace;
+        padding: 3px 8px;
+        border-radius: 4px;
+      }
+      .perm-chip.green {
+        background: rgba(22, 163, 74, 0.1);
+        color: #15803d;
+        border: 1px solid rgba(22, 163, 74, 0.25);
+      }
+      .perm-chip.blue {
+        background: rgba(14, 116, 144, 0.1);
+        color: var(--teal);
+        border: 1px solid rgba(14, 116, 144, 0.25);
+      }
+      .perm-chip.red {
+        background: rgba(220, 38, 38, 0.08);
+        color: #b91c1c;
+        border: 1px solid rgba(220, 38, 38, 0.2);
+      }
+      .perm-chip.amber {
+        background: rgba(217, 119, 6, 0.1);
+        color: #92400e;
+        border: 1px solid rgba(217, 119, 6, 0.25);
+      }
+      .workflow-table {
+        width: 100%;
+        font-size: 10.5px;
+        border-collapse: collapse;
+        margin: 8px 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .workflow-table thead tr {
+        background: var(--navy);
+        color: #fff;
+      }
+      .workflow-table thead th {
+        padding: 6px 10px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 10px;
+      }
+      .workflow-table thead th:first-child {
+        border-radius: 6px 0 0 0;
+      }
+      .workflow-table thead th:last-child {
+        border-radius: 0 6px 0 0;
+      }
+      .workflow-table tbody tr:nth-child(even) {
+        background: var(--bg-soft);
+      }
+      .workflow-table tbody td {
+        padding: 5px 10px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
+        vertical-align: top;
+      }
+      .workflow-table tbody td:first-child {
+        font-weight: 600;
+        color: var(--navy);
+      }
+      .milestone-strip {
+        display: flex;
+        margin: 8px 0;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .milestone-item {
+        flex: 1;
+        padding: 8px 10px;
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .milestone-item:last-child {
+        border-right: none;
+      }
+      .milestone-label {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .milestone-value {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--navy);
+      }
+      .milestone-note {
+        font-size: 9.5px;
+        color: var(--muted);
+      }
+      .flow-path {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 2px;
+        margin: 8px 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .flow-node {
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 5px 9px;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--navy);
+        text-align: center;
+        min-width: 52px;
+        line-height: 1.3;
+      }
+      .flow-node.active {
+        background: var(--teal);
+        border-color: var(--teal);
+        color: #fff;
+      }
+      .flow-node.highlight {
+        background: var(--navy);
+        border-color: var(--navy);
+        color: var(--gold);
+      }
+      .flow-node.done {
+        background: rgba(22, 163, 74, 0.1);
+        border-color: rgba(22, 163, 74, 0.4);
+        color: #15803d;
+      }
+      .flow-arrow {
+        color: var(--border);
+        font-size: 14px;
+        padding: 0 2px;
+        flex-shrink: 0;
+      }
+      .end-banner {
+        margin-top: 20px;
+        padding: 16px 20px;
+        background: linear-gradient(
+          135deg,
+          var(--navy) 0%,
+          var(--navy-mid) 100%
+        );
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .end-banner-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: rgba(201, 168, 76, 0.2);
+        border: 1.5px solid rgba(201, 168, 76, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+      .end-banner-text h3 {
+        font-family: "Playfair Display", serif;
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 4px;
+      }
+      .end-banner-text p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.55);
+        line-height: 1.5;
+      }
+      .page-footer {
+        position: absolute;
+        left: 18mm;
+        right: 18mm;
+        bottom: 10mm;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 9.5px;
+        color: #aab8c2;
+        border-top: 1px solid #e2ecf2;
+        padding-top: 5px;
+      }
+      .page-footer .footer-center {
+        display: flex;
+        gap: 14px;
+      }
+      .page-footer .footer-dot {
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: #ccc;
+        align-self: center;
+      }
+      .decision-box {
+        display: flex;
+        gap: 10px;
+        margin: 8px 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .decision-option {
+        flex: 1;
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      .decision-option.approve {
+        background: rgba(22, 163, 74, 0.08);
+        border: 1.5px solid rgba(22, 163, 74, 0.3);
+      }
+      .decision-option.reject {
+        background: rgba(220, 38, 38, 0.06);
+        border: 1.5px solid rgba(220, 38, 38, 0.2);
+      }
+      .decision-option.rework {
+        background: rgba(217, 119, 6, 0.07);
+        border: 1.5px solid rgba(217, 119, 6, 0.25);
+      }
+      .decision-option-label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+      }
+      .decision-option.approve .decision-option-label {
+        color: var(--green);
+      }
+      .decision-option.reject .decision-option-label {
+        color: var(--red);
+      }
+      .decision-option.rework .decision-option-label {
+        color: var(--amber);
+      }
+      .decision-option p {
+        font-size: 10.5px;
+        color: var(--text);
+        line-height: 1.5;
+      }
+      .context-strip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(201, 168, 76, 0.08);
+        border: 1px solid rgba(201, 168, 76, 0.25);
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin: 6px 0 10px 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .context-strip-label {
+        font-size: 9.5px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--gold);
+        white-space: nowrap;
+      }
+      .context-strip-text {
+        font-size: 10.5px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ══════════════════════════════════════════════
+         PAGE 1 — COVER
+    ══════════════════════════════════════════════ -->
+    <div class="cover">
+      <div class="cover-top-band"></div>
+      <div class="cover-accent-bar"></div>
+      <div class="cover-grid"></div>
+      <div class="cover-inner">
+        <div class="cover-logo-area">
+          <div class="cover-logo-box">
+            <span style="font-size: 22px">🏅</span>
+          </div>
+          <div class="cover-brand">
+            <div class="cover-brand-name">FACTS</div>
+            <div class="cover-brand-sub">File &amp; Case Tracking System</div>
+          </div>
+        </div>
+        <div class="cover-divider"></div>
+        <div class="cover-eyebrow">User Journey Document</div>
+        <h1 class="cover-title">KG<br />Review</h1>
+        <p class="cover-subtitle">
+          A step-by-step visual reference covering the KG Reviewer's
+          responsibilities — receiving cases cleared by both Welfare Review and
+          ZI Approval, conducting a senior-level independent evaluation, and
+          forwarding approved cases to Operations Lead.
+        </p>
+        <div class="cover-role-badge">
+          <span style="font-size: 16px">🏅</span> KG Reviewer
+        </div>
+        <p class="cover-desc">
+          The KG Reviewer is the third independent evaluator in the FACTS
+          approval chain. By the time a case reaches KG Review, it has already
+          been cleared by the Welfare Reviewer and the Zone Inspector (ZI). The
+          KG Reviewer conducts a senior-level final check on the counseling
+          form, attachments, and all prior reviewer comments before either
+          approving the case to advance to Operations Lead, sending it back for
+          rework, or rejecting it outright.
+        </p>
+        <div class="cover-meta-row">
+          <div class="cover-meta-item">
+            <span class="cover-meta-label">Document Version</span
+            ><span class="cover-meta-value">1.0</span>
+          </div>
+          <div class="cover-meta-item">
+            <span class="cover-meta-label">Date</span
+            ><span class="cover-meta-value">March 2026</span>
+          </div>
+          <div class="cover-meta-item">
+            <span class="cover-meta-label">System</span
+            ><span class="cover-meta-value">FACTS v1.0</span>
+          </div>
+          <div class="cover-meta-item">
+            <span class="cover-meta-label">Total Steps</span
+            ><span class="cover-meta-value">9 Steps</span>
+          </div>
+        </div>
+      </div>
+      <div class="cover-step-count"><span>Steps</span><strong>9</strong></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         PAGE 2 — TABLE OF CONTENTS
+    ══════════════════════════════════════════════ -->
+    <div class="page toc-page">
+      <div class="toc-header">
+        <div class="toc-header-left">
+          <div class="toc-header-dot"></div>
+          <div class="toc-header-title">Table of Contents</div>
+        </div>
+        <div class="toc-role-tag">KG Reviewer</div>
+      </div>
+      <div class="toc-intro-box">
+        <p>
+          The KG Reviewer receives cases that have already been cleared by both
+          the Welfare Reviewer and the Zone Inspector (ZI). By this stage, two
+          independent evaluators have verified the case. The KG Reviewer
+          conducts a senior-level review — cross-checking the Counseling Form,
+          attachments, and all prior reviewer comments — before making one of
+          three decisions: <strong>Approve</strong> (forward to Operations
+          Lead), <strong>Request Rework</strong> (return to DCM with comments),
+          or <strong>Reject</strong> (close the case with documented reasons).
+          This document covers <strong>9 steps</strong> across the full KG
+          Reviewer workflow.
+        </p>
+      </div>
+
+      <div class="toc-section-label">Section A — Login &amp; Dashboard</div>
+      <div class="toc-group">
+        <div class="toc-item">
+          <span class="toc-item-num">01</span
+          ><span class="toc-item-title"
+            >Login &amp; Landing on the KG Reviewer Dashboard</span
+          >
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 3</span>
+        </div>
+        <div class="toc-item">
+          <span class="toc-item-num">02</span
+          ><span class="toc-item-title"
+            >Navigating the Cases Module — Finding Cases to Review</span
+          >
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 3</span>
+        </div>
+      </div>
+
+      <div class="toc-section-label">Section B — Reviewing the Case</div>
+      <div class="toc-group">
+        <div class="toc-item">
+          <span class="toc-item-num">03</span
+          ><span class="toc-item-title"
+            >Case Detail View — Header, Workflow Position &amp; Tabs</span
+          >
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 4</span>
+        </div>
+        <div class="toc-item">
+          <span class="toc-item-num">04</span
+          ><span class="toc-item-title"
+            >Understanding the Case — Status History &amp; Prior Reviewer
+            Findings</span
+          >
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 5</span>
+        </div>
+        <div class="toc-item">
+          <span class="toc-item-num">05</span
+          ><span class="toc-item-title"
+            >Reading the Counseling Form — All 7 Sections</span
+          >
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 6</span>
+        </div>
+        <div class="toc-item">
+          <span class="toc-item-num">06</span
+          ><span class="toc-item-title"
+            >Checking Attachments &amp; Supporting Documents</span
+          >
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 6</span>
+        </div>
+      </div>
+
+      <div class="toc-section-label">Section C — Decision &amp; Outcome</div>
+      <div class="toc-group">
+        <div class="toc-item">
+          <span class="toc-item-num">07</span
+          ><span class="toc-item-title">Adding KG Review Comments</span>
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 7</span>
+        </div>
+        <div class="toc-item">
+          <span class="toc-item-num">08</span
+          ><span class="toc-item-title"
+            >Making the Decision — Approve, Rework, or Reject</span
+          >
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 8</span>
+        </div>
+        <div class="toc-item">
+          <span class="toc-item-num">09</span
+          ><span class="toc-item-title"
+            >What Happens After the KG Decision</span
+          >
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 9</span>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — KG Review User Journey</span>
+        <div class="footer-center">
+          <span>File &amp; Case Tracking System</span>
+          <div class="footer-dot"></div>
+          <span>v1.0 · March 2026</span>
+        </div>
+        <span>Page 2</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         PAGE 3 — Steps 01 & 02
+    ══════════════════════════════════════════════ -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >FACTS — KG Review User Journey &nbsp;|&nbsp; Section A: Login &amp;
+            Dashboard</span
+          >
+        </div>
+        <span class="page-header-role">KG Reviewer</span>
+      </div>
+      <div class="section-break">
+        <span class="section-break-label"
+          >Section A — Login &amp; Dashboard</span
+        >
+        <div class="section-break-line"></div>
+      </div>
+
+      <!-- Step 01 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">01</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Login &amp; Landing on the KG Reviewer Dashboard
+          </div>
+          <p class="step-desc">
+            The KG Reviewer accesses FACTS through the browser using their
+            assigned credentials. After login, the system loads the KG Reviewer
+            dashboard — a focused view showing all cases currently at the
+            <strong>KG Review</strong> stage within the KG Reviewer's scope.
+          </p>
+          <div class="sub-block">
+            <ul class="details-list">
+              <li>
+                Open browser → navigate to the FACTS URL → enter
+                <strong>Email</strong> and <strong>Password</strong> → click
+                <strong>Login</strong>
+              </li>
+              <li>
+                On successful login, the
+                <strong>KG Reviewer Dashboard</strong> loads showing key metrics
+                for the reviewer's scope
+              </li>
+              <li>
+                <strong>Dashboard stat cards:</strong> Cases Awaiting KG Review,
+                Cases Approved This Month, Cases Sent for Rework, Cases Rejected
+              </li>
+              <li>
+                A <strong>Recent Cases</strong> list at the bottom shows the
+                most recently updated cases — sorted by SLA urgency by default
+              </li>
+              <li>
+                Left sidebar shows the available modules:
+                <strong>Dashboard</strong> and <strong>Cases</strong>
+              </li>
+              <li>
+                The bell icon in the top bar shows unread notifications — cases
+                approved by the ZI trigger automatic notifications to the KG
+                Reviewer
+              </li>
+              <li>
+                The KG Reviewer's name, role label (<strong>KG Reviewer</strong
+                >), and scope are shown in the top-right profile area
+              </li>
+            </ul>
+          </div>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\KG\images\login.png"
+                alt=""
+              />
+            </div>
+          </div>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\KG\images\dashboard.png"
+                alt=""
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 02 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">02</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Navigating the Cases Module — Finding Cases to Review
+          </div>
+          <p class="step-desc">
+            All cases awaiting KG Review are visible in the
+            <strong>Cases</strong> module. The KG Reviewer filters to see only
+            cases at the <strong>KG Review</strong> stage and opens them one by
+            one. Every case in this queue has already been cleared by both the
+            Welfare Reviewer and the ZI.
+          </p>
+          <div class="sub-block">
+            <ul class="details-list">
+              <li>
+                Click <strong>Cases</strong> in the left sidebar → the cases
+                list loads scoped to the KG Reviewer's scope
+              </li>
+              <li>
+                <strong>Filter by Status → "KG Review"</strong> to see only
+                cases awaiting the KG Reviewer's action — this is the default
+                filter on load for the KG Reviewer role
+              </li>
+              <li>
+                Each case row shows: <strong>Case Number</strong> (BS-XXXX /
+                SHND-XXXX), Applicant Name, Case Type, SLA badge, Assigned DCM,
+                Welfare Reviewer name, ZI name, and Date Reached KG Review
+              </li>
+              <li>
+                <strong>SLA badge colours:</strong>
+                <span class="perm-chip green">On Track</span>
+                <span class="perm-chip amber">Due Soon</span>
+                <span class="perm-chip red">Breached</span> — cases approaching
+                or past SLA are highlighted prominently
+              </li>
+              <li>
+                Cases can be sorted by SLA urgency (oldest first) to manage the
+                review queue
+              </li>
+              <li>
+                Click any case row → opens the <strong>Case Detail View</strong>
+              </li>
+            </ul>
+          </div>
+          <div class="context-strip">
+            <span class="context-strip-label">Context</span>
+            <span class="context-strip-text"
+              >Every case in the KG Review queue has passed both Welfare Review
+              and ZI Approval. Two independent reviewers have already evaluated
+              the case and found it credible. The KG Reviewer is the third — and
+              final — field-level evaluator before the case moves to Operations
+              Lead.</span
+            >
+          </div>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\KG\images\cases.png"
+                alt=""
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — KG Review User Journey</span>
+        <div class="footer-center">
+          <span>Section A: Login &amp; Dashboard</span>
+        </div>
+        <span>Page 3</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         PAGE 4 — Step 03
+    ══════════════════════════════════════════════ -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >FACTS — KG Review User Journey &nbsp;|&nbsp; Section B: Reviewing
+            the Case</span
+          >
+        </div>
+        <span class="page-header-role">KG Reviewer</span>
+      </div>
+      <div class="section-break">
+        <span class="section-break-label">Section B — Reviewing the Case</span>
+        <div class="section-break-line"></div>
+      </div>
+
+      <!-- Step 03 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">03</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Case Detail View — Header, Workflow Position &amp; Tabs
+          </div>
+          <p class="step-desc">
+            Clicking a case opens the Case Detail View. The page shows a case
+            summary header with the current workflow stage, a progress bar
+            showing completed stages, and a tab strip. The KG Reviewer uses the
+            <strong>Counseling Form</strong>, <strong>Attachments</strong>,
+            <strong>Comments</strong>, and <strong>Status History</strong> tabs.
+          </p>
+
+          <div class="sub-block">
+            <div class="sub-label">Case Header Information</div>
+            <ul class="details-list">
+              <li>
+                <strong>Case Number</strong>, Applicant Name, Case Type badge,
+                and current <strong>Workflow Stage: KG Review</strong> badge
+                shown prominently at the top
+              </li>
+              <li>
+                <strong>SLA Timer</strong> shows the KG-stage deadline — days
+                remaining or days overdue for this review to be completed
+              </li>
+              <li>
+                Assigned DCM, Welfare Reviewer name, and ZI name are all visible
+                in the case header
+              </li>
+              <li>
+                <strong>Workflow Progress Bar</strong> shows all stages —
+                Welfare Review ✓ and ZI Approval ✓ are both marked as complete;
+                <strong>KG Review</strong> is the active stage
+              </li>
+            </ul>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Tabs Available to the KG Reviewer</div>
+            <table class="workflow-table">
+              <thead>
+                <tr>
+                  <th>Tab</th>
+                  <th>Purpose</th>
+                  <th>KG Access</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Counseling Form</td>
+                  <td>
+                    All 7 sections filled by the DCM — full read-only view
+                  </td>
+                  <td><span class="perm-chip blue">Read Only</span></td>
+                </tr>
+                <tr>
+                  <td>Attachments</td>
+                  <td>All uploaded supporting documents</td>
+                  <td>
+                    <span class="perm-chip blue">View &amp; Download</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Comments</td>
+                  <td>
+                    Full thread — includes Welfare Reviewer and ZI review notes
+                  </td>
+                  <td><span class="perm-chip green">Read &amp; Write</span></td>
+                </tr>
+                <tr>
+                  <td>Status History</td>
+                  <td>
+                    Full audit trail — all stage transitions with timestamps
+                  </td>
+                  <td><span class="perm-chip blue">Read Only</span></td>
+                </tr>
+                <tr>
+                  <td>Cover Letter</td>
+                  <td>
+                    Not yet generated — available after Operations Lead approval
+                  </td>
+                  <td><span class="perm-chip red">Not Available</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              Recommended Review Order for KG Reviewer
+            </div>
+            <div class="flow-path">
+              <div class="flow-node highlight">Open Case</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Status History<br />&amp; Comments</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Read Full<br />Form</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Check<br />Attachments</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Add KG<br />Comment</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node active">Make<br />Decision</div>
+            </div>
+          </div>
+
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\KG\images\caseDetail.png"
+                alt=""
+              />
+            </div>
+          </div>
+
+          <div class="info-box">
+            <strong>The KG Reviewer Forms an Independent View</strong>
+            Although two reviewers have already approved the case, the KG
+            Reviewer must conduct their own independent evaluation. They are not
+            simply ratifying previous decisions — they are the last line of
+            senior field-level scrutiny before the case reaches Operations Lead
+            and the cover letter generation stage.
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — KG Review User Journey</span>
+        <div class="footer-center">
+          <span>Section B: Reviewing the Case</span>
+        </div>
+        <span>Page 4</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         PAGE 5 — Steps 04, 05 & 06
+    ══════════════════════════════════════════════ -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >FACTS — KG Review User Journey &nbsp;|&nbsp; Section B: History,
+            Form &amp; Attachments</span
+          >
+        </div>
+        <span class="page-header-role">KG Reviewer</span>
+      </div>
+
+      <!-- Step 04 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">04</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Understanding the Case — Status History &amp; Prior Reviewer
+            Findings
+          </div>
+          <p class="step-desc">
+            Before opening the Counseling Form, the KG Reviewer reads the
+            <strong>Status History</strong> and <strong>Comments</strong> tabs
+            to understand the complete history of the case, including findings
+            and rationale documented by the Welfare Reviewer and ZI.
+          </p>
+          <div class="sub-block">
+            <ul class="details-list">
+              <li>
+                Click <strong>Status History</strong> → review the full audit
+                trail: case creation, counseling form submission, Welfare Review
+                approval, ZI approval, and the date the case reached KG Review
+              </li>
+              <li>
+                If there were any prior <strong>Rework cycles</strong>, these
+                are visible in the Status History — understand what issues were
+                raised at each stage and how the DCM addressed them
+              </li>
+              <li>
+                Click <strong>Comments</strong> → read all comments posted to
+                date, including the
+                <strong>Welfare Reviewer's approval note</strong> and the
+                <strong>ZI's approval comment</strong>
+              </li>
+              <li>
+                Pay close attention to any reservations or caveats either
+                reviewer mentioned — even if they still approved, flagged
+                concerns are relevant for the KG Reviewer's own assessment
+              </li>
+              <li>
+                Note any DCM comments that provide context beyond what is in the
+                form itself
+              </li>
+              <li>
+                If both prior reviewers gave strong, well-reasoned approvals
+                with no caveats, this is a positive signal — but does not
+                replace the KG Reviewer's own judgment
+              </li>
+            </ul>
+          </div>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\KG\images\statusHistory.png"
+                alt=""
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 05 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">05</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Reading the Counseling Form — All 7 Sections
+          </div>
+          <p class="step-desc">
+            Click the <strong>Counseling Form</strong> tab to review the full
+            form. The KG Reviewer focuses on the overall integrity and coherence
+            of the case — verifying that figures are internally consistent and
+            that the business case and financial projections hold up at a senior
+            level of scrutiny.
+          </p>
+          <div class="sub-block">
+            <div class="sub-label">KG Reviewer Focus Areas Per Section</div>
+            <table class="workflow-table">
+              <thead>
+                <tr>
+                  <th>Section</th>
+                  <th>KG Reviewer Focus</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Section 1 — Personal Details</td>
+                  <td>
+                    Identity and Jamaat details confirmed; applicant's
+                    eligibility for Baaseteen / SHND within the KG's scope
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 2 — Family Details</td>
+                  <td>
+                    Overall financial picture coherence — income, expenses,
+                    surplus/deficit, and declared assets all consistent with the
+                    assistance being requested
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 3 — Business Assessment</td>
+                  <td>
+                    Counselor's objectivity and depth of assessment; business
+                    viability beyond surface-level description; track record or
+                    credibility of the proposed venture
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 4 — Financial Assistance</td>
+                  <td>
+                    Total assistance quantum appropriateness; Enayat (grant) vs.
+                    Qardan (loan) split is justifiable; repayment terms
+                    realistic given Section 2 surplus
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 5 — Economic Projections</td>
+                  <td>
+                    Year-by-year projection credibility; growth assumptions are
+                    grounded in the business context described in Section 3;
+                    Cash Surplus from Year 1 sufficient for Qardan repayment
+                    schedule
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 6 — Action Plan &amp; Mentors</td>
+                  <td>
+                    Action plan is specific, time-bound, and grounded in
+                    reality; mentor names are appropriate and qualified for the
+                    business type
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 7 — Declaration</td>
+                  <td>
+                    All three signatures (Applicant, Counselor, TR Committee)
+                    present with valid and sequential dates
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 06 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">06</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Checking Attachments &amp; Supporting Documents
+          </div>
+          <p class="step-desc">
+            Click the <strong>Attachments</strong> tab to verify all uploaded
+            documents. The KG Reviewer confirms that mandatory documents are
+            present and consistent with the case data, and takes note of any
+            optional documents that strengthen or raise questions about the
+            case.
+          </p>
+          <div class="sub-block">
+            <ul class="details-list">
+              <li>
+                <strong>Mandatory:</strong> Business photograph, Quotation for
+                Qardan end-use, Product brochure — all three must be present
+                with a credible
+                <span class="perm-chip green">Uploaded</span> status
+              </li>
+              <li>
+                Verify the <strong>Quotation amount</strong> matches the Qardan
+                figure in Section 4 — discrepancies at this stage after two
+                prior reviews are a serious concern
+              </li>
+              <li>
+                For <strong>optional documents</strong> (ITR, Financial
+                Statements, Cancelled Cheque, PAN/Aadhar) — if present,
+                cross-check declared income and asset figures against Section 2
+                data
+              </li>
+              <li>
+                The KG Reviewer has <strong>read-only access</strong> — cannot
+                upload or remove documents. Any attachment issues must be raised
+                in Comments and resolved via Rework
+              </li>
+            </ul>
+          </div>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\KG\images\attachment.png"
+                alt=""
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — KG Review User Journey</span>
+        <div class="footer-center">
+          <span>Section B: History, Form &amp; Attachments</span>
+        </div>
+        <span>Page 5</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         PAGE 6 — Step 07
+    ══════════════════════════════════════════════ -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >FACTS — KG Review User Journey &nbsp;|&nbsp; Section C: Decision
+            &amp; Outcome</span
+          >
+        </div>
+        <span class="page-header-role">KG Reviewer</span>
+      </div>
+      <div class="section-break">
+        <span class="section-break-label"
+          >Section C — Decision &amp; Outcome</span
+        >
+        <div class="section-break-line"></div>
+      </div>
+
+      <!-- Step 07 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">07</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">Adding KG Review Comments</div>
+          <p class="step-desc">
+            Before submitting a decision, the KG Reviewer documents their
+            findings in the <strong>Comments</strong> tab. This comment is
+            particularly significant — it is the last field-level review comment
+            before the case advances to Operations Lead and eventually to the
+            Executive Approval chain. It carries senior-level weight in the
+            audit trail.
+          </p>
+
+          <div class="sub-block">
+            <div class="sub-label">How to Add a Comment</div>
+            <ul class="details-list">
+              <li>
+                Click the <strong>Comments</strong> tab → scroll through the
+                full thread to read all prior notes — DCM, Welfare Reviewer, and
+                ZI comments are all visible
+              </li>
+              <li>
+                Scroll to the bottom → type in the
+                <strong>comment text area</strong> → click
+                <strong>Post Comment</strong>
+              </li>
+              <li>
+                The comment is attributed to the KG Reviewer's name and role
+                with a timestamp automatically
+              </li>
+              <li>
+                Multiple comments can be posted — the KG Reviewer can separate
+                observations by topic if needed
+              </li>
+              <li>
+                Comments are permanent and visible to all downstream reviewers
+                including Operations Lead and Executive Approval
+              </li>
+            </ul>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              What the KG Reviewer Should Write — by Decision Type
+            </div>
+            <table class="workflow-table">
+              <thead>
+                <tr>
+                  <th>Decision</th>
+                  <th>Recommended Comment Content</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="perm-chip green">Approving</span></td>
+                  <td>
+                    Confirm the KG Reviewer's independent evaluation and key
+                    conclusions. E.g., "Reviewed the full case including
+                    Counseling Form (all 7 sections), attachments, and prior
+                    reviewer comments. Financial picture is internally
+                    consistent. Business viability is credible given the
+                    applicant's background and declared assets. Enayat/Qardan
+                    split is appropriate. Economic projections are reasonable.
+                    Recommending for Operations Lead review."
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="perm-chip amber">Rework</span></td>
+                  <td>
+                    List specific numbered items. E.g., "Despite prior reviewer
+                    approvals, the following require correction before this case
+                    can proceed: 1. Section 5 Cash Surplus from Year 1
+                    (₹3,200/month) is insufficient to service the proposed
+                    Qardan repayment (₹4,500/month). The projection or the
+                    Qardan amount must be revised. 2. Mentor in Section 6 is
+                    listed without any contact details or qualification notes.
+                    Please update."
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="perm-chip red">Rejecting</span></td>
+                  <td>
+                    State the grounds clearly and specifically. E.g., "On senior
+                    review, the declared business gross revenue of ₹8,000/month
+                    is inconsistent with the applicant's claimed business
+                    experience of 5 years in the same field (Section 3).
+                    Additionally, the ITR filed shows income of ₹4.2L p.a.,
+                    which does not align with the declared monthly income of
+                    ₹18,000. The discrepancies are material and the case does
+                    not merit further processing."
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\KG\images\comment.png"
+                alt=""
+              />
+            </div>
+          </div>
+
+          <div class="info-box">
+            <strong
+              >KG Comment Is Read by Operations Lead &amp; Executive
+              Approvers</strong
+            >
+            The KG Reviewer's comment is the most senior field-level note in the
+            case. Operations Lead and Executive Approvers read this comment to
+            quickly understand the quality and basis of the case. A thorough,
+            well-reasoned KG approval comment significantly speeds up downstream
+            processing.
+          </div>
+
+          <div class="warning-box">
+            <strong>Rework &amp; Rejection Require a Comment First</strong>
+            The system requires at least one comment to be posted before
+            allowing a Rework or Rejection action. For a KG-level Rework, issues
+            must be specific and documented — prior reviewer approvals must be
+            acknowledged in the comment when overriding them with a Rework
+            request.
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — KG Review User Journey</span>
+        <div class="footer-center">
+          <span>Section C: Decision &amp; Outcome</span>
+        </div>
+        <span>Page 6</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         PAGE 7 — Step 08
+    ══════════════════════════════════════════════ -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >FACTS — KG Review User Journey &nbsp;|&nbsp; Section C: Making the
+            Decision</span
+          >
+        </div>
+        <span class="page-header-role">KG Reviewer</span>
+      </div>
+
+      <!-- Step 08 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">08</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Making the Decision — Approve, Rework, or Reject
+          </div>
+          <p class="step-desc">
+            After reviewing all case materials and posting a comment, the KG
+            Reviewer takes a formal action using the workflow action buttons on
+            the Case Detail page. There are three possible decisions available
+            to the KG Reviewer.
+          </p>
+
+          <div class="sub-block">
+            <div class="sub-label">The Three Decision Options</div>
+            <div class="decision-box">
+              <div class="decision-option approve">
+                <div class="decision-option-label">✅ Approve</div>
+                <p>
+                  The case has passed the KG Reviewer's senior-level evaluation.
+                  Clicking <strong>Approve</strong> moves the case to the
+                  <strong>Operations Lead</strong> stage. The Operations Lead is
+                  notified automatically. The KG approval is the final
+                  field-level clearance before the cover letter generation
+                  process begins.
+                </p>
+              </div>
+              <div class="decision-option rework">
+                <div class="decision-option-label">🔁 Request Rework</div>
+                <p>
+                  The case has fixable issues not resolved in earlier reviews.
+                  Clicking <strong>Request Rework</strong> sends the case back
+                  to the DCM with status <strong>Rework Required</strong>. After
+                  corrections and resubmission, the case re-enters the review
+                  chain from <strong>Welfare Review</strong> before working its
+                  way back up to KG Review.
+                </p>
+              </div>
+            </div>
+            <div class="decision-box" style="margin-top: 6px">
+              <div class="decision-option reject" style="flex: 0 0 48%">
+                <div class="decision-option-label">❌ Reject</div>
+                <p>
+                  The case does not meet criteria and should not proceed
+                  further. Clicking <strong>Reject</strong> closes the case
+                  permanently. The DCM and all assigned stakeholders are
+                  notified. The KG Reviewer's rejection comment becomes the
+                  official rejection reason on the case record.
+                </p>
+              </div>
+              <div
+                style="
+                  flex: 1;
+                  padding-left: 10px;
+                  display: flex;
+                  align-items: center;
+                "
+              >
+                <div class="info-box" style="margin: 0">
+                  <strong>Confirmation Dialog</strong>
+                  All three actions require confirmation before executing. A
+                  modal appears summarising the outcome — click
+                  <strong>Confirm</strong> to proceed or
+                  <strong>Cancel</strong> to return to the case and review
+                  further before deciding.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Step-by-Step: Submitting the Decision</div>
+            <ul class="details-list">
+              <li>
+                Confirm a comment has been posted documenting the KG Reviewer's
+                findings
+              </li>
+              <li>
+                Click the appropriate action button — <strong>Approve</strong>,
+                <strong>Request Rework</strong>, or <strong>Reject</strong> — in
+                the workflow action panel on the case detail page
+              </li>
+              <li>
+                Read the <strong>confirmation dialog</strong> carefully → click
+                <strong>Confirm</strong> to execute the action
+              </li>
+              <li>
+                The system updates the case status, sends notifications to the
+                next relevant party, and logs the KG Reviewer's action in Status
+                History with a timestamp
+              </li>
+              <li>
+                The case is removed from the KG Reviewer's active queue and the
+                Cases list is refreshed
+              </li>
+            </ul>
+          </div>
+
+          <div class="img-placeholder" style="height: 200px">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\KG\images\approveDIalog.png"
+                alt=""
+              />
+            </div>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">KG Decision — Outcome Summary</div>
+            <table class="workflow-table">
+              <thead>
+                <tr>
+                  <th>Decision</th>
+                  <th>Case Status After</th>
+                  <th>Who Is Notified</th>
+                  <th>Next Step</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="perm-chip green">Approve</span></td>
+                  <td>Operations Lead</td>
+                  <td>Operations Lead</td>
+                  <td>
+                    Operations Lead reviews; if approved, Cover Letter is
+                    generated
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="perm-chip amber">Request Rework</span></td>
+                  <td>Rework Required</td>
+                  <td>DCM</td>
+                  <td>
+                    DCM corrects → resubmits → Welfare Review → ZI → KG again
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="perm-chip red">Reject</span></td>
+                  <td>Rejected / Closed</td>
+                  <td>DCM + Stakeholders</td>
+                  <td>Case closed; KG rejection reason permanently recorded</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="warning-box">
+            <strong>Rework Routes Back Through the Full Review Chain</strong>
+            When the KG Reviewer sends a case for Rework, the resubmitted case
+            re-enters the chain at <strong>Welfare Review</strong> — not
+            directly back to KG. The case must clear Welfare Review and ZI
+            Approval again before returning to the KG Reviewer. This ensures
+            every resubmission is re-verified independently at each level.
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — KG Review User Journey</span>
+        <div class="footer-center">
+          <span>Section C: Making the Decision</span>
+        </div>
+        <span>Page 7</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         PAGE 8 — Step 09
+    ══════════════════════════════════════════════ -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >FACTS — KG Review User Journey &nbsp;|&nbsp; Section C: After the
+            Decision</span
+          >
+        </div>
+        <span class="page-header-role">KG Reviewer</span>
+      </div>
+
+      <!-- Step 09 -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">09</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">What Happens After the KG Decision</div>
+          <p class="step-desc">
+            Once the KG Reviewer submits their decision, FACTS automatically
+            routes the case to the correct next stage and notifies all relevant
+            parties. The KG Reviewer's active role in this case is now complete
+            unless it returns following a rework cycle.
+          </p>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              After Approval — Case Moves to Operations Lead
+            </div>
+            <ul class="details-list">
+              <li>
+                The case workflow advances to <strong>Operations Lead</strong> —
+                the next stage in the approval chain
+              </li>
+              <li>
+                The <strong>Operations Lead</strong> receives an in-app
+                notification to review the case
+              </li>
+              <li>
+                If the Operations Lead approves, the system triggers
+                <strong>Cover Letter Generation</strong> — the auto-generated
+                case summary document that will be used throughout the Executive
+                Approval chain
+              </li>
+              <li>
+                The KG Reviewer can still view the case and its downstream
+                progress through the Cases module, but has no further actions to
+                take
+              </li>
+            </ul>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              Full Workflow — KG's Position in the Complete Chain
+            </div>
+            <div class="flow-path">
+              <div class="flow-node done">Case ID<br />&amp; Draft</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node done">Counseling<br />Form</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node done">Welfare<br />Review ✓</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node done">ZI<br />Approval ✓</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node highlight">KG<br />Review ✓</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node active">Operations<br />Lead</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Cover Letter<br />Generation</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Executive<br />Approval</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Manzoori<br />(Sanction)</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Financial<br />Disbursement</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Payment<br />Tracking</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Fund<br />Utilization</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Case<br />Closure</div>
+            </div>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              After Rework Request — What the KG Reviewer Should Expect
+            </div>
+            <ul class="details-list">
+              <li>
+                The case status changes to <strong>Rework Required</strong> —
+                the DCM is notified to make corrections to the Counseling Form
+              </li>
+              <li>
+                After the DCM resubmits, the case re-enters the review chain at
+                <strong>Welfare Review</strong> — it must pass both Welfare
+                Review and ZI Approval before returning to KG Review
+              </li>
+              <li>
+                The KG Reviewer is notified when the case arrives back at
+                <strong>KG Review</strong> after clearing the earlier stages
+              </li>
+              <li>
+                On re-review, check the Comments thread for the DCM's response
+                and confirm that every item raised in the rework request has
+                been addressed before approving
+              </li>
+            </ul>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">After Rejection — Case is Closed</div>
+            <ul class="details-list">
+              <li>
+                The case status changes to <strong>Rejected</strong> — the case
+                is permanently closed; no further workflow actions are possible
+              </li>
+              <li>
+                The KG Reviewer's rejection comment is stored on the case record
+                as the official rejection reason
+              </li>
+              <li>
+                The DCM and applicant are notified; the DCM can view the case
+                and comments for reference and record-keeping
+              </li>
+              <li>
+                A rejected case can only be re-opened by an Admin or Super Admin
+                if a formally justified basis for reconsideration is provided
+              </li>
+            </ul>
+          </div>
+
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\KG\images\caseApproved.png"
+                alt=""
+              />
+            </div>
+          </div>
+
+          <div class="milestone-strip">
+            <div class="milestone-item">
+              <div class="milestone-label">Awaiting Review</div>
+              <div class="milestone-value" style="color: var(--amber)">
+                Queue
+              </div>
+              <div class="milestone-note">Cases needing KG action</div>
+            </div>
+            <div class="milestone-item">
+              <div class="milestone-label">Approved</div>
+              <div class="milestone-value" style="color: var(--green)">
+                Forwarded
+              </div>
+              <div class="milestone-note">Sent to Operations Lead</div>
+            </div>
+            <div class="milestone-item">
+              <div class="milestone-label">Rework Sent</div>
+              <div class="milestone-value" style="color: var(--amber)">
+                Returned
+              </div>
+              <div class="milestone-note">Full chain re-review</div>
+            </div>
+            <div class="milestone-item">
+              <div class="milestone-label">Rejected</div>
+              <div class="milestone-value" style="color: var(--red)">
+                Closed
+              </div>
+              <div class="milestone-note">Documented &amp; closed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="end-banner">
+        <div class="end-banner-icon">🏅</div>
+        <div class="end-banner-text">
+          <h3>End of KG Reviewer User Journey</h3>
+          <p>
+            9 steps covering the complete KG Reviewer workflow in FACTS — from
+            login and finding cases at the KG Review stage, through reading
+            prior reviewer findings, the Counseling Form, and Attachments, to
+            posting a senior review comment and making the final Approve,
+            Rework, or Reject decision that sends the case to Operations Lead.
+          </p>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — KG Review User Journey</span>
+        <div class="footer-center">
+          <span>Section C: After the Decision</span>
+        </div>
+        <span>Page 8</span>
+      </div>
+    </div>
+  </body>
+</html>
