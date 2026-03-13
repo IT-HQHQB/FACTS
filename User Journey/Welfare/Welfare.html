@@ -1,0 +1,2211 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FACTS — Welfare Reviewer User Journey</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap");
+      @page {
+        size: A4;
+        margin: 0;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --navy: #0f1e2e;
+        --navy-mid: #1a3050;
+        --teal: #0e7490;
+        --teal-lt: #06b6d4;
+        --gold: #c9a84c;
+        --gold-lt: #e8c97e;
+        --cream: #f8f5f0;
+        --text: #1e2d3d;
+        --muted: #5a7184;
+        --border: #d6e4ed;
+        --bg-soft: #eef5f9;
+        --red: #dc2626;
+        --green: #16a34a;
+        --amber: #d97706;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        color: var(--text);
+        background: #d8e4ed;
+        line-height: 1.6;
+      }
+      .cover,
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        background: #fff;
+        margin: 20px auto;
+        box-shadow: 0 6px 30px rgba(0, 0, 0, 0.15);
+        position: relative;
+        overflow: visible;
+      }
+      @media print {
+        body {
+          background: #fff;
+          margin: 0;
+          padding: 0;
+        }
+        .cover,
+        .page {
+          width: 100%;
+          min-height: unset;
+          height: auto;
+          max-height: none;
+          margin: 0;
+          padding: 12mm 18mm 14mm 18mm;
+          box-shadow: none;
+          border: none;
+          background: #fff;
+          overflow: visible;
+          break-before: page;
+          page-break-before: always;
+          position: static;
+        }
+        .cover {
+          background: var(--navy) !important;
+          padding: 0;
+          height: 297mm;
+          min-height: 297mm;
+          overflow: hidden;
+          position: relative;
+        }
+        .page-footer {
+          position: static !important;
+          left: auto !important;
+          right: auto !important;
+          bottom: auto !important;
+          margin-top: 16px;
+          padding-top: 5px;
+          border-top: 1px solid #e2ecf2;
+        }
+        .end-banner {
+          margin-top: 20px;
+        }
+        .step,
+        .sub-block,
+        .info-box,
+        .warning-box,
+        .flow-path,
+        .milestone-strip,
+        .workflow-table,
+        .dual-placeholder,
+        .img-placeholder,
+        .end-banner,
+        .toc-group,
+        .toc-intro-box,
+        .decision-box {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        .section-break,
+        .toc-section-label,
+        .step-title,
+        .page-header {
+          break-after: avoid;
+          page-break-after: avoid;
+        }
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
+      /* COVER */
+      .cover {
+        background: var(--navy);
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+      }
+      .cover-top-band {
+        width: 100%;
+        background: var(--teal);
+        height: 6px;
+      }
+      .cover-accent-bar {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 72px;
+        background: linear-gradient(180deg, var(--gold) 0%, #7a5c1e 100%);
+        opacity: 0.85;
+      }
+      .cover-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(14, 116, 144, 0.07) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(14, 116, 144, 0.07) 1px, transparent 1px);
+        background-size: 18mm 18mm;
+      }
+      .cover-inner {
+        position: relative;
+        z-index: 2;
+        padding: 22mm 22mm 18mm 22mm;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        width: calc(100% - 72px);
+      }
+      .cover-logo-area {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 44px;
+      }
+      .cover-logo-box {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        border: 2px solid rgba(201, 168, 76, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .cover-brand {
+        display: flex;
+        flex-direction: column;
+      }
+      .cover-brand-name {
+        font-family: "Playfair Display", serif;
+        font-size: 22px;
+        font-weight: 900;
+        color: #fff;
+        letter-spacing: 0.04em;
+        line-height: 1;
+      }
+      .cover-brand-sub {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.45);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        margin-top: 4px;
+      }
+      .cover-divider {
+        width: 48px;
+        height: 2px;
+        background: var(--gold);
+        margin-bottom: 20px;
+      }
+      .cover-eyebrow {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--teal-lt);
+        margin-bottom: 12px;
+      }
+      .cover-title {
+        font-family: "Playfair Display", serif;
+        font-size: 38px;
+        font-weight: 900;
+        color: #fff;
+        line-height: 1.12;
+        margin-bottom: 10px;
+      }
+      .cover-subtitle {
+        font-size: 16px;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 36px;
+        max-width: 340px;
+        line-height: 1.5;
+      }
+      .cover-role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--gold);
+        color: var(--navy);
+        font-size: 13px;
+        font-weight: 700;
+        padding: 10px 22px;
+        border-radius: 40px;
+        letter-spacing: 0.04em;
+        margin-bottom: 48px;
+        width: fit-content;
+      }
+      .cover-desc {
+        font-size: 12.5px;
+        color: rgba(255, 255, 255, 0.5);
+        line-height: 1.7;
+        max-width: 360px;
+        margin-bottom: auto;
+      }
+      .cover-meta-row {
+        display: flex;
+        gap: 28px;
+        margin-top: 32px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .cover-meta-item {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .cover-meta-label {
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .cover-meta-value {
+        font-size: 11px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.65);
+      }
+      .cover-step-count {
+        position: absolute;
+        bottom: 24mm;
+        right: 14mm;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        transform: rotate(180deg);
+      }
+      .cover-step-count span {
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.35);
+      }
+      .cover-step-count strong {
+        font-family: "Playfair Display", serif;
+        font-size: 28px;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.15);
+      }
+      /* TOC */
+      .toc-page {
+        padding: 14mm 18mm 18mm 18mm;
+        display: flex;
+        flex-direction: column;
+      }
+      .toc-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--teal);
+        margin-bottom: 18px;
+      }
+      .toc-header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .toc-header-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--gold);
+      }
+      .toc-header-title {
+        font-family: "Playfair Display", serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--navy);
+      }
+      .toc-role-tag {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--teal);
+        background: rgba(14, 116, 144, 0.1);
+        padding: 4px 10px;
+        border-radius: 20px;
+      }
+      .toc-section-label {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 6px;
+      }
+      .toc-group {
+        margin-bottom: 10px;
+      }
+      .toc-item {
+        display: flex;
+        align-items: baseline;
+        padding: 4px 0;
+        border-bottom: 1px dotted #dce8ef;
+      }
+      .toc-item-num {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--gold);
+        width: 28px;
+        flex-shrink: 0;
+        font-family: "DM Mono", monospace;
+      }
+      .toc-item-title {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text);
+        flex: 1;
+      }
+      .toc-item-dots {
+        flex: 1;
+        border-bottom: 1px dotted #ccc;
+        margin: 0 6px;
+        max-width: 80px;
+      }
+      .toc-item-page {
+        font-size: 10.5px;
+        font-weight: 600;
+        color: var(--muted);
+        font-family: "DM Mono", monospace;
+        width: 28px;
+        text-align: right;
+      }
+      .toc-intro-box {
+        background: var(--bg-soft);
+        border-left: 4px solid var(--teal);
+        border-radius: 0 8px 8px 0;
+        padding: 12px 16px;
+        margin-bottom: 14px;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .toc-intro-box p {
+        font-size: 11.5px;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+      /* CONTENT */
+      .page {
+        padding: 11mm 18mm 20mm 18mm;
+        display: flex;
+        flex-direction: column;
+      }
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--teal);
+        margin-bottom: 14px;
+        flex-shrink: 0;
+      }
+      .page-header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .page-header-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--gold);
+        flex-shrink: 0;
+      }
+      .page-header-title {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .page-header-role {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--teal);
+        background: rgba(14, 116, 144, 0.1);
+        padding: 3px 9px;
+        border-radius: 20px;
+      }
+      .section-break {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        flex-shrink: 0;
+      }
+      .section-break-label {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--gold);
+        white-space: nowrap;
+      }
+      .section-break-line {
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, var(--gold), transparent);
+      }
+      .step {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 14px;
+        flex-shrink: 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .step-left {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex-shrink: 0;
+        width: 44px;
+      }
+      .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: var(--navy);
+        color: var(--gold);
+        font-size: 15px;
+        font-weight: 700;
+        font-family: "DM Mono", monospace;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        border: 1.5px solid rgba(201, 168, 76, 0.3);
+      }
+      .step-connector {
+        flex: 1;
+        width: 2px;
+        background: linear-gradient(180deg, var(--border), transparent);
+        margin-top: 4px;
+        min-height: 16px;
+      }
+      .step-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .step-title {
+        font-family: "Playfair Display", serif;
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--navy);
+        margin-bottom: 4px;
+        line-height: 1.3;
+      }
+      .step-desc {
+        font-size: 11.5px;
+        color: var(--muted);
+        margin-bottom: 8px;
+        line-height: 1.6;
+      }
+      .sub-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--navy);
+        margin: 8px 0 5px 0;
+        break-after: avoid;
+        page-break-after: avoid;
+      }
+      .sub-block {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        margin-bottom: 4px;
+      }
+      .details-list {
+        list-style: none;
+        padding: 0;
+        margin-bottom: 10px;
+      }
+      .details-list li {
+        font-size: 11px;
+        color: #3d5166;
+        padding: 2.5px 0 2.5px 18px;
+        position: relative;
+        line-height: 1.55;
+      }
+      .details-list li::before {
+        content: "▸";
+        position: absolute;
+        left: 0;
+        color: var(--gold);
+        font-size: 10px;
+        top: 3.5px;
+      }
+      .details-list li strong {
+        color: var(--navy);
+        font-weight: 600;
+      }
+      .img-placeholder {
+        max-height: 300px;
+        width: 100%;
+        border: 1.5px dashed #b8cdd9;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #f4f9fc 0%, #eef5f9 100%);
+        margin-top: 8px;
+        margin-bottom: 4px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        position: relative;
+      }
+      .img-placeholder-inner {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 5px;
+        position: relative;
+        z-index: 1;
+        text-align: center;
+      }
+      .img-placeholder img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      .img-placeholder-icon {
+        font-size: 24px;
+        opacity: 0.5;
+      }
+      .img-placeholder-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--navy);
+        opacity: 0.6;
+      }
+      .img-placeholder-sublabel {
+        font-size: 9.5px;
+        color: var(--muted);
+        max-width: 320px;
+        line-height: 1.5;
+        opacity: 0.8;
+      }
+      .dual-placeholder {
+        display: flex;
+        gap: 10px;
+        margin-top: 8px;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .dual-placeholder .img-placeholder {
+        flex: 1;
+      }
+      .info-box {
+        background: rgba(14, 116, 144, 0.06);
+        border-left: 3px solid var(--teal);
+        border-radius: 0 8px 8px 0;
+        padding: 9px 12px;
+        margin: 8px 0;
+        font-size: 11px;
+        color: #2a4a5e;
+        line-height: 1.6;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .info-box strong {
+        color: var(--teal);
+        font-weight: 600;
+        display: block;
+        margin-bottom: 2px;
+        font-size: 10.5px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .warning-box {
+        background: rgba(217, 119, 6, 0.06);
+        border-left: 3px solid var(--amber);
+        border-radius: 0 8px 8px 0;
+        padding: 9px 12px;
+        margin: 8px 0;
+        font-size: 11px;
+        color: #5a3a0a;
+        line-height: 1.6;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .warning-box strong {
+        color: var(--amber);
+        font-weight: 600;
+        display: block;
+        margin-bottom: 2px;
+        font-size: 10.5px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .perm-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin: 6px 0;
+      }
+      .perm-chip {
+        font-size: 9.5px;
+        font-weight: 600;
+        font-family: "DM Mono", monospace;
+        padding: 3px 8px;
+        border-radius: 4px;
+      }
+      .perm-chip.green {
+        background: rgba(22, 163, 74, 0.1);
+        color: #15803d;
+        border: 1px solid rgba(22, 163, 74, 0.25);
+      }
+      .perm-chip.blue {
+        background: rgba(14, 116, 144, 0.1);
+        color: var(--teal);
+        border: 1px solid rgba(14, 116, 144, 0.25);
+      }
+      .perm-chip.red {
+        background: rgba(220, 38, 38, 0.08);
+        color: #b91c1c;
+        border: 1px solid rgba(220, 38, 38, 0.2);
+      }
+      .perm-chip.amber {
+        background: rgba(217, 119, 6, 0.1);
+        color: #92400e;
+        border: 1px solid rgba(217, 119, 6, 0.25);
+      }
+      .workflow-table {
+        width: 100%;
+        font-size: 10.5px;
+        border-collapse: collapse;
+        margin: 8px 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .workflow-table thead tr {
+        background: var(--navy);
+        color: #fff;
+      }
+      .workflow-table thead th {
+        padding: 6px 10px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 10px;
+      }
+      .workflow-table thead th:first-child {
+        border-radius: 6px 0 0 0;
+      }
+      .workflow-table thead th:last-child {
+        border-radius: 0 6px 0 0;
+      }
+      .workflow-table tbody tr:nth-child(even) {
+        background: var(--bg-soft);
+      }
+      .workflow-table tbody td {
+        padding: 5px 10px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
+        vertical-align: top;
+      }
+      .workflow-table tbody td:first-child {
+        font-weight: 600;
+        color: var(--navy);
+      }
+      .status-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        margin-right: 5px;
+        vertical-align: middle;
+      }
+      .status-dot.green {
+        background: var(--green);
+      }
+      .status-dot.amber {
+        background: var(--amber);
+      }
+      .status-dot.red {
+        background: var(--red);
+      }
+      .status-dot.teal {
+        background: var(--teal);
+      }
+      .milestone-strip {
+        display: flex;
+        margin: 8px 0;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .milestone-item {
+        flex: 1;
+        padding: 8px 10px;
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .milestone-item:last-child {
+        border-right: none;
+      }
+      .milestone-label {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .milestone-value {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--navy);
+      }
+      .milestone-note {
+        font-size: 9.5px;
+        color: var(--muted);
+      }
+      .flow-path {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        margin: 8px 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .flow-node {
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 5px 10px;
+        font-size: 10.5px;
+        font-weight: 600;
+        color: var(--navy);
+        text-align: center;
+        min-width: 60px;
+      }
+      .flow-node.active {
+        background: var(--teal);
+        border-color: var(--teal);
+        color: #fff;
+      }
+      .flow-node.highlight {
+        background: var(--navy);
+        border-color: var(--navy);
+        color: var(--gold);
+      }
+      .flow-arrow {
+        color: var(--border);
+        font-size: 14px;
+        padding: 0 3px;
+        flex-shrink: 0;
+      }
+      .end-banner {
+        margin-top: 20px;
+        padding: 16px 20px;
+        background: linear-gradient(
+          135deg,
+          var(--navy) 0%,
+          var(--navy-mid) 100%
+        );
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .end-banner-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: rgba(201, 168, 76, 0.2);
+        border: 1.5px solid rgba(201, 168, 76, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+      .end-banner-text h3 {
+        font-family: "Playfair Display", serif;
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 4px;
+      }
+      .end-banner-text p {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.55);
+        line-height: 1.5;
+      }
+      .page-footer {
+        position: absolute;
+        left: 18mm;
+        right: 18mm;
+        bottom: 10mm;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 9.5px;
+        color: #aab8c2;
+        border-top: 1px solid #e2ecf2;
+        padding-top: 5px;
+      }
+      .page-footer .footer-center {
+        display: flex;
+        gap: 14px;
+      }
+      .page-footer .footer-dot {
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: #ccc;
+        align-self: center;
+      }
+      .two-col {
+        display: flex;
+        gap: 12px;
+      }
+      .two-col > * {
+        flex: 1;
+      }
+      .decision-box {
+        display: flex;
+        gap: 10px;
+        margin: 8px 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .decision-option {
+        flex: 1;
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      .decision-option.approve {
+        background: rgba(22, 163, 74, 0.08);
+        border: 1.5px solid rgba(22, 163, 74, 0.3);
+      }
+      .decision-option.reject {
+        background: rgba(220, 38, 38, 0.06);
+        border: 1.5px solid rgba(220, 38, 38, 0.2);
+      }
+      .decision-option.rework {
+        background: rgba(217, 119, 6, 0.07);
+        border: 1.5px solid rgba(217, 119, 6, 0.25);
+      }
+      .decision-option-label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+      }
+      .decision-option.approve .decision-option-label {
+        color: var(--green);
+      }
+      .decision-option.reject .decision-option-label {
+        color: var(--red);
+      }
+      .decision-option.rework .decision-option-label {
+        color: var(--amber);
+      }
+      .decision-option p {
+        font-size: 10.5px;
+        color: var(--text);
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- PAGE 1 — COVER -->
+    <div class="cover">
+      <div class="cover-top-band"></div>
+      <div class="cover-accent-bar"></div>
+      <div class="cover-grid"></div>
+      <div class="cover-inner">
+        <div class="cover-logo-area">
+          <div class="cover-logo-box">
+            <span style="font-size: 22px">⚖️</span>
+          </div>
+          <div class="cover-brand">
+            <div class="cover-brand-name">FACTS</div>
+            <div class="cover-brand-sub">File &amp; Case Tracking System</div>
+          </div>
+        </div>
+        <div class="cover-divider"></div>
+        <div class="cover-eyebrow">User Journey Document</div>
+        <h1 class="cover-title">Welfare<br />Reviewer</h1>
+        <p class="cover-subtitle">
+          A step-by-step visual reference covering the Welfare Reviewer's
+          responsibilities — receiving cases, reading all case materials, and
+          making an Approve, Rework, or Reject decision.
+        </p>
+        <div class="cover-role-badge">
+          <span style="font-size: 16px">🔍</span> Welfare Reviewer
+        </div>
+        <p class="cover-desc">
+          The Welfare Reviewer is the first independent evaluator in the FACTS
+          approval chain. After the DCM completes and submits the Counseling
+          Form, the case reaches Welfare Review. The Reviewer reads all case
+          data, assesses eligibility and financial need, reviews the Counseling
+          Form and supporting attachments, and either approves the case to move
+          forward to ZI Approval, sends it back for rework, or rejects it with
+          documented reasons.
+        </p>
+        <div class="cover-meta-row">
+          <div class="cover-meta-item">
+            <span class="cover-meta-label">Document Version</span
+            ><span class="cover-meta-value">1.0</span>
+          </div>
+          <div class="cover-meta-item">
+            <span class="cover-meta-label">Date</span
+            ><span class="cover-meta-value">March 2026</span>
+          </div>
+          <div class="cover-meta-item">
+            <span class="cover-meta-label">System</span
+            ><span class="cover-meta-value">FACTS v1.0</span>
+          </div>
+          <div class="cover-meta-item">
+            <span class="cover-meta-label">Total Steps</span
+            ><span class="cover-meta-value">9 Steps</span>
+          </div>
+        </div>
+      </div>
+      <div class="cover-step-count"><span>Steps</span><strong>9</strong></div>
+    </div>
+
+    <!-- PAGE 2 — TABLE OF CONTENTS -->
+    <div class="page toc-page">
+      <div class="toc-header">
+        <div class="toc-header-left">
+          <div class="toc-header-dot"></div>
+          <div class="toc-header-title">Table of Contents</div>
+        </div>
+        <div class="toc-role-tag">Welfare Reviewer</div>
+      </div>
+      <div class="toc-intro-box">
+        <p>
+          The Welfare Reviewer receives cases once the DCM has completed the
+          Counseling Form. The Reviewer's job is to independently evaluate the
+          case — reading the full counseling form, checking attached documents,
+          and then making one of three decisions:
+          <strong>Approve</strong> (forward to ZI Approval),
+          <strong>Request Rework</strong> (return to DCM with comments), or
+          <strong>Reject</strong> (close the case with documented reasons).
+          Cover Letter Generation happens later in the workflow, after
+          Operations Lead approval. This document covers
+          <strong>9 steps</strong> across the full Welfare Reviewer workflow.
+        </p>
+      </div>
+      <div class="toc-section-label">Section A — Login &amp; Dashboard</div>
+      <div class="toc-group">
+        <div class="toc-item">
+          <span class="toc-item-num">01</span
+          ><span class="toc-item-title"
+            >Login &amp; Landing on the Welfare Reviewer Dashboard</span
+          >
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 3</span>
+        </div>
+        <div class="toc-item">
+          <span class="toc-item-num">02</span
+          ><span class="toc-item-title"
+            >Navigating the Cases Module — Finding Cases to Review</span
+          >
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 4</span>
+        </div>
+      </div>
+      <div class="toc-section-label">Section B — Reviewing the Case</div>
+      <div class="toc-group">
+        <div class="toc-item">
+          <span class="toc-item-num">03</span
+          ><span class="toc-item-title"
+            >Case Detail View — Header, Progress Bar &amp; Tabs</span
+          >
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 5</span>
+        </div>
+        <div class="toc-item">
+          <span class="toc-item-num">04</span
+          ><span class="toc-item-title"
+            >Understanding the Case — Applicant Summary &amp; Status
+            History</span
+          >
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 6</span>
+        </div>
+        <div class="toc-item">
+          <span class="toc-item-num">05</span
+          ><span class="toc-item-title"
+            >Reading the Counseling Form — All 7 Sections</span
+          >
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 7</span>
+        </div>
+        <div class="toc-item">
+          <span class="toc-item-num">06</span
+          ><span class="toc-item-title"
+            >Checking Attachments &amp; Supporting Documents</span
+          >
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 8</span>
+        </div>
+      </div>
+      <div class="toc-section-label">Section C — Decision &amp; Outcome</div>
+      <div class="toc-group">
+        <div class="toc-item">
+          <span class="toc-item-num">07</span
+          ><span class="toc-item-title">Adding Review Comments</span>
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 9</span>
+        </div>
+        <div class="toc-item">
+          <span class="toc-item-num">08</span
+          ><span class="toc-item-title"
+            >Making the Decision — Approve, Rework, or Reject</span
+          >
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 10</span>
+        </div>
+        <div class="toc-item">
+          <span class="toc-item-num">09</span
+          ><span class="toc-item-title">What Happens After the Decision</span>
+          <div class="toc-item-dots"></div>
+          <span class="toc-item-page">P 11</span>
+        </div>
+      </div>
+      <div class="page-footer">
+        <span>FACTS — Welfare Reviewer User Journey</span>
+        <div class="footer-center">
+          <span>File &amp; Case Tracking System</span>
+          <div class="footer-dot"></div>
+          <span>v1.0 · March 2026</span>
+        </div>
+        <span>Page 2</span>
+      </div>
+    </div>
+
+    <!-- PAGE 3 — Steps 01 & 02 -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >FACTS — Welfare Reviewer User Journey &nbsp;|&nbsp; Section A:
+            Login &amp; Dashboard</span
+          >
+        </div>
+        <span class="page-header-role">Welfare Reviewer</span>
+      </div>
+      <div class="section-break">
+        <span class="section-break-label"
+          >Section A — Login &amp; Dashboard</span
+        >
+        <div class="section-break-line"></div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">01</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Login &amp; Landing on the Welfare Reviewer Dashboard
+          </div>
+          <p class="step-desc">
+            The Welfare Reviewer accesses FACTS through the browser using their
+            assigned credentials. After login, the system loads the Welfare
+            Reviewer dashboard — a focused view showing all cases currently
+            awaiting review within their Jamiat scope.
+          </p>
+          <div class="sub-block">
+            <ul class="details-list">
+              <li>
+                Open browser → navigate to the FACTS URL → enter
+                <strong>Email</strong> and <strong>Password</strong> → click
+                <strong>Login</strong>
+              </li>
+              <li>
+                On successful login, the
+                <strong>Welfare Reviewer Dashboard</strong> loads showing key
+                metrics for the reviewer's Jamiat scope
+              </li>
+              <li>
+                <strong>Dashboard stat cards:</strong> Cases Awaiting My Review,
+                Cases I Approved This Month, Cases Sent for Rework, Cases
+                Rejected
+              </li>
+              <li>
+                A <strong>Recent Cases</strong> list shows the most recently
+                updated cases in the reviewer's queue
+              </li>
+              <li>
+                Left sidebar shows modules available:
+                <strong>Dashboard</strong> and <strong>Cases</strong>
+              </li>
+              <li>
+                Bell icon in the top bar shows unread notifications — new cases
+                assigned for review trigger notifications automatically
+              </li>
+            </ul>
+          </div>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\Welfare\Images\login.png"
+                alt=""
+              />
+            </div>
+          </div>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\Welfare\Images\dashboard.png"
+                alt=""
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">02</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Navigating the Cases Module — Finding Cases to Review
+          </div>
+          <p class="step-desc">
+            All cases awaiting welfare review are visible in the
+            <strong>Cases</strong> module. The Reviewer filters to see only
+            cases at the <strong>Welfare Review</strong> stage and opens them
+            one by one to begin the review process.
+          </p>
+          <div class="sub-block">
+            <ul class="details-list">
+              <li>
+                Click <strong>Cases</strong> in the left sidebar → cases list
+                loads scoped to the reviewer's Jamiat
+              </li>
+              <li>
+                <strong>Filter by Status → "Welfare Review"</strong> to see only
+                cases awaiting the reviewer's action — this is the default
+                filter on load for the Welfare Reviewer role
+              </li>
+              <li>
+                Each case row shows: <strong>Case Number</strong> (BS-XXXX),
+                Applicant Name, Case Type, SLA badge, Assigned DCM, and Date
+                Reached Welfare Review
+              </li>
+              <li>
+                <strong>SLA badge colours:</strong>
+                <span class="perm-chip green">On Track</span>
+                <span class="perm-chip amber">Due Soon</span>
+                <span class="perm-chip red">Breached</span> — cases close to or
+                past SLA are highlighted prominently
+              </li>
+              <li>
+                Cases can be sorted by SLA (oldest first) to prioritise urgent
+                reviews
+              </li>
+              <li>
+                Click any case row → opens the <strong>Case Detail View</strong>
+              </li>
+            </ul>
+          </div>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\Welfare\Images\cases.png"
+                alt=""
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Welfare Reviewer User Journey</span>
+        <div class="footer-center">
+          <span>Section A: Login &amp; Dashboard</span>
+        </div>
+        <span>Page 3</span>
+      </div>
+    </div>
+
+    <!-- PAGE 4 — Step 03 -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >FACTS — Welfare Reviewer User Journey &nbsp;|&nbsp; Section B:
+            Reviewing the Case</span
+          >
+        </div>
+        <span class="page-header-role">Welfare Reviewer</span>
+      </div>
+      <div class="section-break">
+        <span class="section-break-label">Section B — Reviewing the Case</span>
+        <div class="section-break-line"></div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">03</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Case Detail View — Header, Progress Bar &amp; Tabs
+          </div>
+          <p class="step-desc">
+            Clicking a case opens the Case Detail View. This is where the
+            Welfare Reviewer does all their evaluation work. The page shows a
+            case summary header, the current workflow position, and a tab strip.
+            The Reviewer will primarily use the <strong>Cover Letter</strong>,
+            <strong>Counseling Form</strong>, <strong>Attachments</strong>, and
+            <strong>Comments</strong> tabs.
+          </p>
+
+          <div class="sub-block">
+            <div class="sub-label">Case Header Information</div>
+            <ul class="details-list">
+              <li>
+                <strong>Case Number</strong> (e.g., BS-0042), Applicant Name,
+                Case Type badge, and current
+                <strong>Workflow Stage: Welfare Review</strong> badge shown
+                prominently
+              </li>
+              <li>
+                <strong>SLA Timer</strong> shows the deadline for completing
+                this review — days remaining or days overdue
+              </li>
+              <li>
+                Assigned DCM name and the date the case entered Welfare Review
+                are displayed
+              </li>
+              <li>
+                <strong>Workflow Progress Bar</strong> visualises all stages
+                with the current stage highlighted
+              </li>
+            </ul>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Tabs Available to the Welfare Reviewer</div>
+            <table class="workflow-table">
+              <thead>
+                <tr>
+                  <th>Tab</th>
+                  <th>Purpose</th>
+                  <th>Reviewer Access</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Cover Letter</td>
+                  <td>Auto-generated summary of the full case for review</td>
+                  <td>
+                    <span class="perm-chip green">Read &amp; Download PDF</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Counseling Form</td>
+                  <td>
+                    All 7 sections filled by the DCM — read-only for reviewer
+                  </td>
+                  <td><span class="perm-chip blue">Read Only</span></td>
+                </tr>
+                <tr>
+                  <td>Attachments</td>
+                  <td>All uploaded supporting documents for the case</td>
+                  <td>
+                    <span class="perm-chip blue">View &amp; Download</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Comments</td>
+                  <td>
+                    Case-level discussion thread — reviewer adds review notes
+                    here
+                  </td>
+                  <td><span class="perm-chip green">Read &amp; Write</span></td>
+                </tr>
+                <tr>
+                  <td>Status History</td>
+                  <td>
+                    Complete audit trail of all stage transitions and actions
+                  </td>
+                  <td><span class="perm-chip blue">Read Only</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Recommended Review Order</div>
+            <div class="flow-path">
+              <div class="flow-node highlight">Open Case</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Read Cover<br />Letter</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Review<br />Form</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Check<br />Attachments</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Add<br />Comments</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node active">Make<br />Decision</div>
+            </div>
+          </div>
+
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\Welfare\Images\caseDetails.png"
+                alt=""
+              />
+            </div>
+          </div>
+
+          <div class="info-box">
+            <strong>Read-Only Access to the Counseling Form</strong>
+            The Welfare Reviewer cannot edit the Counseling Form. All 7 sections
+            are locked in read-only mode. If the Reviewer finds issues, they
+            document them in Comments and send the case back for Rework — they
+            do not directly edit the form.
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Welfare Reviewer User Journey</span>
+        <div class="footer-center">
+          <span>Section B: Reviewing the Case</span>
+        </div>
+        <span>Page 4</span>
+      </div>
+    </div>
+
+    <!-- PAGE 5 — Steps 04 & 05 -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >FACTS — Welfare Reviewer User Journey &nbsp;|&nbsp; Section B:
+            Cover Letter &amp; Counseling Form</span
+          >
+        </div>
+        <span class="page-header-role">Welfare Reviewer</span>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">04</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Understanding the Case — Applicant Summary &amp; Context
+          </div>
+          <p class="step-desc">
+            Before diving into the full Counseling Form, the Welfare Reviewer
+            first gets a quick overview of the case from the
+            <strong>case header</strong> and the
+            <strong>Status History</strong> tab. This gives context on who the
+            applicant is, what stage the case is at, and any prior activity on
+            the case.
+          </p>
+          <div class="sub-block">
+            <ul class="details-list">
+              <li>
+                The <strong>case header</strong> at the top of the Case Detail
+                View shows: Case Number, Applicant Name, ITS Number, Case Type
+                (Baaseteen / SHND), Assigned DCM, and the date the case entered
+                Welfare Review
+              </li>
+              <li>
+                The <strong>SLA timer</strong> shows how many days remain before
+                the review deadline — prioritise cases with fewer days remaining
+              </li>
+              <li>
+                Click the <strong>Status History</strong> tab → review the full
+                audit trail to see when the case was created, when the
+                counseling form was completed, and whether this is a first-time
+                review or a resubmission after rework
+              </li>
+              <li>
+                If the case was previously sent back for
+                <strong>Rework</strong>, the Status History will show the
+                original rework request and the DCM's resubmission — check
+                whether previous concerns were addressed
+              </li>
+              <li>
+                Note any DCM comments already posted in the
+                <strong>Comments</strong> tab for additional context before
+                opening the Counseling Form
+              </li>
+            </ul>
+          </div>
+          <div class="info-box">
+            <strong>Note — No Cover Letter at This Stage</strong>
+            Cover Letter Generation occurs later in the workflow — after
+            Operations Lead approval. At the Welfare Review stage, the Reviewer
+            evaluates the case directly from the
+            <strong>Counseling Form</strong> and <strong>Attachments</strong>.
+            There is no Cover Letter document available to read at this point.
+          </div>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\Welfare\Images\timeline.png"
+                alt=""
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">05</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Reading the Counseling Form — All 7 Sections
+          </div>
+          <p class="step-desc">
+            After reviewing the Cover Letter, click the
+            <strong>Counseling Form</strong> tab to read the full form in
+            detail. All 7 sections are presented in read-only mode. Evaluate
+            completeness, accuracy, and overall case strength.
+          </p>
+          <div class="sub-block">
+            <div class="sub-label">What to Review in Each Section</div>
+            <table class="workflow-table">
+              <thead>
+                <tr>
+                  <th>Section</th>
+                  <th>Key Things to Check</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Section 1 — Personal Details</td>
+                  <td>
+                    ITS verification, contact info completeness, Jamiat/Jamaat
+                    match
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 2 — Family Details</td>
+                  <td>
+                    Wellbeing accuracy, family member count vs. income declared,
+                    surplus/deficit reasonableness
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 3 — Assessment</td>
+                  <td>
+                    Business background credibility, counselor's assessment
+                    quality, proposed business viability
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 4 — Financial Assistance</td>
+                  <td>
+                    Amount requested vs. stated need, Enayat/Qardan split
+                    reasonableness, collateral declared
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 5 — Economic Projections</td>
+                  <td>
+                    Year-1 revenue vs. present; growth rate realism; Cash
+                    Surplus adequacy for Qardan repayment
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 6 — Action Plan &amp; Mentors</td>
+                  <td>
+                    Action plan specificity and timeline realism; mentor
+                    assignments present and appropriate
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 7 — Declaration</td>
+                  <td>
+                    All three signatures present (Applicant, Counselor, TR
+                    Committee); dates valid
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\Welfare\Images\formStages.png"
+                alt=""
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Welfare Reviewer User Journey</span>
+        <div class="footer-center">
+          <span>Section B: Cover Letter &amp; Counseling Form</span>
+        </div>
+        <span>Page 5</span>
+      </div>
+    </div>
+
+    <!-- PAGE 6 — Step 06 -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >FACTS — Welfare Reviewer User Journey &nbsp;|&nbsp; Section B:
+            Attachments Review</span
+          >
+        </div>
+        <span class="page-header-role">Welfare Reviewer</span>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">06</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Checking Attachments &amp; Supporting Documents
+          </div>
+          <p class="step-desc">
+            The <strong>Attachments</strong> tab shows all documents uploaded by
+            the DCM during the counseling form process. The Welfare Reviewer
+            must verify that mandatory documents are present, view them, and
+            assess whether they support the case data. Missing or inconsistent
+            attachments are grounds for requesting rework.
+          </p>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              What the Reviewer Sees in the Attachments Tab
+            </div>
+            <ul class="details-list">
+              <li>
+                A list of all uploaded files grouped by document type —
+                Mandatory documents listed first, then Optional ones
+              </li>
+              <li>
+                Each file row shows: Document name, File name, Upload date, and
+                a <strong>View / Download</strong> button
+              </li>
+              <li>
+                A section header shows the
+                <strong>total attachment count</strong> (e.g., "5 documents
+                attached")
+              </li>
+              <li>
+                Mandatory documents that are uploaded show
+                <span class="perm-chip green">Uploaded</span>; missing ones show
+                <span class="perm-chip red">Missing</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Mandatory Documents to Verify</div>
+            <table class="workflow-table">
+              <thead>
+                <tr>
+                  <th>Document</th>
+                  <th>What to Check</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Photograph of business / proposed place</td>
+                  <td>
+                    Image is clear and shows a real location; matches
+                    description in Section 3 of the form
+                  </td>
+                </tr>
+                <tr>
+                  <td>Quotation for Qardan end-use</td>
+                  <td>
+                    Quotation amount matches or aligns with the Qardan amount
+                    requested in Section 4
+                  </td>
+                </tr>
+                <tr>
+                  <td>Product brochure / marketing material</td>
+                  <td>
+                    Confirms the business type and product claims made in
+                    Section 3
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Optional Documents — Check if Present</div>
+            <ul class="details-list">
+              <li>
+                <strong>Income Tax Return:</strong> confirms declared income
+                levels; verify approximate alignment with Section 2 income
+                figures
+              </li>
+              <li>
+                <strong>Financial Statements:</strong> P&amp;L and Balance Sheet
+                if an existing business — cross-check against Section 3 and
+                Section 5 projections
+              </li>
+              <li>
+                <strong>Cancelled Cheque / PAN / Aadhar:</strong> identity
+                verification documents — note their presence
+              </li>
+              <li>
+                If key optional documents are missing for an existing business
+                (e.g., no financials), the reviewer may note this as a concern
+                in Comments
+              </li>
+            </ul>
+          </div>
+
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\Welfare\Images\attachments.png"
+                alt=""
+              />
+            </div>
+          </div>
+
+          <div class="warning-box">
+            <strong>Reviewer Cannot Upload or Delete Attachments</strong>
+            The Welfare Reviewer has read-only access to Attachments. They can
+            view and download files but cannot add new documents or remove
+            existing ones. If documents are missing or incorrect, the reviewer
+            sends the case back for Rework and lists the required corrections in
+            the Comments section.
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Welfare Reviewer User Journey</span>
+        <div class="footer-center">
+          <span>Section B: Attachments Review</span>
+        </div>
+        <span>Page 6</span>
+      </div>
+    </div>
+
+    <!-- PAGE 7 — Step 07 -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >FACTS — Welfare Reviewer User Journey &nbsp;|&nbsp; Section C:
+            Decision &amp; Outcome</span
+          >
+        </div>
+        <span class="page-header-role">Welfare Reviewer</span>
+      </div>
+      <div class="section-break">
+        <span class="section-break-label"
+          >Section C — Decision &amp; Outcome</span
+        >
+        <div class="section-break-line"></div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">07</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">Adding Review Comments</div>
+          <p class="step-desc">
+            Before making a final decision, the Welfare Reviewer documents their
+            observations, concerns, and evaluation notes in the
+            <strong>Comments</strong> tab. This creates a clear audit trail and,
+            in the case of Rework or Rejection, gives the DCM actionable
+            feedback.
+          </p>
+
+          <div class="sub-block">
+            <div class="sub-label">How to Use the Comments Tab</div>
+            <ul class="details-list">
+              <li>
+                Click the <strong>Comments</strong> tab → a threaded comment
+                feed loads showing all previous comments on this case
+              </li>
+              <li>
+                Scroll to the bottom → a <strong>text area</strong> is available
+                to type a new comment
+              </li>
+              <li>
+                Type the review observation → click
+                <strong>Post Comment</strong> → the comment is added with the
+                reviewer's name, role, and timestamp
+              </li>
+              <li>
+                Comments are visible to all users with access to the case —
+                write clearly and professionally
+              </li>
+              <li>
+                Multiple comments can be posted for different concerns (e.g.,
+                one for form issues, one for attachment issues)
+              </li>
+            </ul>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">What to Write in Review Comments</div>
+            <table class="workflow-table">
+              <thead>
+                <tr>
+                  <th>Scenario</th>
+                  <th>What to include in the comment</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Case is strong — approving</td>
+                  <td>
+                    Brief summary of strengths: e.g., "Income figures
+                    consistent, business plan credible, all mandatory
+                    attachments present. Recommending for ZI review."
+                  </td>
+                </tr>
+                <tr>
+                  <td>Sending for Rework</td>
+                  <td>
+                    Specific list of items to correct: e.g., "1. Section 4
+                    Qardan amount does not match quotation. 2. Business photo
+                    missing context. 3. Year-1 revenue projection appears too
+                    high vs. present baseline."
+                  </td>
+                </tr>
+                <tr>
+                  <td>Rejecting the case</td>
+                  <td>
+                    Clear documented reason: e.g., "Applicant income exceeds
+                    eligibility threshold. Declared assets indicate financial
+                    sufficiency. Case does not meet Baaseteen welfare criteria."
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\Welfare\Images\comments.png"
+                alt=""
+              />
+            </div>
+          </div>
+
+          <div class="info-box">
+            <strong>Comments Are Part of the Permanent Audit Trail</strong>
+            All comments are stored permanently and cannot be deleted. They are
+            visible across all workflow stages to all authorised users. Always
+            write with the assumption that applicants, committee members, and
+            management may read them.
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Welfare Reviewer User Journey</span>
+        <div class="footer-center">
+          <span>Section C: Decision &amp; Outcome</span>
+        </div>
+        <span>Page 7</span>
+      </div>
+    </div>
+
+    <!-- PAGE 8 — Step 08 -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >FACTS — Welfare Reviewer User Journey &nbsp;|&nbsp; Section C:
+            Making the Decision</span
+          >
+        </div>
+        <span class="page-header-role">Welfare Reviewer</span>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">08</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Making the Decision — Approve, Rework, or Reject
+          </div>
+          <p class="step-desc">
+            After reviewing all case materials, the Welfare Reviewer takes a
+            formal action using the workflow action buttons visible on the Case
+            Detail page. There are three possible decisions.
+          </p>
+
+          <div class="sub-block">
+            <div class="sub-label">The Three Decision Options</div>
+            <div class="decision-box">
+              <div class="decision-option approve">
+                <div class="decision-option-label">✅ Approve</div>
+                <p>
+                  The case is complete, credible, and meets welfare criteria.
+                  Clicking <strong>Approve</strong> moves the case to the
+                  <strong>ZI Approval</strong> stage. A notification is sent to
+                  the ZI assigned to this Jamiat.
+                </p>
+              </div>
+              <div class="decision-option rework">
+                <div class="decision-option-label">🔁 Request Rework</div>
+                <p>
+                  The case has fixable issues. Clicking
+                  <strong>Request Rework</strong> sends the case back to the DCM
+                  with status <strong>Rework Required</strong>. The DCM is
+                  notified to address the reviewer's comments and resubmit.
+                </p>
+              </div>
+            </div>
+            <div class="decision-box" style="margin-top: 6px">
+              <div class="decision-option reject" style="flex: 0 0 48%">
+                <div class="decision-option-label">❌ Reject</div>
+                <p>
+                  The case does not meet welfare criteria and should not
+                  proceed. Clicking <strong>Reject</strong> closes the case. The
+                  DCM and relevant stakeholders are notified. The reviewer's
+                  comments become the official rejection reason.
+                </p>
+              </div>
+              <div
+                style="
+                  flex: 1;
+                  padding-left: 10px;
+                  display: flex;
+                  align-items: center;
+                "
+              >
+                <div class="info-box" style="margin: 0">
+                  <strong>Confirmation Required</strong>
+                  All three actions show a confirmation dialog before executing.
+                  For Reject, the system requires at least one comment to be
+                  posted first — this ensures a documented reason always exists
+                  on record.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              Step-by-Step: How to Submit the Decision
+            </div>
+            <ul class="details-list">
+              <li>
+                Ensure at least one comment has been posted summarising the
+                review findings
+              </li>
+              <li>
+                Click the appropriate action button: <strong>Approve</strong>,
+                <strong>Request Rework</strong>, or <strong>Reject</strong> —
+                found in the workflow action panel on the case detail page
+              </li>
+              <li>
+                A <strong>confirmation dialog</strong> appears: confirm the
+                action → click <strong>Confirm</strong>
+              </li>
+              <li>
+                The system executes the action, updates the case status,
+                triggers notifications, and logs the action in Status History
+              </li>
+              <li>
+                The case moves out of the reviewer's queue — the reviewer is
+                returned to the Cases list
+              </li>
+            </ul>
+          </div>
+
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\Welfare\Images\reviewForm.png"
+                alt=""
+              />
+            </div>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Decision Outcome Summary</div>
+            <table class="workflow-table">
+              <thead>
+                <tr>
+                  <th>Decision</th>
+                  <th>Case Status After</th>
+                  <th>Who is Notified</th>
+                  <th>Next Step</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="perm-chip green">Approve</span></td>
+                  <td>ZI Approval</td>
+                  <td>ZI (Zone Inspector)</td>
+                  <td>ZI reviews and makes their decision</td>
+                </tr>
+                <tr>
+                  <td><span class="perm-chip amber">Request Rework</span></td>
+                  <td>Rework Required</td>
+                  <td>DCM</td>
+                  <td>
+                    DCM corrects form, resubmits → returns to Welfare Review
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="perm-chip red">Reject</span></td>
+                  <td>Rejected / Closed</td>
+                  <td>DCM + Applicant</td>
+                  <td>Case closed; rejection reason permanently recorded</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Welfare Reviewer User Journey</span>
+        <div class="footer-center">
+          <span>Section C: Making the Decision</span>
+        </div>
+        <span>Page 8</span>
+      </div>
+    </div>
+
+    <!-- PAGE 9 — Step 09 -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >FACTS — Welfare Reviewer User Journey &nbsp;|&nbsp; Section C:
+            After the Decision</span
+          >
+        </div>
+        <span class="page-header-role">Welfare Reviewer</span>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">09</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">What Happens After the Decision</div>
+          <p class="step-desc">
+            Once the Welfare Reviewer submits their decision, FACTS
+            automatically routes the case and notifies all relevant parties. The
+            Reviewer's role in this case is now complete unless the case returns
+            for a re-review after rework.
+          </p>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              After Approval — Case Moves to ZI Approval
+            </div>
+            <ul class="details-list">
+              <li>
+                The case workflow advances to <strong>ZI Approval</strong> — the
+                next level of the approval chain
+              </li>
+              <li>
+                The <strong>ZI (Zone Inspector)</strong> assigned to the Jamiat
+                receives an in-app notification to begin their review
+              </li>
+              <li>
+                The Welfare Reviewer can still view the case and its progress
+                but has no further action unless the ZI sends it back
+              </li>
+            </ul>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              Full Workflow Progression After Approval
+            </div>
+            <div class="flow-path">
+              <div class="flow-node">Draft &amp;<br />Counseling</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node highlight">Welfare<br />Review ✓</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node active">ZI<br />Approval</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">KG<br />Review</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Operations<br />Lead</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Cover Letter<br />Generation</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Executive<br />Approval</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Manzoori<br />(Sanction)</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Financial<br />Disbursement</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Payment<br />Tracking</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Fund<br />Utilization</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Case<br />Closure</div>
+            </div>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              After Rework Request — Case Returns to DCM
+            </div>
+            <ul class="details-list">
+              <li>
+                The case status changes to <strong>Rework Required</strong> —
+                the DCM receives a notification with the reviewer's comments
+                attached
+              </li>
+              <li>
+                The DCM unlocks the relevant sections of the Counseling Form,
+                makes the requested corrections, and resubmits
+              </li>
+              <li>
+                Once resubmitted, the case returns to
+                <strong>Welfare Review</strong> stage — the Welfare Reviewer
+                receives a new notification to re-review
+              </li>
+              <li>
+                The reviewer goes through the same review process (Steps 03–08)
+                again, focusing on whether the rework comments have been
+                addressed
+              </li>
+            </ul>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">After Rejection — Case is Closed</div>
+            <ul class="details-list">
+              <li>
+                The case status changes to <strong>Rejected</strong> — the case
+                is closed and no further workflow actions are possible
+              </li>
+              <li>
+                The rejection reason (from the reviewer's Comments) is stored
+                permanently against the case
+              </li>
+              <li>
+                The DCM and applicant are notified of the rejection; the DCM can
+                view the case and the comments for reference
+              </li>
+              <li>
+                A rejected case can only be re-opened by an Admin or Super Admin
+                if there is a valid reason to reconsider
+              </li>
+            </ul>
+          </div>
+
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\Welfare\Images\ZI Review.png"
+                alt=""
+              />
+            </div>
+          </div>
+
+          <div class="milestone-strip">
+            <div class="milestone-item">
+              <div class="milestone-label">Awaiting Review</div>
+              <div class="milestone-value" style="color: var(--amber)">
+                Queue
+              </div>
+              <div class="milestone-note">Cases needing action now</div>
+            </div>
+            <div class="milestone-item">
+              <div class="milestone-label">Approved</div>
+              <div class="milestone-value" style="color: var(--green)">
+                Forwarded
+              </div>
+              <div class="milestone-note">Moved to ZI Approval</div>
+            </div>
+            <div class="milestone-item">
+              <div class="milestone-label">Rework Sent</div>
+              <div class="milestone-value" style="color: var(--amber)">
+                Returned
+              </div>
+              <div class="milestone-note">DCM notified to correct</div>
+            </div>
+            <div class="milestone-item">
+              <div class="milestone-label">Rejected</div>
+              <div class="milestone-value" style="color: var(--red)">
+                Closed
+              </div>
+              <div class="milestone-note">Documented &amp; closed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="end-banner">
+        <div class="end-banner-icon">🔍</div>
+        <div class="end-banner-text">
+          <h3>End of Welfare Reviewer User Journey</h3>
+          <p>
+            9 steps covering the complete Welfare Reviewer workflow in FACTS —
+            from login and finding cases, through reading the Cover Letter,
+            Counseling Form, and Attachments, to posting review comments and
+            making the final Approve, Rework, or Reject decision.
+          </p>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Welfare Reviewer User Journey</span>
+        <div class="footer-center">
+          <span>Section C: After the Decision</span>
+        </div>
+        <span>Page 9</span>
+      </div>
+    </div>
+  </body>
+</html>
