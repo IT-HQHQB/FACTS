@@ -314,7 +314,7 @@ const CounselingForm = () => {
         background: {
           education: '',
           work_experience: '',
-          family_business: '',
+          total_work_experience: '',
           skills_knowledge: '',
           counselor_assessment: ''
         },
@@ -326,10 +326,9 @@ const CounselingForm = () => {
           store_location: '',
           sourcing: '',
           selling: '',
-          major_expenses: '',
-          goods_purchase: '',
-          revenue: '',
-          profit_margin: ''
+          business_expenses: '',
+          yearly_revenue: '',
+          avg_gross_profit_margin: ''
         },
         counselor_assessment: {
           demand_supply: '',
@@ -3408,10 +3407,10 @@ const CounselingForm = () => {
                     className={!canUpdateSection('assessment') ? 'bg-gray-100' : ''}
                   />
                   <Input
-                    label="3.1.3. Current Business/Service"
+                    label="3.1.3. Total years of working experience"
                     required
-                    {...register('assessment.background.family_business', { required: 'Present Business/Family Business is required' })}
-                    error={errors.assessment?.background?.family_business?.message}
+                    {...register('assessment.background.total_work_experience', { required: 'Total years of working experience is required' })}
+                    error={errors.assessment?.background?.total_work_experience?.message}
                     disabled={!canUpdateSection('assessment')}
                     className={!canUpdateSection('assessment') ? 'bg-gray-100' : ''}
                   />
@@ -3528,46 +3527,31 @@ const CounselingForm = () => {
                     error={errors.assessment?.proposed_business?.selling?.message}
                   />
                   <Input
-                    label="3.2.4. Business Expenses"
-                    {...register('assessment.proposed_business.major_expenses')}
-                    error={errors.assessment?.proposed_business?.major_expenses?.message}
+                    label="3.2.4. Please mention What are business expenses with amount? Eg. Rent, transport, salary, bills."
+                    {...register('assessment.proposed_business.business_expenses')}
+                    error={errors.assessment?.proposed_business?.business_expenses?.message}
                     disabled={!canUpdateSection('assessment')}
                     className={!canUpdateSection('assessment') ? 'bg-gray-100' : ''}
                   />
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      3.2.5. From where goods purchase/credit period/cash, products/services
+                      3.2.5. Please mention Yearly Revenue.
                     </label>
                     <textarea
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                       rows={4}
-                      {...register('assessment.proposed_business.goods_purchase')}
-                      placeholder="Enter details about goods purchase, credit period, cash, products/services"
+                      {...register('assessment.proposed_business.yearly_revenue')}
+                      placeholder="Enter yearly revenue details"
                       disabled={!canUpdateSection('assessment')}
                     />
-                    {errors.assessment?.proposed_business?.goods_purchase && (
-                      <p className="text-red-500 text-sm mt-1">{errors.assessment.proposed_business.goods_purchase.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      3.2.6. Revenue
-                    </label>
-                    <textarea
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      rows={4}
-                      {...register('assessment.proposed_business.revenue')}
-                      placeholder="Enter revenue details"
-                      disabled={!canUpdateSection('assessment')}
-                    />
-                    {errors.assessment?.proposed_business?.revenue && (
-                      <p className="text-red-500 text-sm mt-1">{errors.assessment.proposed_business.revenue.message}</p>
+                    {errors.assessment?.proposed_business?.yearly_revenue && (
+                      <p className="text-red-500 text-sm mt-1">{errors.assessment.proposed_business.yearly_revenue.message}</p>
                     )}
                   </div>
                   <Input
-                    label="3.2.7. Profit Margin"
-                    {...register('assessment.proposed_business.profit_margin')}
-                    error={errors.assessment?.proposed_business?.profit_margin?.message}
+                    label="3.2.6. Please mention Average Gross Profit Margin."
+                    {...register('assessment.proposed_business.avg_gross_profit_margin')}
+                    error={errors.assessment?.proposed_business?.avg_gross_profit_margin?.message}
                     disabled={!canUpdateSection('assessment')}
                     className={!canUpdateSection('assessment') ? 'bg-gray-100' : ''}
                   />

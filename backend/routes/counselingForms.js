@@ -678,7 +678,7 @@ router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, 
           background: {
             education: assessment.background_education || '',
             work_experience: assessment.background_work_experience || '',
-            family_business: assessment.background_family_business || '',
+            total_work_experience: assessment.background_total_work_experience || '',
             skills_knowledge: assessment.background_skills_knowledge || '',
             counselor_assessment: assessment.background_counselor_assessment || ''
           },
@@ -690,10 +690,9 @@ router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, 
             store_location: assessment.store_location || '',
             sourcing: assessment.proposed_sourcing || '',
             selling: assessment.proposed_selling || '',
-            major_expenses: assessment.proposed_major_expenses || '',
-            goods_purchase: assessment.proposed_goods_purchase || '',
-            revenue: assessment.proposed_revenue || '',
-            profit_margin: assessment.proposed_profit_margin || ''
+            business_expenses: assessment.proposed_business_expenses || '',
+            yearly_revenue: assessment.proposed_yearly_revenue || '',
+            avg_gross_profit_margin: assessment.proposed_avg_gross_profit_margin || ''
           },
           counselor_assessment: {
             demand_supply: assessment.counselor_demand_supply || '',
@@ -1099,22 +1098,22 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
           // Update existing assessment
           await pool.execute(`
             UPDATE assessment SET
-              background_education = ?, background_work_experience = ?, background_family_business = ?,
+              background_education = ?, background_work_experience = ?, background_total_work_experience = ?,
               background_skills_knowledge = ?, background_counselor_assessment = ?,
               trade_mark = ?, online_presence = ?, digital_marketing = ?, store_location = ?,
-              proposed_present_business_condition = ?, proposed_sourcing = ?, proposed_selling = ?, proposed_major_expenses = ?,
-              proposed_goods_purchase = ?, proposed_revenue = ?, proposed_profit_margin = ?,
+              proposed_present_business_condition = ?, proposed_sourcing = ?, proposed_selling = ?, proposed_business_expenses = ?,
+              proposed_yearly_revenue = ?, proposed_avg_gross_profit_margin = ?,
               counselor_demand_supply = ?, counselor_growth_potential = ?,
               counselor_competition_strategy = ?, counselor_support_needed = ?,
               updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
           `, [
-            data.background?.education, data.background?.work_experience, data.background?.family_business,
+            data.background?.education, data.background?.work_experience, data.background?.total_work_experience,
             data.background?.skills_knowledge, data.background?.counselor_assessment,
-            data.proposed_business?.trade_mark, data.proposed_business?.online_presence, 
+            data.proposed_business?.trade_mark, data.proposed_business?.online_presence,
             data.proposed_business?.digital_marketing, data.proposed_business?.store_location,
-            data.proposed_business?.present_business_condition, data.proposed_business?.sourcing, data.proposed_business?.selling, data.proposed_business?.major_expenses,
-            data.proposed_business?.goods_purchase, data.proposed_business?.revenue, data.proposed_business?.profit_margin,
+            data.proposed_business?.present_business_condition, data.proposed_business?.sourcing, data.proposed_business?.selling, data.proposed_business?.business_expenses,
+            data.proposed_business?.yearly_revenue, data.proposed_business?.avg_gross_profit_margin,
             data.counselor_assessment?.demand_supply, data.counselor_assessment?.growth_potential,
             data.counselor_assessment?.competition_strategy, JSON.stringify(data.counselor_assessment?.support_needed || []),
             assessmentId
@@ -1124,21 +1123,21 @@ router.put('/:formId/section/:section', authenticateToken, async (req, res) => {
           // Create new assessment
           const [result] = await pool.execute(`
             INSERT INTO assessment (
-              case_id, background_education, background_work_experience, background_family_business,
+              case_id, background_education, background_work_experience, background_total_work_experience,
               background_skills_knowledge, background_counselor_assessment,
               trade_mark, online_presence, digital_marketing, store_location,
-              proposed_present_business_condition, proposed_sourcing, proposed_selling, proposed_major_expenses,
-              proposed_goods_purchase, proposed_revenue, proposed_profit_margin,
+              proposed_present_business_condition, proposed_sourcing, proposed_selling, proposed_business_expenses,
+              proposed_yearly_revenue, proposed_avg_gross_profit_margin,
               counselor_demand_supply, counselor_growth_potential,
               counselor_competition_strategy, counselor_support_needed
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `, [
-            form.case_id, data.background?.education, data.background?.work_experience, data.background?.family_business,
+            form.case_id, data.background?.education, data.background?.work_experience, data.background?.total_work_experience,
             data.background?.skills_knowledge, data.background?.counselor_assessment,
-            data.proposed_business?.trade_mark, data.proposed_business?.online_presence, 
+            data.proposed_business?.trade_mark, data.proposed_business?.online_presence,
             data.proposed_business?.digital_marketing, data.proposed_business?.store_location,
-            data.proposed_business?.present_business_condition, data.proposed_business?.sourcing, data.proposed_business?.selling, data.proposed_business?.major_expenses,
-            data.proposed_business?.goods_purchase, data.proposed_business?.revenue, data.proposed_business?.profit_margin,
+            data.proposed_business?.present_business_condition, data.proposed_business?.sourcing, data.proposed_business?.selling, data.proposed_business?.business_expenses,
+            data.proposed_business?.yearly_revenue, data.proposed_business?.avg_gross_profit_margin,
             data.counselor_assessment?.demand_supply, data.counselor_assessment?.growth_potential,
             data.counselor_assessment?.competition_strategy, JSON.stringify(data.counselor_assessment?.support_needed || [])
           ]);
