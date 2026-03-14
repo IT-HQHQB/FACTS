@@ -24,6 +24,7 @@ A comprehensive case management and welfare tracking system designed for Baasete
 - [Deployment](#deployment)
 - [Testing](#testing)
 - [Monitoring](#monitoring)
+- [Recent Changes](#recent-changes)
 
 ---
 
@@ -391,12 +392,20 @@ Multi-section digital counseling forms that replace paper-based counseling. Form
 - Counselor and DCM role-specific access
 
 ### 5. Cover Letters
-Automated cover letter generation for cases. Cover letter forms collect additional information and generate PDF documents.
+Automated cover letter generation for cases. Cover letter forms collect additional information and generate PDF documents for executive review.
 
 **Key capabilities:**
 - Cover letter form with submission workflow
-- Automated PDF generation
+- Automated PDF generation via Puppeteer
 - Download and print support
+- Save-before-submit UX — Save keeps the modal open (shows toast confirmation); Submit is disabled with helper text until unsaved changes are saved
+- PDF downloaded fresh from current data via the preview endpoint (not a stored static file)
+- Toast notifications rendered at `document.body` level via `ReactDOM.createPortal` to prevent z-index conflicts with the header
+
+**PDF layout:**
+- Section labels (Summary of Proposed Upliftment Plan, Financial Assistance, Non-financial Assistance, Projected Income) use 20% width to align with the Welfare Dept Comments style
+- Executive Management section has `page-break-inside: avoid` to prevent it from splitting across pages
+- Executive Approval section rendered as a table with columns (Enayat, Qardan, QH Months) matching the Financial Assistance table style
 
 ### 6. Payment Management
 Track financial disbursements for approved cases. Payment schedules define installment plans and track actual disbursements.
@@ -970,6 +979,26 @@ cd frontend && npm test
 - **Error Logging**: Console-based error logging with stack traces
 - **Audit Trails**: Workflow logs, income change audit, status history
 - **SLA Monitoring**: Automated SLA calculation per workflow stage
+
+---
+
+## Recent Changes
+
+### Cover Letter Improvements (March 2026)
+
+**PDF Template (`backend/templates/coverLetterPdfTemplate.js`)**
+- Standardized section label widths to 20% (Summary of Proposed Upliftment Plan, Financial Assistance, Non-financial Assistance, Projected Income) to match the Welfare Dept Comments style
+- Added `page-break-inside: avoid` on the Executive Management section to prevent it from splitting across pages
+- Removed "Cover letter prepared by System" footer text from generated PDFs
+- Converted Executive Approval section from flat inline layout to a table (columns: Enayat, Qardan, QH Months), consistent with the Financial Assistance table style
+
+**Cover Letter Form UX (`frontend/src/components/CoverLetterForm.js`)**
+- Save button no longer closes the modal — it saves and shows a toast, keeping the form open for review
+- Added `hasUnsavedChanges` state: Submit button is disabled with helper text "Save changes before submitting" whenever there are unsaved edits
+
+**Toast & PDF Download (`frontend/src/pages/Cases.js`)**
+- Toast notifications moved to `document.body` via `ReactDOM.createPortal` with `z-index: 9999`, preventing them from being obscured by the app header
+- PDF download now uses the preview endpoint (`/api/cover-letters/preview/:caseId`) to generate a fresh PDF from current data instead of retrieving a previously saved static file
 
 ---
 
