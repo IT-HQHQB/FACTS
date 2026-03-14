@@ -203,6 +203,7 @@ router.get('/', authenticateToken, authorizeCasesList, async (req, res) => {
       jamiat_id,
       jamaat_id,
       current_workflow_stage_id,
+      workflow_progress,
       is_duplicate
     } = req.query;
 
@@ -287,6 +288,24 @@ router.get('/', authenticateToken, authorizeCasesList, async (req, res) => {
     if (current_workflow_stage_id && current_workflow_stage_id.toString().trim() !== '') {
       whereConditions.push('c.current_workflow_stage_id = ?');
       queryParams.push(current_workflow_stage_id);
+    }
+
+    // Filter by workflow progress step (which section the case is currently on)
+    if (workflow_progress && workflow_progress.toString().trim() !== '') {
+      const step = workflow_progress.toString().trim();
+      const progressConditions = {
+        'personal': 'cf.personal_details_id IS NULL',
+        'family': 'cf.personal_details_id IS NOT NULL AND cf.family_details_id IS NULL',
+        'assessment': 'cf.family_details_id IS NOT NULL AND cf.assessment_id IS NULL',
+        'financial': 'cf.assessment_id IS NOT NULL AND cf.financial_assistance_id IS NULL',
+        'growth': 'cf.financial_assistance_id IS NOT NULL AND cf.economic_growth_id IS NULL',
+        'declaration': 'cf.economic_growth_id IS NOT NULL AND cf.declaration_id IS NULL',
+        'attachments': 'cf.declaration_id IS NOT NULL AND cf.attachments_id IS NULL',
+        'completed': 'cf.personal_details_id IS NOT NULL AND cf.family_details_id IS NOT NULL AND cf.assessment_id IS NOT NULL AND cf.financial_assistance_id IS NOT NULL AND cf.economic_growth_id IS NOT NULL AND cf.declaration_id IS NOT NULL AND cf.attachments_id IS NOT NULL'
+      };
+      if (progressConditions[step]) {
+        whereConditions.push(`(${progressConditions[step]})`);
+      }
     }
 
     let isDuplicateColumnExists = false;

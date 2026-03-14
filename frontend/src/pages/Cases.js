@@ -119,6 +119,7 @@ const Cases = () => {
     assigned_roles: '',
     assigned_counselor_id: '',
     current_workflow_stage_id: '',
+    workflow_progress: '',
   });
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [filterJamiatId, setFilterJamiatId] = useState('');
@@ -1141,6 +1142,7 @@ const Cases = () => {
       assigned_roles: '',
       assigned_counselor_id: '',
       current_workflow_stage_id: '',
+      workflow_progress: '',
     });
     setFilterJamiatId('');
     setFilterJamaatId('');
@@ -2273,19 +2275,6 @@ const Cases = () => {
             <Select.Option value="finance_disbursement">Finance Disbursement</Select.Option>
           </Select>
 
-          <Select
-            label="Case Type"
-            value={filters.case_type}
-            onChange={(e) => handleFilterChange('case_type', e.target.value)}
-          >
-            <Select.Option value="">All Types</Select.Option>
-            {caseTypesData?.map((caseType) => (
-              <Select.Option key={caseType.id} value={caseType.name}>
-                {caseType.name}
-              </Select.Option>
-            ))}
-          </Select>
-
           {/* Jamiat Filter */}
           <SearchableSelect
             label="Jamiat"
@@ -2342,16 +2331,50 @@ const Cases = () => {
             })) || []}
           />
 
+          {/* Workflow Filter */}
+          <SearchableSelect
+            label="Workflow"
+            value={filters.case_type}
+            onChange={(value) => handleFilterChange('case_type', value)}
+            placeholder="Select Workflow..."
+            options={caseTypesData?.map(caseType => ({
+              value: caseType.name,
+              label: caseType.name
+            })) || []}
+          />
+
           {/* Case Stage Filter */}
           <SearchableSelect
             label="Case Stage"
             value={filters.current_workflow_stage_id}
             onChange={(value) => handleFilterChange('current_workflow_stage_id', value)}
             placeholder="Select Case Stage..."
-            options={workflowStagesData?.map(stage => ({
-              value: stage.id,
-              label: stage.stage_name
-            })) || []}
+            options={workflowStagesData
+              ?.filter((stage, index, self) =>
+                index === self.findIndex(s => s.stage_name === stage.stage_name)
+              )
+              .map(stage => ({
+                value: stage.id,
+                label: stage.stage_name
+              })) || []}
+          />
+
+          {/* Workflow Progress Filter */}
+          <SearchableSelect
+            label="Workflow Progress"
+            value={filters.workflow_progress}
+            onChange={(value) => handleFilterChange('workflow_progress', value)}
+            placeholder="Select Workflow Step..."
+            options={[
+              { value: 'personal', label: 'Personal Details' },
+              { value: 'family', label: 'Family Details' },
+              { value: 'assessment', label: 'Assessment' },
+              { value: 'financial', label: 'Financial Assistance' },
+              { value: 'growth', label: 'Economic Growth' },
+              { value: 'declaration', label: 'Declaration' },
+              { value: 'attachments', label: 'Attachments' },
+              { value: 'completed', label: 'Completed' },
+            ]}
           />
         </div>
 
