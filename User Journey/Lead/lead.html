@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FACTS — Operations Lead User Journey</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap");
+      @page { size: A4; margin: 0; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      :root {
+        --navy: #0f1e2e; --navy-mid: #1a3050; --teal: #0e7490; --teal-lt: #06b6d4;
+        --gold: #c9a84c; --gold-lt: #e8c97e; --cream: #f8f5f0; --text: #1e2d3d;
+        --muted: #5a7184; --border: #d6e4ed; --bg-soft: #eef5f9;
+        --red: #dc2626; --green: #16a34a; --amber: #d97706;
+      }
+      body { font-family: "DM Sans", sans-serif; color: var(--text); background: #d8e4ed; line-height: 1.6; }
+      .cover, .page { width: 210mm; min-height: 297mm; background: #fff; margin: 20px auto; box-shadow: 0 6px 30px rgba(0,0,0,0.15); position: relative; overflow: visible; }
+      @media print {
+        body { background: #fff; margin: 0; padding: 0; }
+        .cover, .page { width: 100%; min-height: unset; height: auto; margin: 0; padding: 12mm 18mm 14mm 18mm; box-shadow: none; background: #fff; overflow: visible; break-before: page; page-break-before: always; position: static; }
+        .cover { background: var(--navy) !important; padding: 0; height: 297mm; min-height: 297mm; overflow: hidden; position: relative; }
+        .page-footer { position: static !important; margin-top: 16px; padding-top: 5px; border-top: 1px solid #e2ecf2; }
+        .step, .sub-block, .info-box, .warning-box, .flow-path, .milestone-strip, .workflow-table, .dual-placeholder, .img-placeholder, .end-banner, .toc-intro-box, .decision-box, .context-strip { break-inside: avoid; page-break-inside: avoid; }
+        .section-break, .step-title, .page-header, .sub-label { break-after: avoid; page-break-after: avoid; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      }
+      /* COVER */
+      .cover { background: var(--navy); display: flex; flex-direction: column; padding: 0; }
+      .cover-top-band { width: 100%; background: var(--teal); height: 6px; }
+      .cover-accent-bar { position: absolute; right: 0; top: 0; bottom: 0; width: 72px; background: linear-gradient(180deg, var(--gold) 0%, #7a5c1e 100%); opacity: 0.85; }
+      .cover-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(14,116,144,0.07) 1px,transparent 1px), linear-gradient(90deg,rgba(14,116,144,0.07) 1px,transparent 1px); background-size: 18mm 18mm; }
+      .cover-inner { position: relative; z-index: 2; padding: 22mm 22mm 18mm 22mm; display: flex; flex-direction: column; height: 100%; width: calc(100% - 72px); }
+      .cover-logo-area { display: flex; align-items: center; gap: 14px; margin-bottom: 44px; }
+      .cover-logo-box { width: 56px; height: 56px; border-radius: 12px; border: 2px solid rgba(201,168,76,0.6); display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.06); }
+      .cover-brand-name { font-family: "Playfair Display", serif; font-size: 22px; font-weight: 900; color: #fff; letter-spacing: 0.04em; line-height: 1; }
+      .cover-brand-sub { font-size: 10px; color: rgba(255,255,255,0.45); letter-spacing: 0.18em; text-transform: uppercase; margin-top: 4px; }
+      .cover-divider { width: 48px; height: 2px; background: var(--gold); margin-bottom: 20px; }
+      .cover-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: var(--teal-lt); margin-bottom: 12px; }
+      .cover-title { font-family: "Playfair Display", serif; font-size: 36px; font-weight: 900; color: #fff; line-height: 1.12; margin-bottom: 10px; }
+      .cover-subtitle { font-size: 14.5px; font-weight: 300; color: rgba(255,255,255,0.6); margin-bottom: 36px; max-width: 340px; line-height: 1.5; }
+      .cover-role-badge { display: inline-flex; align-items: center; gap: 10px; background: var(--gold); color: var(--navy); font-size: 13px; font-weight: 700; padding: 10px 22px; border-radius: 40px; letter-spacing: 0.04em; margin-bottom: 48px; width: fit-content; }
+      .cover-desc { font-size: 11.5px; color: rgba(255,255,255,0.5); line-height: 1.7; max-width: 360px; margin-bottom: auto; }
+      .cover-meta-row { display: flex; gap: 24px; margin-top: 32px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); }
+      .cover-meta-label { font-size: 9px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+      .cover-meta-value { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.65); }
+      .cover-step-count { position: absolute; bottom: 24mm; right: 14mm; display: flex; flex-direction: column; align-items: center; gap: 6px; writing-mode: vertical-rl; transform: rotate(180deg); }
+      .cover-step-count span { font-size: 9px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.35); }
+      .cover-step-count strong { font-family: "Playfair Display", serif; font-size: 28px; font-weight: 900; color: rgba(255,255,255,0.15); }
+      /* TOC */
+      .toc-page { padding: 13mm 18mm 18mm 18mm; display: flex; flex-direction: column; }
+      .toc-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; border-bottom: 2px solid var(--teal); margin-bottom: 14px; }
+      .toc-header-title { font-family: "Playfair Display", serif; font-size: 20px; font-weight: 700; color: var(--navy); display: flex; align-items: center; gap: 10px; }
+      .toc-header-title::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); display: inline-block; }
+      .toc-role-tag { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); background: rgba(14,116,144,0.1); padding: 4px 10px; border-radius: 20px; }
+      .toc-section-label { font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 5px; margin-top: 10px; }
+      .toc-item { display: flex; align-items: baseline; padding: 3.5px 0; border-bottom: 1px dotted #dce8ef; }
+      .toc-item-num { font-size: 10px; font-weight: 700; color: var(--gold); width: 28px; flex-shrink: 0; font-family: "DM Mono", monospace; }
+      .toc-item-title { font-size: 11.5px; font-weight: 500; color: var(--text); flex: 1; }
+      .toc-item-dots { flex: 1; border-bottom: 1px dotted #ccc; margin: 0 6px; max-width: 60px; }
+      .toc-item-page { font-size: 10.5px; font-weight: 600; color: var(--muted); font-family: "DM Mono", monospace; width: 28px; text-align: right; }
+      .toc-intro-box { background: var(--bg-soft); border-left: 4px solid var(--teal); border-radius: 0 8px 8px 0; padding: 11px 15px; margin-bottom: 12px; break-inside: avoid; }
+      .toc-intro-box p { font-size: 11px; color: var(--muted); line-height: 1.65; }
+      /* CONTENT */
+      .page { padding: 10mm 18mm 20mm 18mm; display: flex; flex-direction: column; }
+      .page-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 7px; border-bottom: 2px solid var(--teal); margin-bottom: 12px; flex-shrink: 0; }
+      .page-header-left { display: flex; align-items: center; gap: 8px; }
+      .page-header-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
+      .page-header-title { font-size: 9.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+      .page-header-role { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal); background: rgba(14,116,144,0.1); padding: 3px 9px; border-radius: 20px; }
+      .section-break { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+      .section-break-label { font-size: 9px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); white-space: nowrap; }
+      .section-break-line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--gold), transparent); }
+      .step { display: flex; gap: 14px; margin-bottom: 12px; break-inside: avoid; page-break-inside: avoid; }
+      .step-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 42px; }
+      .step-number { width: 38px; height: 38px; border-radius: 10px; background: var(--navy); color: var(--gold); font-size: 14px; font-weight: 700; font-family: "DM Mono", monospace; display: flex; align-items: center; justify-content: center; border: 1.5px solid rgba(201,168,76,0.3); }
+      .step-connector { flex: 1; width: 2px; background: linear-gradient(180deg, var(--border), transparent); margin-top: 4px; min-height: 14px; }
+      .step-content { flex: 1; min-width: 0; }
+      .step-title { font-family: "Playfair Display", serif; font-size: 14.5px; font-weight: 700; color: var(--navy); margin-bottom: 3px; line-height: 1.3; }
+      .step-desc { font-size: 11px; color: var(--muted); margin-bottom: 7px; line-height: 1.6; }
+      .sub-label { font-size: 10.5px; font-weight: 700; color: var(--navy); margin: 7px 0 4px 0; }
+      .sub-block { break-inside: avoid; page-break-inside: avoid; margin-bottom: 4px; }
+      .details-list { list-style: none; padding: 0; margin-bottom: 8px; }
+      .details-list li { font-size: 10.5px; color: #3d5166; padding: 2px 0 2px 17px; position: relative; line-height: 1.55; }
+      .details-list li::before { content: "▸"; position: absolute; left: 0; color: var(--gold); font-size: 9.5px; top: 3px; }
+      .details-list li strong { color: var(--navy); font-weight: 600; }
+      .img-placeholder { width: 100%; max-height: 400px; overflow: hidden; border: 1.5px dashed #b8cdd9; border-radius: 10px; background: linear-gradient(135deg, #f4f9fc 0%, #eef5f9 100%); margin-top: 7px; margin-bottom: 3px; display: flex; justify-content: center; align-items: center; break-inside: avoid; }
+      .img-placeholder.short  { min-height: 75px; }
+      .img-placeholder.medium { min-height: 115px; }
+      .img-placeholder.tall   { min-height: 155px; }
+      .img-placeholder-inner { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 5px; text-align: center; }
+      .img-placeholder img { width: 100%; height: auto; max-height: 400px; object-fit: contain; }
+      .img-placeholder-icon { font-size: 22px; opacity: 0.5; }
+      .img-placeholder-label { font-size: 10.5px; font-weight: 700; color: var(--navy); opacity: 0.6; }
+      .img-placeholder-sublabel { font-size: 9px; color: var(--muted); max-width: 300px; line-height: 1.5; opacity: 0.8; }
+      .dual-placeholder { display: flex; gap: 8px; margin-top: 7px; break-inside: avoid; }
+      .dual-placeholder .img-placeholder { flex: 1; }
+      .info-box { background: rgba(14,116,144,0.06); border-left: 3px solid var(--teal); border-radius: 0 8px 8px 0; padding: 8px 12px; margin: 7px 0; font-size: 10.5px; color: #2a4a5e; line-height: 1.6; break-inside: avoid; }
+      .info-box strong { color: var(--teal); font-weight: 600; display: block; margin-bottom: 2px; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
+      .warning-box { background: rgba(217,119,6,0.06); border-left: 3px solid var(--amber); border-radius: 0 8px 8px 0; padding: 8px 12px; margin: 7px 0; font-size: 10.5px; color: #5a3a0a; line-height: 1.6; break-inside: avoid; }
+      .warning-box strong { color: var(--amber); font-weight: 600; display: block; margin-bottom: 2px; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
+      .perm-chip { font-size: 9.5px; font-weight: 600; font-family: "DM Mono", monospace; padding: 2px 7px; border-radius: 4px; display: inline-block; }
+      .perm-chip.green  { background: rgba(22,163,74,0.1);   color:#15803d; border:1px solid rgba(22,163,74,0.25); }
+      .perm-chip.blue   { background: rgba(14,116,144,0.1);  color:var(--teal); border:1px solid rgba(14,116,144,0.25); }
+      .perm-chip.red    { background: rgba(220,38,38,0.08);  color:#b91c1c; border:1px solid rgba(220,38,38,0.2); }
+      .perm-chip.amber  { background: rgba(217,119,6,0.1);   color:#92400e; border:1px solid rgba(217,119,6,0.25); }
+      .perm-chip.gold   { background: rgba(201,168,76,0.15); color:#7a5c1e; border:1px solid rgba(201,168,76,0.35); }
+      .workflow-table { width: 100%; font-size: 10px; border-collapse: collapse; margin: 7px 0; break-inside: avoid; }
+      .workflow-table thead tr { background: var(--navy); color: #fff; }
+      .workflow-table thead th { padding: 5px 9px; text-align: left; font-weight: 600; font-size: 9.5px; }
+      .workflow-table thead th:first-child { border-radius: 6px 0 0 0; }
+      .workflow-table thead th:last-child  { border-radius: 0 6px 0 0; }
+      .workflow-table tbody tr:nth-child(even) { background: var(--bg-soft); }
+      .workflow-table tbody td { padding: 5px 9px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; font-size: 10px; }
+      .workflow-table tbody td:first-child { font-weight: 600; color: var(--navy); }
+      .flow-path { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; margin: 7px 0; break-inside: avoid; }
+      .flow-node { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 5px; padding: 4px 8px; font-size: 9.5px; font-weight: 600; color: var(--navy); text-align: center; min-width: 46px; line-height: 1.3; }
+      .flow-node.active    { background: var(--teal); border-color: var(--teal); color: #fff; }
+      .flow-node.highlight { background: var(--navy); border-color: var(--navy); color: var(--gold); }
+      .flow-node.done      { background: rgba(22,163,74,0.1); border-color: rgba(22,163,74,0.4); color: #15803d; }
+      .flow-arrow { color: var(--border); font-size: 13px; padding: 0 1px; flex-shrink: 0; }
+      .milestone-strip { display: flex; margin: 7px 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); break-inside: avoid; }
+      .milestone-item { flex: 1; padding: 7px 9px; border-right: 1px solid var(--border); }
+      .milestone-item:last-child { border-right: none; }
+      .milestone-label { font-size: 8.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+      .milestone-value { font-size: 11px; font-weight: 700; color: var(--navy); }
+      .milestone-note  { font-size: 9px; color: var(--muted); }
+      .decision-box { display: flex; gap: 8px; margin: 7px 0; break-inside: avoid; }
+      .decision-option { flex: 1; border-radius: 8px; padding: 9px 11px; }
+      .decision-option.approve { background: rgba(22,163,74,0.08); border: 1.5px solid rgba(22,163,74,0.3); }
+      .decision-option.reject  { background: rgba(220,38,38,0.06); border: 1.5px solid rgba(220,38,38,0.2); }
+      .decision-option.rework  { background: rgba(217,119,6,0.07); border: 1.5px solid rgba(217,119,6,0.25); }
+      .decision-option-label { font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+      .decision-option.approve .decision-option-label { color: var(--green); }
+      .decision-option.reject  .decision-option-label { color: var(--red); }
+      .decision-option.rework  .decision-option-label { color: var(--amber); }
+      .decision-option p { font-size: 10px; color: var(--text); line-height: 1.5; }
+      .context-strip { display: flex; align-items: flex-start; gap: 8px; background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.25); border-radius: 8px; padding: 7px 11px; margin: 5px 0 9px 0; break-inside: avoid; }
+      .context-strip-label { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); white-space: nowrap; flex-shrink: 0; margin-top: 1px; }
+      .context-strip-text { font-size: 10px; color: var(--muted); line-height: 1.55; }
+      .api-tag { font-family: "DM Mono", monospace; font-size: 8px; background: rgba(14,116,144,0.08); color: var(--teal); border: 1px solid rgba(14,116,144,0.2); border-radius: 3px; padding: 1px 5px; }
+      .end-banner { margin-top: 18px; padding: 14px 18px; background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%); border-radius: 10px; display: flex; align-items: center; gap: 14px; break-inside: avoid; }
+      .end-banner-icon { width: 42px; height: 42px; border-radius: 10px; background: rgba(201,168,76,0.2); border: 1.5px solid rgba(201,168,76,0.4); display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+      .end-banner-text h3 { font-family: "Playfair Display", serif; font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+      .end-banner-text p  { font-size: 10px; color: rgba(255,255,255,0.55); line-height: 1.5; }
+      .page-footer { position: absolute; left: 18mm; right: 18mm; bottom: 9mm; display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: #aab8c2; border-top: 1px solid #e2ecf2; padding-top: 5px; }
+      .footer-center { display: flex; gap: 12px; }
+      .footer-dot { width: 3px; height: 3px; border-radius: 50%; background: #ccc; align-self: center; }
+      /* Auto-trigger banner for cover letter */
+      .trigger-banner { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, rgba(14,116,144,0.08) 0%, rgba(201,168,76,0.06) 100%); border: 1.5px solid rgba(14,116,144,0.2); border-radius: 10px; padding: 11px 14px; margin: 10px 0; break-inside: avoid; }
+      .trigger-banner-icon { font-size: 24px; flex-shrink: 0; }
+      .trigger-banner-text { font-size: 10.5px; color: var(--text); line-height: 1.55; }
+      .trigger-banner-text strong { color: var(--teal); font-weight: 600; }
+    </style>
+  </head>
+  <body>
+
+    <!-- ══════════════════════════════════════════════
+         PAGE 1 — COVER
+    ══════════════════════════════════════════════ -->
+    <div class="cover">
+      <div class="cover-top-band"></div>
+      <div class="cover-accent-bar"></div>
+      <div class="cover-grid"></div>
+      <div class="cover-inner">
+        <div class="cover-logo-area">
+          <div class="cover-logo-box"><span style="font-size:22px">🎯</span></div>
+          <div>
+            <div class="cover-brand-name">FACTS</div>
+            <div class="cover-brand-sub">File &amp; Case Tracking System</div>
+          </div>
+        </div>
+        <div class="cover-divider"></div>
+        <div class="cover-eyebrow">User Journey Document</div>
+        <h1 class="cover-title">Operations<br/>Lead</h1>
+        <p class="cover-subtitle">The fourth and final field-level reviewer — independently evaluating the case and making the approval decision that triggers the Cover Letter generation process.</p>
+        <div class="cover-role-badge"><span style="font-size:16px">🎯</span> Operations Lead</div>
+        <p class="cover-desc">The Operations Lead receives cases that have already been cleared by three prior independent reviewers — Welfare Reviewer, ZI (Zone Inspector), and KG Reviewer. The Operations Lead conducts their own senior-level evaluation of the case data: reviewing the Counseling Form, Attachments, Status History, and all prior reviewer comments. Based on this review, they make one of three decisions: <strong style="color:rgba(255,255,255,0.75)">Approve</strong>, <strong style="color:rgba(255,255,255,0.75)">Request Rework</strong>, or <strong style="color:rgba(255,255,255,0.75)">Reject</strong>. If approved, the system automatically triggers the <strong style="color:rgba(255,255,255,0.75)">Cover Letter Generation</strong> process — the case then moves forward to the Executive Approval chain.</p>
+        <div class="cover-meta-row">
+          <div><div class="cover-meta-label">Version</div><div class="cover-meta-value">1.0</div></div>
+          <div><div class="cover-meta-label">Date</div><div class="cover-meta-value">March 2026</div></div>
+          <div><div class="cover-meta-label">System</div><div class="cover-meta-value">FACTS v1.0</div></div>
+          <div><div class="cover-meta-label">Steps</div><div class="cover-meta-value">7</div></div>
+          <div><div class="cover-meta-label">Pages</div><div class="cover-meta-value">8</div></div>
+        </div>
+      </div>
+      <div class="cover-step-count"><span>Steps</span><strong>7</strong></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         PAGE 2 — TABLE OF CONTENTS
+    ══════════════════════════════════════════════ -->
+    <div class="page toc-page">
+      <div class="toc-header">
+        <div class="toc-header-title">Table of Contents</div>
+        <div class="toc-role-tag">Operations Lead</div>
+      </div>
+      <div class="toc-intro-box">
+        <p>The Operations Lead is the fourth and final field-level reviewer in the FACTS approval chain. By the time a case reaches this stage, it has already been independently cleared by the Welfare Reviewer, ZI, and KG Reviewer. The Operations Lead conducts their own senior-level evaluation — reviewing the Counseling Form, attachments, status history, and all prior reviewer comments — before deciding to <strong>Approve</strong>, <strong>Request Rework</strong>, or <strong>Reject</strong>. On approval, the system <strong>automatically triggers Cover Letter Generation</strong>, after which the case advances to the Executive Approval chain. This document covers <strong>7 steps across 8 pages</strong>.</p>
+      </div>
+
+      <div class="toc-section-label">Section A — Login &amp; Dashboard</div>
+      <div class="toc-item"><span class="toc-item-num">01</span><span class="toc-item-title">Login &amp; Landing on the Operations Lead Dashboard</span><div class="toc-item-dots"></div><span class="toc-item-page">P 3</span></div>
+      <div class="toc-item"><span class="toc-item-num">02</span><span class="toc-item-title">Navigating the Cases Module — Finding Cases to Review</span><div class="toc-item-dots"></div><span class="toc-item-page">P 3</span></div>
+
+      <div class="toc-section-label">Section B — Reviewing the Case</div>
+      <div class="toc-item"><span class="toc-item-num">03</span><span class="toc-item-title">Case Detail View — Header, Workflow Position &amp; Tabs</span><div class="toc-item-dots"></div><span class="toc-item-page">P 4</span></div>
+      <div class="toc-item"><span class="toc-item-num">04</span><span class="toc-item-title">Reading Status History &amp; All Prior Reviewer Comments</span><div class="toc-item-dots"></div><span class="toc-item-page">P 5</span></div>
+      <div class="toc-item"><span class="toc-item-num">05</span><span class="toc-item-title">Reviewing the Counseling Form &amp; Attachments</span><div class="toc-item-dots"></div><span class="toc-item-page">P 5</span></div>
+
+      <div class="toc-section-label">Section C — Decision &amp; Outcome</div>
+      <div class="toc-item"><span class="toc-item-num">06</span><span class="toc-item-title">Adding Comments &amp; Making the Decision (Approve / Rework / Reject)</span><div class="toc-item-dots"></div><span class="toc-item-page">P 6</span></div>
+      <div class="toc-item"><span class="toc-item-num">07</span><span class="toc-item-title">What Happens After Approval — Cover Letter Generation &amp; Next Steps</span><div class="toc-item-dots"></div><span class="toc-item-page">P 7</span></div>
+
+      <div class="page-footer">
+        <span>FACTS — Operations Lead User Journey</span>
+        <div class="footer-center"><span>File &amp; Case Tracking System</span><div class="footer-dot"></div><span>v1.0 · March 2026</span></div>
+        <span>Page 2</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         PAGE 3 — Steps 01 & 02
+    ══════════════════════════════════════════════ -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left"><div class="page-header-dot"></div><span class="page-header-title">Section A — Login &amp; Dashboard</span></div>
+        <span class="page-header-role">Operations Lead</span>
+      </div>
+      <div class="section-break"><span class="section-break-label">Section A — Login &amp; Dashboard</span><div class="section-break-line"></div></div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-number">01</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Login &amp; Landing on the Operations Lead Dashboard</div>
+          <p class="step-desc">The Operations Lead accesses FACTS via browser with their credentials. After login, the system loads a role-scoped dashboard surfacing all cases currently at the <strong>Operations Lead</strong> stage within their Jamiat scope.</p>
+          <ul class="details-list">
+            <li>Navigate to the FACTS URL → enter <strong>Email / Username + Password</strong> → click <strong>Login</strong>. JWT token issued and stored.</li>
+            <li><strong>Dashboard stat cards</strong> (scoped to OL's Jamiat/Jamaat): <em>Cases Awaiting My Review · Approved This Month · Sent for Rework · Rejected</em></li>
+            <li>A <strong>Recent Cases</strong> panel shows cases most recently forwarded from KG Review — sorted by SLA urgency</li>
+            <li>Left sidebar: <strong>Dashboard</strong> and <strong>Cases</strong> modules. Bell icon shows unread notifications — KG Reviewer approval triggers an automatic in-app notification to the Operations Lead.</li>
+            <li>The Operations Lead's name, role label, and Jamiat scope are displayed in the top-right profile area</li>
+          </ul>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img src="images/login.png" alt="Login Screen" />
+            </div>
+          </div>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img src="images/dashboard.png" alt="Operations Lead Dashboard" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-number">02</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Navigating the Cases Module — Finding Cases to Review</div>
+          <p class="step-desc">All cases awaiting Operations Lead action are in the <strong>Cases</strong> module. Every case in this queue has been cleared independently by three prior reviewers.</p>
+          <ul class="details-list">
+            <li>Click <strong>Cases</strong> in the left sidebar → cases list loads, pre-filtered to <strong>"Operations Lead"</strong> status for this role</li>
+            <li>Each row shows: Case Number (BS-XXXX / SHND-XXXX), Applicant Name, Case Type, <strong>SLA badge</strong>, DCM, Welfare Reviewer, ZI, KG Reviewer names, Date Reached OL</li>
+            <li><strong>SLA badges: </strong><span class="perm-chip green">On Track</span> <span class="perm-chip amber">Due Soon</span> <span class="perm-chip red">Breached</span> — sort by SLA urgency to prioritise the queue</li>
+            <li>Click any row → opens the <strong>Case Detail View</strong></li>
+          </ul>
+          <div class="context-strip">
+            <span class="context-strip-label">Context</span>
+            <span class="context-strip-text">Every case in the Operations Lead queue has already passed three prior independent reviews — Welfare Review, ZI Approval, and KG Review. The Operations Lead conducts their own senior-level independent evaluation. On approval, the system automatically triggers <strong>Cover Letter Generation</strong> — the case then advances to Executive Approval.</span>
+          </div>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img src="images/cases.png" alt="Cases List — Operations Lead" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Operations Lead User Journey</span>
+        <div class="footer-center"><span>Section A: Login &amp; Dashboard</span></div>
+        <span>Page 3</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         PAGE 4 — Step 03
+    ══════════════════════════════════════════════ -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left"><div class="page-header-dot"></div><span class="page-header-title">Section B — Reviewing the Case</span></div>
+        <span class="page-header-role">Operations Lead</span>
+      </div>
+      <div class="section-break"><span class="section-break-label">Section B — Reviewing the Case</span><div class="section-break-line"></div></div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-number">03</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Case Detail View — Header, Workflow Position &amp; Tabs</div>
+          <p class="step-desc">Clicking a case opens the Case Detail View. The progress bar shows three completed stages as green ticks. The Operations Lead uses the same tab set as prior reviewers — <strong>Counseling Form</strong>, <strong>Attachments</strong>, <strong>Comments</strong>, and <strong>Status History</strong>.</p>
+
+          <div class="sub-block">
+            <div class="sub-label">Case Header</div>
+            <ul class="details-list">
+              <li><strong>Case Number</strong>, Applicant Name, Case Type badge, <strong>Stage: Operations Lead</strong> badge shown prominently</li>
+              <li><strong>SLA Timer</strong> — days remaining or overdue for the Operations Lead stage deadline</li>
+              <li>Full reviewer chain visible in the header: DCM · Welfare Reviewer · ZI · KG Reviewer</li>
+              <li><strong>Workflow Progress Bar</strong> — Welfare Review ✓ · ZI Approval ✓ · KG Review ✓ (three green ticks); <strong>Operations Lead</strong> is the active highlighted stage</li>
+            </ul>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Tabs Available to the Operations Lead</div>
+            <table class="workflow-table">
+              <thead><tr><th>Tab</th><th>Content</th><th>OL Access</th></tr></thead>
+              <tbody>
+                <tr><td>Counseling Form</td><td>All 7 sections filled by the DCM — Personal, Family, Assessment, Financial Assistance, Economic Growth, Declaration, Attachments</td><td><span class="perm-chip blue">Read Only</span></td></tr>
+                <tr><td>Attachments</td><td>All uploaded documents — mandatory (business photo, quotation, brochure) and optional</td><td><span class="perm-chip blue">View &amp; Download</span></td></tr>
+                <tr><td>Comments</td><td>Full thread — DCM, Welfare Reviewer, ZI, and KG Reviewer notes all visible</td><td><span class="perm-chip green">Read &amp; Write</span></td></tr>
+                <tr><td>Status History</td><td>Full audit trail — every stage transition with timestamps, including all three prior approvals</td><td><span class="perm-chip blue">Read Only</span></td></tr>
+                <tr><td>Cover Letter</td><td>Not yet generated — will be automatically created after OL approval</td><td><span class="perm-chip amber">Auto-Generated on Approval</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Recommended Review Order</div>
+            <div class="flow-path">
+              <div class="flow-node highlight">Open Case</div><div class="flow-arrow">›</div>
+              <div class="flow-node">Status History<br/>&amp; Comments</div><div class="flow-arrow">›</div>
+              <div class="flow-node">Counseling<br/>Form</div><div class="flow-arrow">›</div>
+              <div class="flow-node">Attachments</div><div class="flow-arrow">›</div>
+              <div class="flow-node">Add OL<br/>Comment</div><div class="flow-arrow">›</div>
+              <div class="flow-node active">Approve /<br/>Rework / Reject</div>
+            </div>
+          </div>
+
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img src="images/caseDetails.png" alt="Case Detail View — Operations Lead Stage" />
+            </div>
+          </div>
+
+          <div class="info-box">
+            <strong>Operations Lead Forms an Independent View</strong>
+            The Operations Lead does not simply ratify the decisions of three prior reviewers. They conduct their own evaluation of the case data and take full accountability for their decision. Their approval is the final field-level clearance before the Cover Letter is generated and the case enters the Executive Approval chain.
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Operations Lead User Journey</span>
+        <div class="footer-center"><span>Section B: Reviewing the Case</span></div>
+        <span>Page 4</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         PAGE 5 — Steps 04 & 05
+    ══════════════════════════════════════════════ -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left"><div class="page-header-dot"></div><span class="page-header-title">Section B — Prior Findings, Counseling Form &amp; Attachments</span></div>
+        <span class="page-header-role">Operations Lead</span>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-number">04</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Reading Status History &amp; All Prior Reviewer Comments</div>
+          <p class="step-desc">Before opening the Counseling Form, the Operations Lead reads the full history and comments thread to understand every prior evaluation — including findings, caveats, and rationale from all three prior reviewers.</p>
+          <ul class="details-list">
+            <li>Click <strong>Status History</strong> → audit trail: Case Created → Draft → Counseling Submitted → Welfare Approved → ZI Approved → KG Approved → Operations Lead, all timestamped</li>
+            <li>Check for any prior <strong>Rework cycles</strong> — how many, what issues were raised, and how they were resolved before reaching OL</li>
+            <li>Click <strong>Comments</strong> → full thread: DCM's submission note → Welfare Reviewer's approval rationale → ZI's independent findings → <strong>KG Reviewer's senior approval note</strong></li>
+            <li>Any reservations flagged by the KG Reviewer (e.g., "projections appear slightly optimistic") are especially relevant — the OL is the last reviewer before Executive Approval and must ensure every concern has been adequately addressed</li>
+            <li>The Operations Lead is not bound by prior reviewer assessments but must document any divergence in their own comment before deciding</li>
+          </ul>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img src="images/feedback.png" alt="Comments Thread — All Prior Reviewer Notes" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-number">05</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Reviewing the Counseling Form &amp; Attachments</div>
+          <p class="step-desc">The Operations Lead reads the full Counseling Form with a focus on financial coherence and overall case integrity, then checks all attachments.</p>
+          <div class="sub-block">
+            <div class="sub-label">Key Focus Areas Per Section</div>
+            <table class="workflow-table">
+              <thead><tr><th>Section</th><th>Operations Lead Focus</th></tr></thead>
+              <tbody>
+                <tr><td>Section 1 — Personal Details</td><td>ITS number, Jamiat/Jamaat, age, occupation — confirm eligibility and scope</td></tr>
+                <tr><td>Section 2 — Family Details</td><td>Total family income, declared expenses, <strong>monthly surplus/deficit</strong> — is the declared financial position internally consistent? Existing liabilities (Qardan, goods credit, others)</td></tr>
+                <tr><td>Section 3 — Business Assessment</td><td>Business viability at a senior level; counselor's objectivity and depth; present vs. proposed business condition coherence</td></tr>
+                <tr><td>Section 4 — Financial Assistance</td><td>Requested Enayat and Qardan amounts; 5-year repayment schedule — are the amounts proportionate to the family's repayment capacity from Section 2?</td></tr>
+                <tr><td>Section 5 — Economic Growth</td><td>5-year projections: Revenue, Expenses, Profit, <strong>Cash Surplus per year</strong>. Verify Year 1 Cash Surplus covers the proposed Qardan repayment. Are projection growth assumptions realistic?</td></tr>
+                <tr><td>Section 6 — Action Plan &amp; Mentors</td><td>Specific, time-bound action plan; qualified mentors listed — is the upliftment strategy credible?</td></tr>
+                <tr><td>Section 7 — Declaration</td><td>All three signatures present (Applicant, Counselor, TR Committee) with valid and sequential dates</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="sub-block">
+            <div class="sub-label">Attachments Check</div>
+            <ul class="details-list">
+              <li>Click <strong>Attachments</strong> → verify all mandatory docs are present: Business photograph <span class="perm-chip green">Uploaded</span>, Quotation for Qardan end-use <span class="perm-chip green">Uploaded</span>, Product brochure <span class="perm-chip green">Uploaded</span></li>
+              <li>Cross-check the <strong>Quotation amount</strong> against the requested Qardan in Section 4 — they should align</li>
+              <li>If optional documents (ITR, Financial Statements) are present, verify declared income figures match Section 2 data</li>
+              <li>The Operations Lead has <strong>read-only access</strong> — any attachment issues must be raised via Rework</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Operations Lead User Journey</span>
+        <div class="footer-center"><span>Section B: Prior Findings, Form &amp; Attachments</span></div>
+        <span>Page 5</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         PAGE 6 — Step 06
+    ══════════════════════════════════════════════ -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left"><div class="page-header-dot"></div><span class="page-header-title">Section C — Decision &amp; Outcome</span></div>
+        <span class="page-header-role">Operations Lead</span>
+      </div>
+      <div class="section-break"><span class="section-break-label">Section C — Decision &amp; Outcome</span><div class="section-break-line"></div></div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-number">06</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">Adding Comments &amp; Making the Decision (Approve / Rework / Reject)</div>
+          <p class="step-desc">After reviewing all case materials, the Operations Lead posts a workflow comment documenting their findings and then uses the action panel to formally decide the case.</p>
+
+          <div class="sub-block">
+            <div class="sub-label">Posting a Comment</div>
+            <ul class="details-list">
+              <li>Click the <strong>Comments</strong> tab → read all prior comments → scroll to bottom → type comment → click <strong>Post Comment</strong></li>
+              <li>The Operations Lead's comment is the last field-level review note before Executive Approval — it is read by all Executive Approvers and carries significant weight</li>
+              <li>For <strong>Rework</strong> and <strong>Reject</strong> actions, a comment is required before the action can be submitted</li>
+            </ul>
+            <table class="workflow-table" style="margin-top:5px">
+              <thead><tr><th>Decision</th><th>Recommended Comment Content</th></tr></thead>
+              <tbody>
+                <tr><td><span class="perm-chip green">Approve</span></td><td>E.g., "Reviewed full case including Counseling Form (all 7 sections), attachments, and all prior reviewer comments. Financial position is consistent — monthly surplus supports the proposed Qardan repayment schedule. Business assessment is credible. Upliftment plan in Section 6 is specific and time-bound. Approving for Cover Letter Generation and Executive Review."</td></tr>
+                <tr><td><span class="perm-chip amber">Rework</span></td><td>List numbered specific items: "1. Year 1 Cash Surplus (₹2,100/month) cannot support the proposed Qardan repayment (₹4,167/month over 36 months) — revise projections or reduce Qardan ask. 2. Quotation (₹90K) does not match Qardan request (₹1,50K) — clarify end-use split. 3. Action Plan in Section 6 lacks specific milestone dates."</td></tr>
+                <tr><td><span class="perm-chip red">Reject</span></td><td>State clear material grounds: "Existing liabilities (goods credit ₹25K) combined with a monthly surplus of ₹1,400 leave no viable Qardan repayment capacity. Declared monthly income (₹12K) is materially inconsistent with the submitted ITR (₹37.5K/month). Discrepancies are not resolvable through rework — rejecting."</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">The Three Decision Options</div>
+            <div class="decision-box">
+              <div class="decision-option approve">
+                <div class="decision-option-label">✅ Approve</div>
+                <p>The case has passed the Operations Lead's evaluation. Clicking <strong>Approve</strong> is the final field-level clearance. The system immediately triggers <strong>Cover Letter Generation</strong> automatically — the Cover Letter PDF is compiled from the case data and the case advances to <strong>Executive Approval</strong>.</p>
+              </div>
+              <div class="decision-option rework">
+                <div class="decision-option-label">🔁 Request Rework</div>
+                <p>The case has fixable issues. Clicking <strong>Request Rework</strong> returns the case to the DCM with status <strong>Rework Required</strong>. After corrections and resubmission, the case must pass Welfare Review → ZI Approval → KG Review before returning to Operations Lead.</p>
+              </div>
+            </div>
+            <div class="decision-box" style="margin-top:6px">
+              <div class="decision-option reject" style="flex:0 0 48%">
+                <div class="decision-option-label">❌ Reject</div>
+                <p>The case does not merit further processing. Clicking <strong>Reject</strong> closes the case permanently. The DCM and all stakeholders are notified. The Operations Lead's rejection comment becomes the official rejection reason on the record.</p>
+              </div>
+              <div style="flex:1;padding-left:8px;display:flex;align-items:center;">
+                <div class="info-box" style="margin:0">
+                  <strong>Confirmation Dialog for All Three Actions</strong>Each action triggers a modal — e.g., <em>"Approving this case will trigger automatic Cover Letter Generation and advance the case to Executive Approval."</em> → Confirm or Cancel.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Decision Outcome Summary</div>
+            <table class="workflow-table">
+              <thead><tr><th>Decision</th><th>Immediate System Action</th><th>Case Status After</th><th>Who Notified</th></tr></thead>
+              <tbody>
+                <tr><td><span class="perm-chip green">Approve</span></td><td>Cover Letter automatically generated; case advances to Executive Approval; status_history updated</td><td>Cover Letter Generation → Executive Approval</td><td>Executive Approvers (Level 1)</td></tr>
+                <tr><td><span class="perm-chip amber">Rework</span></td><td>Case status → Rework Required; notification sent to DCM</td><td>Rework Required</td><td>DCM</td></tr>
+                <tr><td><span class="perm-chip red">Reject</span></td><td>Case status → Rejected/Closed; status_history entry; notifications sent</td><td>Rejected / Closed (Final)</td><td>DCM + all assigned stakeholders</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img src="images/action.png" alt="Workflow Action Panel — Operations Lead" />
+            </div>
+          </div>
+
+          <div class="warning-box">
+            <strong>Rework Routes Through the Full Field Review Chain</strong>
+            A Rework from Operations Lead returns the case to the DCM. After corrections and resubmission, the case must pass through Welfare Review → ZI Approval → KG Review before arriving back at the Operations Lead. This ensures every resubmission is independently re-verified at each prior level.
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Operations Lead User Journey</span>
+        <div class="footer-center"><span>Section C: Decision &amp; Outcome</span></div>
+        <span>Page 6</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         PAGE 7 — Step 07
+    ══════════════════════════════════════════════ -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left"><div class="page-header-dot"></div><span class="page-header-title">Section C — After Approval: Cover Letter Generation &amp; Executive Approval</span></div>
+        <span class="page-header-role">Operations Lead</span>
+      </div>
+
+      <div class="step">
+        <div class="step-left"><div class="step-number">07</div><div class="step-connector"></div></div>
+        <div class="step-content">
+          <div class="step-title">What Happens After Approval — Cover Letter Generation &amp; Next Steps</div>
+          <p class="step-desc">When the Operations Lead approves the case, FACTS immediately and automatically triggers the Cover Letter Generation process. The Operations Lead's active role in this case is now complete.</p>
+
+          <div class="sub-block">
+            <div class="sub-label">Immediate Automated Sequence on OL Approval</div>
+            <div class="trigger-banner">
+              <div class="trigger-banner-icon">⚡</div>
+              <div class="trigger-banner-text">
+                <strong>OL clicks Approve → System auto-triggers:</strong> (1) Cover Letter PDF is compiled from case data → (2) Cover Letter tab activates on the case → (3) Case status advances to Executive Approval → (4) Level 1 Executive Approvers receive in-app notification with the Cover Letter attached.
+              </div>
+            </div>
+            <ul class="details-list">
+              <li><strong>Cover Letter PDF Generated:</strong> The system compiles the applicant's case data — profile, family financial summary, business details, financial assistance figures, 5-year projections, and the review chain — into a formatted PDF document. A new record is created in the <code>cover_letters</code> table with file_path, generated_at, and generated_by (OL user ID).</li>
+              <li><strong>Cover Letter tab activates:</strong> The <strong>Cover Letter</strong> tab on the case becomes accessible to the Operations Lead and all downstream roles. The tab shows a PDF preview with a Download button.</li>
+              <li><strong>Case status advances:</strong> cases.current_workflow_stage_id is updated to the Cover Letter Generation → Executive Approval stage. A new entry is written to status_history with a timestamp.</li>
+              <li><strong>Executive Approvers notified:</strong> All assigned Level 1 Executive Approvers receive an in-app notification referencing the case. The Cover Letter PDF is the primary document they review in the Executive Approval stage.</li>
+            </ul>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Full Workflow — Operations Lead's Position in the Complete FACTS Chain</div>
+            <div class="flow-path">
+              <div class="flow-node done">Case ID<br/>&amp; Draft</div><div class="flow-arrow">›</div>
+              <div class="flow-node done">Counseling<br/>Form</div><div class="flow-arrow">›</div>
+              <div class="flow-node done">Welfare<br/>Review ✓</div><div class="flow-arrow">›</div>
+              <div class="flow-node done">ZI<br/>Approval ✓</div><div class="flow-arrow">›</div>
+              <div class="flow-node done">KG<br/>Review ✓</div><div class="flow-arrow">›</div>
+              <div class="flow-node highlight">Operations<br/>Lead ✓</div><div class="flow-arrow">›</div>
+              <div class="flow-node active">Cover Letter<br/>Generation</div><div class="flow-arrow">›</div>
+              <div class="flow-node">Executive<br/>Approval</div><div class="flow-arrow">›</div>
+              <div class="flow-node">Manzoori<br/>(Sanction)</div><div class="flow-arrow">›</div>
+              <div class="flow-node">Financial<br/>Disbursement</div><div class="flow-arrow">›</div>
+              <div class="flow-node">Payment<br/>Tracking</div><div class="flow-arrow">›</div>
+              <div class="flow-node">Fund<br/>Utilization</div><div class="flow-arrow">›</div>
+              <div class="flow-node">Case<br/>Closure</div>
+            </div>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">After Rework — What the Operations Lead Should Expect</div>
+            <ul class="details-list">
+              <li>The case returns to the DCM for corrections → after resubmission, it must pass Welfare Review → ZI Approval → KG Review before arriving back at Operations Lead</li>
+              <li>On re-arrival, check the Comments thread for the DCM's response — confirm every item raised in the rework comment has been addressed before approving</li>
+              <li>A second round of comments is recommended, noting what was verified on re-review</li>
+            </ul>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">After Rejection — Case is Closed</div>
+            <ul class="details-list">
+              <li>The case status changes to <strong>Rejected / Closed</strong> — the case is permanently closed; no further workflow actions are possible</li>
+              <li>The Operations Lead's rejection comment is stored as the official rejection reason on the case record</li>
+              <li>The DCM and all assigned stakeholders are notified; the case can be viewed in read-only mode for records</li>
+              <li>A rejected case can only be re-opened by an Admin or Super Admin if a formally justified basis for reconsideration is provided</li>
+            </ul>
+          </div>
+
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img src="C:\Users\Admin\Desktop\New folder\User Journey\Lead\images\caseApproved.png" alt="Cover Letter Tab — Auto-Generated PDF Preview" />
+            </div>
+          </div>
+
+          <div class="milestone-strip">
+            <div class="milestone-item"><div class="milestone-label">Awaiting Review</div><div class="milestone-value" style="color:var(--amber)">Queue</div><div class="milestone-note">Cases at OL stage</div></div>
+            <div class="milestone-item"><div class="milestone-label">Approved</div><div class="milestone-value" style="color:var(--green)">Cover Letter<br/>Auto-Generated</div><div class="milestone-note">→ Executive Approval</div></div>
+            <div class="milestone-item"><div class="milestone-label">Rework</div><div class="milestone-value" style="color:var(--amber)">Returned</div><div class="milestone-note">Full chain re-review</div></div>
+            <div class="milestone-item"><div class="milestone-label">Rejected</div><div class="milestone-value" style="color:var(--red)">Closed</div><div class="milestone-note">Permanently closed</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="end-banner">
+        <div class="end-banner-icon">🎯</div>
+        <div class="end-banner-text">
+          <h3>End of Operations Lead User Journey</h3>
+          <p>7 steps · Login → Dashboard → Cases Module → Case Detail (tabs, progress bar) → Status History &amp; All Prior Reviewer Comments → Counseling Form review (financial focus) → Attachments check → Post Comment → Approve / Rework / Reject → On approval, Cover Letter PDF is automatically generated and the case advances to Executive Approval.</p>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Operations Lead User Journey</span>
+        <div class="footer-center"><span>Section C: After Approval</span></div>
+        <span>Page 7</span>
+      </div>
+    </div>
+
+  </body>
+</html>
