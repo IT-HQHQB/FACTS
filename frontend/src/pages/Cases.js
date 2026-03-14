@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -16,13 +17,14 @@ import {
   Alert,
   Switch,
   WorkflowProgress,
-  SearchableSelect
+  SearchableSelect,
+  Toast
 } from '../components/ui';
 import { useCounselingFormAccess, usePermission } from '../utils/permissionUtils';
 import WelfareChecklistForm from '../components/WelfareChecklistForm';
 import CoverLetterForm from '../components/CoverLetterForm';
 import CaseSLAStatus from '../components/CaseSLAStatus';
-import { generateCoverLetterPDF } from '../utils/generateCoverLetterPDF';
+
 
 // Icon components
 const AddIcon = () => (
@@ -152,7 +154,8 @@ const Cases = () => {
   const [coverLetterModalOpen, setCoverLetterModalOpen] = useState(false);
   const [coverLetterCaseId, setCoverLetterCaseId] = useState(null);
   const [coverLetterSubmitHandler, setCoverLetterSubmitHandler] = useState(null);
-  
+  const [toastMessage, setToastMessage] = useState('');
+
   // Assign case modal state
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignModalMode, setAssignModalMode] = useState('assign'); // 'assign' | 'reassign'
@@ -282,54 +285,21 @@ const Cases = () => {
   // Handle PDF download for cover letter
   const handleDownloadCoverLetterPDF = async (caseId, caseNumber) => {
     try {
-      // Fetch latest cover letter form data
-      const formResponse = await axios.get(`/api/cover-letter-forms/case/${caseId}`);
-      const formData = formResponse.data.form;
+      // Always generate a fresh PDF from the latest form data via the preview endpoint
+      const response = await axios.get(`/api/cover-letters/preview/${caseId}`, { responseType: 'blob' });
+      const downloadUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const fileName = `cover_letter_${caseNumber || caseId}.pdf`;
 
-      if (!formData) {
-        alert('Cover letter form not found');
-        return;
-      }
-
-      // Get user info for PDF
-      const user = JSON.parse(localStorage.getItem('user'));
-      const userName = user?.full_name || user?.username || user?.name || 'System';
-
-      // Generate PDF
-      const pdfDoc = await generateCoverLetterPDF(formData, {
-        caseNumber: caseNumber || formData.applicant_details?.case_id || `#${caseId}`,
-        userName,
-        caseId
-      });
-
-      // Generate blob and download
-      const pdfBlob = pdfDoc.output('blob');
-      if (!pdfBlob || pdfBlob.size === 0) {
-        throw new Error('PDF blob is empty');
-      }
-
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-      const fileName = `cover_letter_${caseNumber || caseId || 'unknown'}_${timestamp}.pdf`;
-
-      // Trigger download
       const link = document.createElement('a');
-      link.href = pdfUrl;
-      link.download = fileName;
+      link.href = downloadUrl;
+      link.setAttribute('download', fileName);
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-
-      // Open in new tab
-      window.open(pdfUrl, '_blank');
-
-      // Clean up blob URL after a delay
-      setTimeout(() => {
-        URL.revokeObjectURL(pdfUrl);
-      }, 100);
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert(`Failed to generate PDF: ${error.message}`);
+      console.error('Error downloading PDF:', error);
+      alert(`Failed to download PDF: ${error.message}`);
     }
   };
 
@@ -2900,46 +2870,32 @@ const Cases = () => {
             const shouldBeViewOnly = isCoverLetterApproved && user?.role !== 'super_admin';
             
             return (
-              <CoverLetterForm 
-                caseId={coverLetterCaseId} 
+              <CoverLetterForm
+                caseId={coverLetterCaseId}
                 isViewOnly={shouldBeViewOnly}
                 onExposeSubmit={setCoverLetterSubmitHandler}
-                onSuccess={() => {
+                onClose={() => {
+                  setCoverLetterModalOpen(false);
+                  setCoverLetterCaseId(null);
+                  setCoverLetterSubmitHandler(null);
+                  queryClient.invalidateQueries(['cases']);
+                }}
+                onSuccess={(message) => {
                   // Refresh cases list after successful submit
                   refetch();
                   queryClient.invalidateQueries(['cases']);
                   setCoverLetterModalOpen(false);
                   setCoverLetterCaseId(null);
+                  if (message) {
+                    setToastMessage(message);
+                    setTimeout(() => setToastMessage(''), 5000);
+                  }
                 }}
               />
             );
           })()}
         </div>
         <Modal.Footer>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              setCoverLetterModalOpen(false);
-              setCoverLetterCaseId(null);
-              setCoverLetterSubmitHandler(null);
-              queryClient.invalidateQueries(['cases']);
-            }}
-          >
-            Close
-          </Button>
-          {coverLetterSubmitHandler?.canSubmit && (
-            <Button
-              type="button"
-              variant="primary"
-              onClick={() => coverLetterSubmitHandler?.submit()}
-              loading={coverLetterSubmitHandler?.isSubmitting}
-              disabled={coverLetterSubmitHandler?.isSubmitting}
-              className="bg-primary-600 hover:bg-primary-700 text-white"
-            >
-              {coverLetterSubmitHandler?.isSubmitting ? 'Submitting...' : 'Submit'}
-            </Button>
-          )}
         </Modal.Footer>
       </Modal>
 
@@ -3627,6 +3583,21 @@ const Cases = () => {
           </div>
         </Modal.Footer>
       </Modal>
+
+      {/* Toast notification rendered via portal to escape stacking context */}
+      {toastMessage && ReactDOM.createPortal(
+        <div className="fixed top-4 right-4 max-w-sm" style={{ zIndex: 9999 }}>
+          <Toast
+            severity="success"
+            onClose={() => setToastMessage('')}
+            autoClose={true}
+            duration={5000}
+          >
+            {toastMessage}
+          </Toast>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

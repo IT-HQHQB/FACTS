@@ -5,9 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePermission } from '../utils/permissionUtils';
 import { Card, Button, Input, Alert, Toast } from '../components/ui';
 import SignaturePad from './SignaturePad';
-import { generateCoverLetterPDF } from '../utils/generateCoverLetterPDF';
 
-const CoverLetterForm = ({ caseId, isViewOnly = false, onSuccess, onExposeSubmit = null }) => {
+const CoverLetterForm = ({ caseId, isViewOnly = false, onSuccess, onClose, onExposeSubmit = null }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
@@ -107,6 +106,7 @@ const CoverLetterForm = ({ caseId, isViewOnly = false, onSuccess, onExposeSubmit
 
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [applicantPhotoPreview, setApplicantPhotoPreview] = useState(null);
   const [counsellorPhotoPreview, setCounsellorPhotoPreview] = useState(null);
 
@@ -321,6 +321,7 @@ const CoverLetterForm = ({ caseId, isViewOnly = false, onSuccess, onExposeSubmit
             if (data.form.counsellor_photo) {
               setCounsellorPhotoPreview(data.form.counsellor_photo);
             }
+            setHasUnsavedChanges(false);
           }
         } else if (data.applicantData || data.counselorData || data.familyFinancialData || data.familyAssetsLiabilitiesData || data.personalOccupationData || data.financialAssistanceTotals) {
           // Auto-populate from fetched data when form doesn't exist
@@ -423,13 +424,14 @@ const CoverLetterForm = ({ caseId, isViewOnly = false, onSuccess, onExposeSubmit
           if (data.counselorData?.photo) {
             setCounsellorPhotoPreview(data.counselorData.photo);
           }
+          setHasUnsavedChanges(false);
         }
       }
     }
   );
 
   // Fetch case details to populate applicant info (fallback if form endpoint doesn't return auto-fetch data)
-  const { data: caseData } = useQuery(
+  useQuery(
     ['case', caseId],
     () => axios.get(`/api/cases/${caseId}`).then(res => res.data),
     {
@@ -477,7 +479,7 @@ const CoverLetterForm = ({ caseId, isViewOnly = false, onSuccess, onExposeSubmit
         queryClient.invalidateQueries(['coverLetterForm', caseId]);
         setSuccessMessage('Cover letter form saved successfully!');
         setTimeout(() => setSuccessMessage(''), 5000);
-        if (onSuccess) onSuccess();
+        setHasUnsavedChanges(false);
       },
       onError: (error) => {
         setErrors({ submit: error.response?.data?.error || 'Failed to save form' });
@@ -494,74 +496,18 @@ const CoverLetterForm = ({ caseId, isViewOnly = false, onSuccess, onExposeSubmit
       onSuccess: async () => {
         queryClient.invalidateQueries(['coverLetterForm', caseId]);
         queryClient.invalidateQueries(['cases']);
-        setSuccessMessage('Cover letter form submitted successfully!');
-        setTimeout(() => setSuccessMessage(''), 5000);
-        
-        // Generate PDF after successful submission
-        // Get case number - try multiple sources (declare outside try for error handling)
-        let caseNumber = '';
-        if (formResponse?.case_number) {
-          caseNumber = formResponse.case_number;
-        } else if (caseData?.case?.case_number) {
-          caseNumber = caseData.case.case_number;
-        } else if (formData.applicant_details?.case_id) {
-          caseNumber = formData.applicant_details.case_id;
-        }
-        
-        const userName = user?.full_name || user?.username || user?.name || 'System';
-        
+
+        // Generate PDF server-side after successful submission
+        let message;
         try {
-          // Generate PDF
-          const pdfDoc = await generateCoverLetterPDF(formData, {
-            caseNumber,
-            userName,
-            caseId
-          });
-          
-          // Generate blob and download
-          const pdfBlob = pdfDoc.output('blob');
-          
-          if (!pdfBlob || pdfBlob.size === 0) {
-            throw new Error('PDF blob is empty');
-          }
-          
-          const pdfUrl = URL.createObjectURL(pdfBlob);
-          const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-          const fileName = `cover_letter_${caseNumber || caseId || 'unknown'}_${timestamp}.pdf`;
-          
-          // Trigger download
-          const link = document.createElement('a');
-          link.href = pdfUrl;
-          link.download = fileName;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          // Open in new tab
-          const newWindow = window.open(pdfUrl, '_blank');
-          if (!newWindow) {
-            setErrors(prev => ({
-              ...prev,
-              pdf: 'PDF generated but popup was blocked. Please check your browser settings.'
-            }));
-          }
-          
-          // Clean up blob URL after a delay
-          setTimeout(() => {
-            URL.revokeObjectURL(pdfUrl);
-          }, 100);
+          await axios.post(`/api/cover-letters/generate/${caseId}`);
+          message = 'Cover letter submitted and PDF generated successfully';
         } catch (pdfError) {
-          console.error('Error generating PDF:', pdfError);
-          // Show error message to user
-          setErrors(prev => ({
-            ...prev,
-            pdf: `PDF generation failed: ${pdfError.message}. Form was submitted successfully.`
-          }));
-          // Also show as a toast/alert
-          setSuccessMessage(`Form submitted successfully, but PDF generation failed: ${pdfError.message}`);
+          console.error('Error generating PDF on server:', pdfError);
+          message = 'Cover letter submitted successfully, but PDF generation failed. You can retry PDF generation from the Cases page.';
         }
-        
-        if (onSuccess) onSuccess();
+
+        if (onSuccess) onSuccess(message);
       },
       onError: (error) => {
         setErrors({ submit: error.response?.data?.error || error.message || 'Failed to submit form' });
@@ -574,16 +520,16 @@ const CoverLetterForm = ({ caseId, isViewOnly = false, onSuccess, onExposeSubmit
       const keys = path.split('.');
       const newData = { ...prev };
       let current = newData;
-      
+
       for (let i = 0; i < keys.length - 1; i++) {
         if (!current[keys[i]]) {
           current[keys[i]] = {};
         }
         current = current[keys[i]];
       }
-      
+
       current[keys[keys.length - 1]] = value;
-      
+
       // Auto-calculate totals for financial assistance
       if (path === 'requested_enayat' || path === 'requested_qardan') {
         // Get the updated values after setting the new value
@@ -597,10 +543,12 @@ const CoverLetterForm = ({ caseId, isViewOnly = false, onSuccess, onExposeSubmit
         const qardan = parseFloat(path === 'recommended_qardan' ? value : newData.recommended_qardan) || 0;
         newData.recommended_total = String(enayat + qardan);
       }
-      
+
       return newData;
     });
-    
+
+    setHasUnsavedChanges(true);
+
     // Clear error for this field
     if (errors[path]) {
       setErrors(prev => {
@@ -807,8 +755,10 @@ const CoverLetterForm = ({ caseId, isViewOnly = false, onSuccess, onExposeSubmit
       // Individual financial assistance fields
       requested_enayat: formData.requested_enayat || null,
       requested_qardan: formData.requested_qardan || null,
+      requested_total: formData.requested_total || null,
       recommended_enayat: formData.recommended_enayat || null,
       recommended_qardan: formData.recommended_qardan || null,
+      recommended_total: formData.recommended_total || null,
       // Individual projected income fields
       applicant_projected_income_after_1_year: formData.applicant_projected_income_after_1_year || null,
       applicant_projected_income_after_2_years: formData.applicant_projected_income_after_2_years || null,
@@ -1925,26 +1875,42 @@ const CoverLetterForm = ({ caseId, isViewOnly = false, onSuccess, onExposeSubmit
           <Alert severity="error">{errors.submit}</Alert>
         )}
 
-        {canEdit && (
-          <div className="flex justify-end space-x-3">
+        <div className="flex justify-end space-x-3">
+          {canEdit && (
+            <>
+              <Button
+                variant="secondary"
+                onClick={handleSave}
+                loading={saveMutation.isLoading}
+              >
+                Save
+              </Button>
+              {canSubmit && existingForm?.id && !isFormApproved && (
+                <div className="flex flex-col items-end">
+                  <Button
+                    variant="primary"
+                    onClick={handleSubmit}
+                    loading={submitMutation.isLoading}
+                    disabled={hasUnsavedChanges}
+                  >
+                    Submit
+                  </Button>
+                  {hasUnsavedChanges && (
+                    <p className="mt-1 text-xs text-orange-500">Save changes before submitting</p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+          {onClose && (
             <Button
               variant="secondary"
-              onClick={handleSave}
-              loading={saveMutation.isLoading}
+              onClick={onClose}
             >
-              Save
+              Close
             </Button>
-            {canSubmit && existingForm?.id && !isFormApproved && (
-              <Button
-                variant="primary"
-                onClick={handleSubmit}
-                loading={submitMutation.isLoading}
-              >
-                Submit
-              </Button>
-            )}
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </>
   );

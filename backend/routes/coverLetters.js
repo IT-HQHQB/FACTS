@@ -1,56 +1,98 @@
 const express = require('express');
-const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+const puppeteer = require('puppeteer');
 const { pool } = require('../config/database');
 const { authenticateToken, authorizeCaseAccess } = require('../middleware/auth');
 const { hasPermission } = require('../utils/roleUtils');
 const notificationService = require('../services/notificationService');
+const buildCoverLetterPdfData = require('../utils/coverLetterPdfData');
+const renderCoverLetterTemplate = require('../templates/coverLetterPdfTemplate');
 
 const router = express.Router();
 
-// Generate cover letter
+/**
+ * Helper: launch Puppeteer, render HTML to PDF buffer, and always close the browser.
+ * Returns a Node.js Buffer containing the PDF bytes.
+ */
+async function generatePdfBuffer(html) {
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    });
+    const page = await browser.newPage();
+    await page.setContent(html, {
+      waitUntil: 'load',
+      timeout: 15000
+    });
+
+    let pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      preferCSSPageSize: true,
+      margin: {
+        top: '16mm',
+        right: '12mm',
+        bottom: '20mm',
+        left: '12mm'
+      },
+      displayHeaderFooter: true,
+      headerTemplate: '<div></div>',
+      footerTemplate: `
+        <div style="font-size: 9px; color: #666; width: 100%; padding: 0 12px; display: flex; justify-content: space-between;">
+          <span><span class="date"></span></span>
+          <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
+        </div>
+      `
+    });
+
+    // Puppeteer returns Uint8Array; convert to Buffer for consistency
+    if (!(pdfBuffer instanceof Buffer)) {
+      pdfBuffer = Buffer.from(pdfBuffer);
+    }
+
+    return pdfBuffer;
+  } finally {
+    if (browser) {
+      try { await browser.close(); } catch (e) { /* ignore */ }
+    }
+  }
+}
+
+/**
+ * POST /generate/:caseId
+ * Generate a cover letter PDF, save to filesystem, and store a record in cover_letters table.
+ */
 router.post('/generate/:caseId', authenticateToken, authorizeCaseAccess, async (req, res) => {
   try {
     const { caseId } = req.params;
 
-    // Get case and applicant details (case type from case_types JOIN for new case types)
-    const [cases] = await pool.execute(`
-      SELECT 
-        c.*,
-        ct.name AS case_type_name,
-        a.first_name, a.last_name, a.father_name, a.mother_name,
-        a.date_of_birth, a.gender, a.marital_status, a.phone, a.email,
-        a.address, a.mauze, a.city, a.state, a.postal_code, a.its_number,
-        dcm.first_name as dcm_first_name, dcm.last_name as dcm_last_name,
-        counselor.first_name as counselor_first_name, counselor.last_name as counselor_last_name
-      FROM cases c
-      JOIN applicants a ON c.applicant_id = a.id
-      LEFT JOIN case_types ct ON c.case_type_id = ct.id
-      LEFT JOIN users dcm ON c.roles = dcm.id
-      LEFT JOIN users counselor ON c.assigned_counselor_id = counselor.id
-      WHERE c.id = ?
-    `, [caseId]);
-
+    // Verify the case exists
+    const [cases] = await pool.execute('SELECT id, case_number, status FROM cases WHERE id = ?', [caseId]);
     if (cases.length === 0) {
       return res.status(404).json({ error: 'Case not found' });
     }
-
     const caseData = cases[0];
 
-    // Get counseling form data
-    const [forms] = await pool.execute(
-      'SELECT * FROM counseling_forms WHERE case_id = ? AND is_complete = 1',
-      [caseId]
-    );
+    // Build data and render HTML using the new template pipeline
+    const data = await buildCoverLetterPdfData(pool, caseId, { userName: req.user.full_name });
+    const html = renderCoverLetterTemplate(data);
 
-    if (forms.length === 0) {
-      return res.status(400).json({ error: 'Counseling form must be completed before generating cover letter' });
+    // Generate PDF buffer via Puppeteer
+    const pdfBuffer = await generatePdfBuffer(html);
+
+    // Validate PDF output
+    if (!pdfBuffer || pdfBuffer.length < 10) {
+      return res.status(500).json({ error: 'PDF generation produced empty or invalid output' });
+    }
+    const pdfHeader = pdfBuffer.slice(0, 5).toString('ascii');
+    if (pdfHeader !== '%PDF-') {
+      return res.status(500).json({ error: 'PDF generation produced invalid output' });
     }
 
-    const formData = forms[0];
-
-    // Generate PDF cover letter
+    // Save PDF to filesystem
     const fileName = `cover_letter_${caseData.case_number}_${Date.now()}.pdf`;
     const filePath = path.join(__dirname, '../uploads/cover_letters', fileName);
 
@@ -60,13 +102,7 @@ router.post('/generate/:caseId', authenticateToken, authorizeCaseAccess, async (
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    const doc = new PDFDocument();
-    doc.pipe(fs.createWriteStream(filePath));
-
-    // Add content to PDF
-    generateCoverLetterContent(doc, caseData, formData);
-
-    doc.end();
+    fs.writeFileSync(filePath, pdfBuffer);
 
     // Save cover letter record to database
     const [result] = await pool.execute(`
@@ -111,13 +147,58 @@ router.post('/generate/:caseId', authenticateToken, authorizeCaseAccess, async (
   }
 });
 
+/**
+ * GET /preview/:caseId
+ * Generate a cover letter PDF on-the-fly and stream it directly to the client.
+ * Does NOT save the PDF to the filesystem or create a database record.
+ */
+router.get('/preview/:caseId', authenticateToken, authorizeCaseAccess, async (req, res) => {
+  try {
+    const { caseId } = req.params;
+
+    // Verify the case exists
+    const [cases] = await pool.execute('SELECT id, case_number FROM cases WHERE id = ?', [caseId]);
+    if (cases.length === 0) {
+      return res.status(404).json({ error: 'Case not found' });
+    }
+    const caseData = cases[0];
+
+    // Build data and render HTML
+    const data = await buildCoverLetterPdfData(pool, caseId, { userName: req.user.full_name });
+    const html = renderCoverLetterTemplate(data);
+
+    // Generate PDF buffer via Puppeteer
+    const pdfBuffer = await generatePdfBuffer(html);
+
+    // Validate PDF output
+    if (!pdfBuffer || pdfBuffer.length < 10) {
+      return res.status(500).json({ error: 'PDF generation produced empty or invalid output' });
+    }
+    const pdfHeader = pdfBuffer.slice(0, 5).toString('ascii');
+    if (pdfHeader !== '%PDF-') {
+      return res.status(500).json({ error: 'PDF generation produced invalid output' });
+    }
+
+    // Stream PDF to client
+    const safeCaseNumber = (caseData.case_number || caseId || 'unknown').replace(/[^a-zA-Z0-9-_]/g, '_');
+    const filename = `Cover_Letter_${safeCaseNumber}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Preview cover letter error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get cover letters for a case
 router.get('/case/:caseId', authenticateToken, authorizeCaseAccess, async (req, res) => {
   try {
     const { caseId } = req.params;
 
     const [coverLetters] = await pool.execute(`
-      SELECT 
+      SELECT
         cl.*,
         u.full_name as generated_by_full_name
       FROM cover_letters cl
@@ -169,7 +250,7 @@ router.get('/download/:coverLetterId', authenticateToken, async (req, res) => {
     }
 
     const filePath = coverLetter.file_path;
-    
+
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'Cover letter file not found' });
     }
@@ -180,62 +261,5 @@ router.get('/download/:coverLetterId', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-// Helper function to generate cover letter content
-function generateCoverLetterContent(doc, caseData, formData) {
-  // Header
-  doc.fontSize(20)
-     .text('BAASEETEN CASE MANAGEMENT SYSTEM', 50, 50, { align: 'center' });
-  
-  doc.fontSize(16)
-     .text('COVER LETTER', 50, 100, { align: 'center' });
-
-  // Case Information
-  const caseTypeLabel = (caseData.case_type_name || caseData.case_type || '').toString().toUpperCase();
-  doc.fontSize(12)
-     .text(`Case Number: ${caseData.case_number}`, 50, 150)
-     .text(`Case Type: ${caseTypeLabel}`, 50, 170)
-     .text(`Date: ${new Date().toLocaleDateString()}`, 50, 190);
-
-  // Applicant Information
-  doc.text('APPLICANT INFORMATION:', 50, 230)
-     .text(`Name: ${caseData.first_name} ${caseData.last_name}`, 50, 250)
-     .text(`ITS Number: ${caseData.its_number}`, 50, 270)
-     .text(`Father's Name: ${caseData.father_name || 'N/A'}`, 50, 290)
-     .text(`Mother's Name: ${caseData.mother_name || 'N/A'}`, 50, 310)
-     .text(`Date of Birth: ${caseData.date_of_birth || 'N/A'}`, 50, 330)
-     .text(`Gender: ${caseData.gender || 'N/A'}`, 50, 350)
-     .text(`Marital Status: ${caseData.marital_status || 'N/A'}`, 50, 370)
-     .text(`Phone: ${caseData.phone || 'N/A'}`, 50, 390)
-     .text(`Email: ${caseData.email || 'N/A'}`, 50, 410)
-     .text(`Address: ${caseData.address || 'N/A'}`, 50, 430)
-     .text(`Mauze: ${caseData.mauze || 'N/A'}`, 50, 450)
-     .text(`City: ${caseData.city || 'N/A'}`, 50, 470)
-     .text(`State: ${caseData.state || 'N/A'}`, 50, 490);
-
-  // Assigned Personnel
-  doc.text('ASSIGNED PERSONNEL:', 50, 530)
-     .text(`DCM: ${caseData.dcm_first_name || 'N/A'} ${caseData.dcm_last_name || 'N/A'}`, 50, 550)
-     .text(`Counselor: ${caseData.counselor_first_name || 'N/A'} ${caseData.counselor_last_name || 'N/A'}`, 50, 570);
-
-  // Form Summary (if available)
-  if (formData.personal_details) {
-    const personalDetails = JSON.parse(formData.personal_details);
-    doc.text('PERSONAL DETAILS SUMMARY:', 50, 610);
-    
-    let yPosition = 630;
-    Object.entries(personalDetails).forEach(([key, value]) => {
-      if (value && yPosition < 750) {
-        doc.text(`${key}: ${value}`, 70, yPosition);
-        yPosition += 20;
-      }
-    });
-  }
-
-  // Footer
-  doc.fontSize(10)
-     .text('Generated by Baaseteen Case Management System', 50, 750, { align: 'center' })
-     .text(`Generated on: ${new Date().toLocaleString()}`, 50, 770, { align: 'center' });
-}
 
 module.exports = router;
