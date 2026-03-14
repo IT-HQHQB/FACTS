@@ -1,0 +1,2862 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FACTS — Executive Management User Journey</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap");
+      @page {
+        size: A4;
+        margin: 0;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :root {
+        --navy: #0f1e2e;
+        --navy-mid: #1a3050;
+        --teal: #0e7490;
+        --teal-lt: #06b6d4;
+        --gold: #c9a84c;
+        --gold-lt: #e8c97e;
+        --cream: #f8f5f0;
+        --text: #1e2d3d;
+        --muted: #5a7184;
+        --border: #d6e4ed;
+        --bg-soft: #eef5f9;
+        --red: #dc2626;
+        --green: #16a34a;
+        --amber: #d97706;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        color: var(--text);
+        background: #d8e4ed;
+        line-height: 1.6;
+      }
+      .cover,
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        background: #fff;
+        margin: 20px auto;
+        box-shadow: 0 6px 30px rgba(0, 0, 0, 0.15);
+        position: relative;
+        overflow: visible;
+      }
+      @media print {
+        body {
+          background: #fff;
+          margin: 0;
+          padding: 0;
+        }
+        .cover,
+        .page {
+          width: 100%;
+          min-height: unset;
+          height: auto;
+          margin: 0;
+          padding: 12mm 18mm 14mm 18mm;
+          box-shadow: none;
+          background: #fff;
+          overflow: visible;
+          break-before: page;
+          page-break-before: always;
+          position: static;
+        }
+        .cover {
+          background: var(--navy) !important;
+          padding: 0;
+          height: 297mm;
+          min-height: 297mm;
+          overflow: hidden;
+          position: relative;
+        }
+        .page-footer {
+          position: static !important;
+          margin-top: 16px;
+          padding-top: 5px;
+          border-top: 1px solid #e2ecf2;
+        }
+        .step,
+        .sub-block,
+        .info-box,
+        .warning-box,
+        .flow-path,
+        .milestone-strip,
+        .workflow-table,
+        .dual-placeholder,
+        .img-placeholder,
+        .end-banner,
+        .toc-intro-box,
+        .decision-box,
+        .context-strip,
+        .field-group,
+        .sig-box,
+        .level-strip {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        .section-break,
+        .step-title,
+        .page-header,
+        .sub-label {
+          break-after: avoid;
+          page-break-after: avoid;
+        }
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
+      /* COVER */
+      .cover {
+        background: var(--navy);
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+      }
+      .cover-top-band {
+        width: 100%;
+        background: var(--teal);
+        height: 6px;
+      }
+      .cover-accent-bar {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 72px;
+        background: linear-gradient(180deg, var(--gold) 0%, #7a5c1e 100%);
+        opacity: 0.85;
+      }
+      .cover-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(14, 116, 144, 0.07) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(14, 116, 144, 0.07) 1px, transparent 1px);
+        background-size: 18mm 18mm;
+      }
+      .cover-inner {
+        position: relative;
+        z-index: 2;
+        padding: 22mm 22mm 18mm 22mm;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        width: calc(100% - 72px);
+      }
+      .cover-logo-area {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 44px;
+      }
+      .cover-logo-box {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        border: 2px solid rgba(201, 168, 76, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .cover-brand-name {
+        font-family: "Playfair Display", serif;
+        font-size: 22px;
+        font-weight: 900;
+        color: #fff;
+        letter-spacing: 0.04em;
+        line-height: 1;
+      }
+      .cover-brand-sub {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.45);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        margin-top: 4px;
+      }
+      .cover-divider {
+        width: 48px;
+        height: 2px;
+        background: var(--gold);
+        margin-bottom: 20px;
+      }
+      .cover-eyebrow {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--teal-lt);
+        margin-bottom: 12px;
+      }
+      .cover-title {
+        font-family: "Playfair Display", serif;
+        font-size: 34px;
+        font-weight: 900;
+        color: #fff;
+        line-height: 1.12;
+        margin-bottom: 10px;
+      }
+      .cover-subtitle {
+        font-size: 14px;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 36px;
+        max-width: 340px;
+        line-height: 1.5;
+      }
+      .cover-role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--gold);
+        color: var(--navy);
+        font-size: 13px;
+        font-weight: 700;
+        padding: 10px 22px;
+        border-radius: 40px;
+        letter-spacing: 0.04em;
+        margin-bottom: 48px;
+        width: fit-content;
+      }
+      .cover-desc {
+        font-size: 11.5px;
+        color: rgba(255, 255, 255, 0.5);
+        line-height: 1.7;
+        max-width: 360px;
+        margin-bottom: auto;
+      }
+      .cover-meta-row {
+        display: flex;
+        gap: 24px;
+        margin-top: 32px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .cover-meta-label {
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.3);
+      }
+      .cover-meta-value {
+        font-size: 11px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.65);
+      }
+      .cover-step-count {
+        position: absolute;
+        bottom: 24mm;
+        right: 14mm;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+      }
+      .cover-step-count span {
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.35);
+      }
+      .cover-step-count strong {
+        font-family: "Playfair Display", serif;
+        font-size: 28px;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.15);
+      }
+      /* TOC */
+      .toc-page {
+        padding: 13mm 18mm 18mm 18mm;
+        display: flex;
+        flex-direction: column;
+      }
+      .toc-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--teal);
+        margin-bottom: 14px;
+      }
+      .toc-header-title {
+        font-family: "Playfair Display", serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--navy);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .toc-header-title::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--gold);
+        display: inline-block;
+      }
+      .toc-role-tag {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--teal);
+        background: rgba(14, 116, 144, 0.1);
+        padding: 4px 10px;
+        border-radius: 20px;
+      }
+      .toc-section-label {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 5px;
+        margin-top: 10px;
+      }
+      .toc-item {
+        display: flex;
+        align-items: baseline;
+        padding: 3.5px 0;
+        border-bottom: 1px dotted #dce8ef;
+      }
+      .toc-item-num {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--gold);
+        width: 28px;
+        flex-shrink: 0;
+        font-family: "DM Mono", monospace;
+      }
+      .toc-item-title {
+        font-size: 11.5px;
+        font-weight: 500;
+        color: var(--text);
+        flex: 1;
+      }
+      .toc-item-dots {
+        flex: 1;
+        border-bottom: 1px dotted #ccc;
+        margin: 0 6px;
+        max-width: 60px;
+      }
+      .toc-item-page {
+        font-size: 10.5px;
+        font-weight: 600;
+        color: var(--muted);
+        font-family: "DM Mono", monospace;
+        width: 28px;
+        text-align: right;
+      }
+      .toc-intro-box {
+        background: var(--bg-soft);
+        border-left: 4px solid var(--teal);
+        border-radius: 0 8px 8px 0;
+        padding: 11px 15px;
+        margin-bottom: 12px;
+        break-inside: avoid;
+      }
+      .toc-intro-box p {
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+      /* CONTENT */
+      .page {
+        padding: 10mm 18mm 20mm 18mm;
+        display: flex;
+        flex-direction: column;
+      }
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 7px;
+        border-bottom: 2px solid var(--teal);
+        margin-bottom: 12px;
+        flex-shrink: 0;
+      }
+      .page-header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .page-header-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--gold);
+        flex-shrink: 0;
+      }
+      .page-header-title {
+        font-size: 9.5px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .page-header-role {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--teal);
+        background: rgba(14, 116, 144, 0.1);
+        padding: 3px 9px;
+        border-radius: 20px;
+      }
+      .section-break {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .section-break-label {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--gold);
+        white-space: nowrap;
+      }
+      .section-break-line {
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, var(--gold), transparent);
+      }
+      .step {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 12px;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .step-left {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex-shrink: 0;
+        width: 42px;
+      }
+      .step-number {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: var(--navy);
+        color: var(--gold);
+        font-size: 14px;
+        font-weight: 700;
+        font-family: "DM Mono", monospace;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1.5px solid rgba(201, 168, 76, 0.3);
+      }
+      .step-connector {
+        flex: 1;
+        width: 2px;
+        background: linear-gradient(180deg, var(--border), transparent);
+        margin-top: 4px;
+        min-height: 14px;
+      }
+      .step-content {
+        flex: 1;
+        min-width: 0;
+      }
+      .step-title {
+        font-family: "Playfair Display", serif;
+        font-size: 14.5px;
+        font-weight: 700;
+        color: var(--navy);
+        margin-bottom: 3px;
+        line-height: 1.3;
+      }
+      .step-desc {
+        font-size: 11px;
+        color: var(--muted);
+        margin-bottom: 7px;
+        line-height: 1.6;
+      }
+      .sub-label {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: var(--navy);
+        margin: 7px 0 4px 0;
+      }
+      .sub-block {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        margin-bottom: 4px;
+      }
+      .details-list {
+        list-style: none;
+        padding: 0;
+        margin-bottom: 8px;
+      }
+      .details-list li {
+        font-size: 10.5px;
+        color: #3d5166;
+        padding: 2px 0 2px 17px;
+        position: relative;
+        line-height: 1.55;
+      }
+      .details-list li::before {
+        content: "▸";
+        position: absolute;
+        left: 0;
+        color: var(--gold);
+        font-size: 9.5px;
+        top: 3px;
+      }
+      .details-list li strong {
+        color: var(--navy);
+        font-weight: 600;
+      }
+      .img-placeholder {
+        width: 100%;
+        max-height: 400px;
+        overflow: hidden;
+        border: 1.5px dashed #b8cdd9;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #f4f9fc 0%, #eef5f9 100%);
+        margin-top: 7px;
+        margin-bottom: 3px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        break-inside: avoid;
+      }
+      .img-placeholder.short {
+        min-height: 75px;
+      }
+      .img-placeholder.medium {
+        min-height: 115px;
+      }
+      .img-placeholder-inner {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        padding: 5px;
+        text-align: center;
+      }
+      .img-placeholder img {
+        width: 100%;
+        height: auto;
+        max-height: 400px;
+        object-fit: contain;
+      }
+      .img-placeholder-icon {
+        font-size: 22px;
+        opacity: 0.5;
+      }
+      .img-placeholder-label {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: var(--navy);
+        opacity: 0.6;
+      }
+      .img-placeholder-sublabel {
+        font-size: 9px;
+        color: var(--muted);
+        max-width: 300px;
+        line-height: 1.5;
+        opacity: 0.8;
+      }
+      .dual-placeholder {
+        display: flex;
+        gap: 8px;
+        margin-top: 7px;
+        break-inside: avoid;
+      }
+      .dual-placeholder .img-placeholder {
+        flex: 1;
+      }
+      .info-box {
+        background: rgba(14, 116, 144, 0.06);
+        border-left: 3px solid var(--teal);
+        border-radius: 0 8px 8px 0;
+        padding: 8px 12px;
+        margin: 7px 0;
+        font-size: 10.5px;
+        color: #2a4a5e;
+        line-height: 1.6;
+        break-inside: avoid;
+      }
+      .info-box strong {
+        color: var(--teal);
+        font-weight: 600;
+        display: block;
+        margin-bottom: 2px;
+        font-size: 10px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .warning-box {
+        background: rgba(217, 119, 6, 0.06);
+        border-left: 3px solid var(--amber);
+        border-radius: 0 8px 8px 0;
+        padding: 8px 12px;
+        margin: 7px 0;
+        font-size: 10.5px;
+        color: #5a3a0a;
+        line-height: 1.6;
+        break-inside: avoid;
+      }
+      .warning-box strong {
+        color: var(--amber);
+        font-weight: 600;
+        display: block;
+        margin-bottom: 2px;
+        font-size: 10px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .perm-chip {
+        font-size: 9.5px;
+        font-weight: 600;
+        font-family: "DM Mono", monospace;
+        padding: 2px 7px;
+        border-radius: 4px;
+        display: inline-block;
+      }
+      .perm-chip.green {
+        background: rgba(22, 163, 74, 0.1);
+        color: #15803d;
+        border: 1px solid rgba(22, 163, 74, 0.25);
+      }
+      .perm-chip.blue {
+        background: rgba(14, 116, 144, 0.1);
+        color: var(--teal);
+        border: 1px solid rgba(14, 116, 144, 0.25);
+      }
+      .perm-chip.red {
+        background: rgba(220, 38, 38, 0.08);
+        color: #b91c1c;
+        border: 1px solid rgba(220, 38, 38, 0.2);
+      }
+      .perm-chip.amber {
+        background: rgba(217, 119, 6, 0.1);
+        color: #92400e;
+        border: 1px solid rgba(217, 119, 6, 0.25);
+      }
+      .perm-chip.gold {
+        background: rgba(201, 168, 76, 0.15);
+        color: #7a5c1e;
+        border: 1px solid rgba(201, 168, 76, 0.35);
+      }
+      .workflow-table {
+        width: 100%;
+        font-size: 10px;
+        border-collapse: collapse;
+        margin: 7px 0;
+        break-inside: avoid;
+      }
+      .workflow-table thead tr {
+        background: var(--navy);
+        color: #fff;
+      }
+      .workflow-table thead th {
+        padding: 5px 9px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 9.5px;
+      }
+      .workflow-table thead th:first-child {
+        border-radius: 6px 0 0 0;
+      }
+      .workflow-table thead th:last-child {
+        border-radius: 0 6px 0 0;
+      }
+      .workflow-table tbody tr:nth-child(even) {
+        background: var(--bg-soft);
+      }
+      .workflow-table tbody td {
+        padding: 5px 9px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
+        vertical-align: top;
+        font-size: 10px;
+      }
+      .workflow-table tbody td:first-child {
+        font-weight: 600;
+        color: var(--navy);
+      }
+      .flow-path {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 2px;
+        margin: 7px 0;
+        break-inside: avoid;
+      }
+      .flow-node {
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 4px 8px;
+        font-size: 9.5px;
+        font-weight: 600;
+        color: var(--navy);
+        text-align: center;
+        min-width: 46px;
+        line-height: 1.3;
+      }
+      .flow-node.active {
+        background: var(--teal);
+        border-color: var(--teal);
+        color: #fff;
+      }
+      .flow-node.highlight {
+        background: var(--navy);
+        border-color: var(--navy);
+        color: var(--gold);
+      }
+      .flow-node.done {
+        background: rgba(22, 163, 74, 0.1);
+        border-color: rgba(22, 163, 74, 0.4);
+        color: #15803d;
+      }
+      .flow-node.gold-node {
+        background: rgba(201, 168, 76, 0.1);
+        border-color: rgba(201, 168, 76, 0.35);
+        color: #7a5c1e;
+      }
+      .flow-arrow {
+        color: var(--border);
+        font-size: 13px;
+        padding: 0 1px;
+        flex-shrink: 0;
+      }
+      .milestone-strip {
+        display: flex;
+        margin: 7px 0;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        break-inside: avoid;
+      }
+      .milestone-item {
+        flex: 1;
+        padding: 7px 9px;
+        border-right: 1px solid var(--border);
+      }
+      .milestone-item:last-child {
+        border-right: none;
+      }
+      .milestone-label {
+        font-size: 8.5px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .milestone-value {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--navy);
+      }
+      .milestone-note {
+        font-size: 9px;
+        color: var(--muted);
+      }
+      .decision-box {
+        display: flex;
+        gap: 8px;
+        margin: 7px 0;
+        break-inside: avoid;
+      }
+      .decision-option {
+        flex: 1;
+        border-radius: 8px;
+        padding: 9px 11px;
+      }
+      .decision-option.approve {
+        background: rgba(22, 163, 74, 0.08);
+        border: 1.5px solid rgba(22, 163, 74, 0.3);
+      }
+      .decision-option.reject {
+        background: rgba(220, 38, 38, 0.06);
+        border: 1.5px solid rgba(220, 38, 38, 0.2);
+      }
+      .decision-option.rework {
+        background: rgba(217, 119, 6, 0.07);
+        border: 1.5px solid rgba(217, 119, 6, 0.25);
+      }
+      .decision-option-label {
+        font-size: 9.5px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+      .decision-option.approve .decision-option-label {
+        color: var(--green);
+      }
+      .decision-option.reject .decision-option-label {
+        color: var(--red);
+      }
+      .decision-option.rework .decision-option-label {
+        color: var(--amber);
+      }
+      .decision-option p {
+        font-size: 10px;
+        color: var(--text);
+        line-height: 1.5;
+      }
+      .context-strip {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        background: rgba(201, 168, 76, 0.08);
+        border: 1px solid rgba(201, 168, 76, 0.25);
+        border-radius: 8px;
+        padding: 7px 11px;
+        margin: 5px 0 9px 0;
+        break-inside: avoid;
+      }
+      .context-strip-label {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--gold);
+        white-space: nowrap;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .context-strip-text {
+        font-size: 10px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+      .unique-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(201, 168, 76, 0.15);
+        border: 1px solid rgba(201, 168, 76, 0.4);
+        border-radius: 20px;
+        padding: 2px 9px;
+        font-size: 9px;
+        font-weight: 700;
+        color: #7a5c1e;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+      }
+      .field-group {
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 9px 13px;
+        margin: 5px 0;
+        break-inside: avoid;
+      }
+      .field-group-title {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--teal);
+        margin-bottom: 7px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid var(--border);
+      }
+      .field-row {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 5px;
+        flex-wrap: wrap;
+      }
+      .field-item {
+        flex: 1;
+        min-width: 90px;
+      }
+      .field-label {
+        font-size: 8px;
+        font-weight: 600;
+        color: var(--muted);
+        margin-bottom: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .field-value {
+        font-size: 9.5px;
+        color: var(--navy);
+        font-weight: 500;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 3px 7px;
+      }
+      .field-value.editable {
+        border-color: var(--teal);
+        background: rgba(14, 116, 144, 0.03);
+      }
+      .field-value.textarea-field {
+        min-height: 30px;
+        line-height: 1.4;
+      }
+      .auto-pill {
+        font-size: 7px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        background: rgba(14, 116, 144, 0.12);
+        color: var(--teal);
+        border-radius: 3px;
+        padding: 1px 4px;
+        margin-left: 3px;
+      }
+      .edit-pill {
+        font-size: 7px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        background: rgba(201, 168, 76, 0.2);
+        color: #7a5c1e;
+        border-radius: 3px;
+        padding: 1px 4px;
+        margin-left: 3px;
+      }
+      .sig-box {
+        display: flex;
+        gap: 7px;
+        margin-top: 6px;
+        break-inside: avoid;
+      }
+      .sig-block {
+        flex: 1;
+        background: rgba(14, 116, 144, 0.04);
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        padding: 8px 10px;
+        text-align: center;
+      }
+      .sig-block.exec-sig {
+        background: rgba(201, 168, 76, 0.06);
+        border-color: rgba(201, 168, 76, 0.4);
+      }
+      .sig-block-label {
+        font-size: 8.5px;
+        font-weight: 700;
+        color: var(--teal);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 4px;
+      }
+      .sig-block.exec-sig .sig-block-label {
+        color: var(--gold);
+      }
+      .sig-area {
+        width: 100%;
+        height: 28px;
+        background: #fff;
+        border: 1px dashed #c0d0dc;
+        border-radius: 5px;
+        margin: 4px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        color: #aab8c2;
+      }
+      .sig-block-name {
+        font-size: 9.5px;
+        font-weight: 600;
+        color: var(--navy);
+      }
+      .sig-block-sub {
+        font-size: 8.5px;
+        color: var(--muted);
+      }
+      .level-strip {
+        display: flex;
+        gap: 0;
+        margin: 7px 0;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        break-inside: avoid;
+      }
+      .level-item {
+        flex: 1;
+        padding: 8px 10px;
+        border-right: 1px solid var(--border);
+        text-align: center;
+      }
+      .level-item:last-child {
+        border-right: none;
+      }
+      .level-item.active-level {
+        background: var(--navy);
+      }
+      .level-item.done-level {
+        background: rgba(22, 163, 74, 0.08);
+      }
+      .level-num {
+        font-size: 10px;
+        font-weight: 700;
+        font-family: "DM Mono", monospace;
+        color: var(--muted);
+      }
+      .level-item.active-level .level-num {
+        color: var(--gold);
+      }
+      .level-item.done-level .level-num {
+        color: #15803d;
+      }
+      .level-name {
+        font-size: 9px;
+        font-weight: 600;
+        color: var(--navy);
+        margin-top: 2px;
+      }
+      .level-item.active-level .level-name {
+        color: #fff;
+      }
+      .level-item.done-level .level-name {
+        color: #15803d;
+      }
+      .level-note {
+        font-size: 8px;
+        color: var(--muted);
+      }
+      .level-item.active-level .level-note {
+        color: rgba(255, 255, 255, 0.5);
+      }
+      .api-tag {
+        font-family: "DM Mono", monospace;
+        font-size: 8px;
+        background: rgba(14, 116, 144, 0.08);
+        color: var(--teal);
+        border: 1px solid rgba(14, 116, 144, 0.2);
+        border-radius: 3px;
+        padding: 1px 5px;
+      }
+      .trigger-banner {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: linear-gradient(
+          135deg,
+          rgba(14, 116, 144, 0.08) 0%,
+          rgba(201, 168, 76, 0.06) 100%
+        );
+        border: 1.5px solid rgba(14, 116, 144, 0.2);
+        border-radius: 10px;
+        padding: 11px 14px;
+        margin: 10px 0;
+        break-inside: avoid;
+      }
+      .trigger-banner-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+      }
+      .trigger-banner-text {
+        font-size: 10.5px;
+        color: var(--text);
+        line-height: 1.55;
+      }
+      .trigger-banner-text strong {
+        color: var(--teal);
+        font-weight: 600;
+      }
+      .end-banner {
+        margin-top: 18px;
+        padding: 14px 18px;
+        background: linear-gradient(
+          135deg,
+          var(--navy) 0%,
+          var(--navy-mid) 100%
+        );
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        break-inside: avoid;
+      }
+      .end-banner-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        background: rgba(201, 168, 76, 0.2);
+        border: 1.5px solid rgba(201, 168, 76, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 19px;
+        flex-shrink: 0;
+      }
+      .end-banner-text h3 {
+        font-family: "Playfair Display", serif;
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 3px;
+      }
+      .end-banner-text p {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.55);
+        line-height: 1.5;
+      }
+      .page-footer {
+        position: absolute;
+        left: 18mm;
+        right: 18mm;
+        bottom: 9mm;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 9px;
+        color: #aab8c2;
+        border-top: 1px solid #e2ecf2;
+        padding-top: 5px;
+      }
+      .footer-center {
+        display: flex;
+        gap: 12px;
+      }
+      .footer-dot {
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: #ccc;
+        align-self: center;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- COVER -->
+    <div class="cover">
+      <div class="cover-top-band"></div>
+      <div class="cover-accent-bar"></div>
+      <div class="cover-grid"></div>
+      <div class="cover-inner">
+        <div class="cover-logo-area">
+          <div class="cover-logo-box">
+            <span style="font-size: 22px">👑</span>
+          </div>
+          <div>
+            <div class="cover-brand-name">FACTS</div>
+            <div class="cover-brand-sub">File &amp; Case Tracking System</div>
+          </div>
+        </div>
+        <div class="cover-divider"></div>
+        <div class="cover-eyebrow">User Journey Document</div>
+        <h1 class="cover-title">Executive<br />Management</h1>
+        <p class="cover-subtitle">
+          The person who fills the Cover Letter Form — entering recommended and
+          approved financial amounts, signing, and triggering the Cover Letter
+          PDF generation through their approval.
+        </p>
+        <div class="cover-role-badge">
+          <span style="font-size: 16px">👑</span> Executive Management
+        </div>
+        <p class="cover-desc">
+          The Executive Management role is the final approval authority in
+          FACTS. Cases arrive after clearing all four field-level reviews
+          (Welfare Review → ZI → KG Review → Operations Lead). The Executive is
+          the person who
+          <strong style="color: rgba(255, 255, 255, 0.75)"
+            >fills the Cover Letter Form</strong
+          >
+          — entering recommended Enayat/Qardan amounts, proposed upliftment
+          plan, non-financial assistance details, welfare department comments,
+          and their
+          <strong style="color: rgba(255, 255, 255, 0.75)"
+            >digital signature</strong
+          >. When the final Executive level approves, the system automatically
+          <strong style="color: rgba(255, 255, 255, 0.75)"
+            >generates the Cover Letter PDF</strong
+          >
+          and advances the case to
+          <strong style="color: rgba(255, 255, 255, 0.75)"
+            >Manzoori (Sanction)</strong
+          >. FACTS supports up to
+          <strong style="color: rgba(255, 255, 255, 0.75)"
+            >5 executive approval levels</strong
+          >.
+        </p>
+        <div class="cover-meta-row">
+          <div>
+            <div class="cover-meta-label">Version</div>
+            <div class="cover-meta-value">1.0</div>
+          </div>
+          <div>
+            <div class="cover-meta-label">Date</div>
+            <div class="cover-meta-value">March 2026</div>
+          </div>
+          <div>
+            <div class="cover-meta-label">System</div>
+            <div class="cover-meta-value">FACTS v1.0</div>
+          </div>
+          <div>
+            <div class="cover-meta-label">Steps</div>
+            <div class="cover-meta-value">9</div>
+          </div>
+          <div>
+            <div class="cover-meta-label">Pages</div>
+            <div class="cover-meta-value">10</div>
+          </div>
+        </div>
+      </div>
+      <div class="cover-step-count"><span>Steps</span><strong>9</strong></div>
+    </div>
+
+    <!-- TABLE OF CONTENTS -->
+    <div class="page toc-page">
+      <div class="toc-header">
+        <div class="toc-header-title">Table of Contents</div>
+        <div class="toc-role-tag">Executive Management</div>
+      </div>
+      <div class="toc-intro-box">
+        <p>
+          Cases reach Executive Management after passing Welfare Review → ZI
+          Approval → KG Review → Operations Lead. The Executive is the
+          <strong>person who fills the Cover Letter Form</strong> — a key
+          structured document that captures the recommended and approved
+          financial assistance amounts, proposed upliftment plan, non-financial
+          assistance details, welfare comments, and the Executive's digital
+          signature. After the Executive fills the form, signs it, and clicks
+          Approve, the
+          <strong
+            >final executive level's approval triggers automatic Cover Letter
+            PDF generation</strong
+          >
+          — the official sanctioned document. The case then advances to
+          <strong>Manzoori (Sanction)</strong>. FACTS supports
+          <strong>up to 5 executive approval levels</strong>. This document
+          covers <strong>9 steps across 10 pages</strong>.
+        </p>
+      </div>
+
+      <div class="toc-section-label">Section A — Login &amp; Dashboard</div>
+      <div class="toc-item">
+        <span class="toc-item-num">01</span
+        ><span class="toc-item-title"
+          >Login &amp; Landing on the Executive Dashboard</span
+        >
+        <div class="toc-item-dots"></div>
+        <span class="toc-item-page">P 3</span>
+      </div>
+      <div class="toc-item">
+        <span class="toc-item-num">02</span
+        ><span class="toc-item-title"
+          >Finding Cases in the Queue — Multi-Level Context</span
+        >
+        <div class="toc-item-dots"></div>
+        <span class="toc-item-page">P 3</span>
+      </div>
+
+      <div class="toc-section-label">Section B — Case Review</div>
+      <div class="toc-item">
+        <span class="toc-item-num">03</span
+        ><span class="toc-item-title"
+          >Case Detail View — Header, Tabs &amp; Workflow Position</span
+        >
+        <div class="toc-item-dots"></div>
+        <span class="toc-item-page">P 4</span>
+      </div>
+      <div class="toc-item">
+        <span class="toc-item-num">04</span
+        ><span class="toc-item-title"
+          >Reviewing Status History, Comments &amp; Counseling Form</span
+        >
+        <div class="toc-item-dots"></div>
+        <span class="toc-item-page">P 5</span>
+      </div>
+
+      <div class="toc-section-label">Section C — Cover Letter Form</div>
+      <div class="toc-item">
+        <span class="toc-item-num">05</span
+        ><span class="toc-item-title"
+          >Opening the Cover Letter Form — Auto-Populated Fields</span
+        >
+        <div class="toc-item-dots"></div>
+        <span class="toc-item-page">P 6</span>
+      </div>
+      <div class="toc-item">
+        <span class="toc-item-num">06</span
+        ><span class="toc-item-title"
+          >Filling Recommended &amp; Approved Amounts, Upliftment Plan &amp;
+          Comments</span
+        >
+        <div class="toc-item-dots"></div>
+        <span class="toc-item-page">P 7</span>
+      </div>
+      <div class="toc-item">
+        <span class="toc-item-num">07</span
+        ><span class="toc-item-title"
+          >Signing the Cover Letter Form &amp; Submitting It</span
+        >
+        <div class="toc-item-dots"></div>
+        <span class="toc-item-page">P 8</span>
+      </div>
+
+      <div class="toc-section-label">Section D — Decision &amp; Outcome</div>
+      <div class="toc-item">
+        <span class="toc-item-num">08</span
+        ><span class="toc-item-title"
+          >Adding Comments &amp; Making the Decision</span
+        >
+        <div class="toc-item-dots"></div>
+        <span class="toc-item-page">P 9</span>
+      </div>
+      <div class="toc-item">
+        <span class="toc-item-num">09</span
+        ><span class="toc-item-title"
+          >What Happens After — Cover Letter PDF Generation &amp; Manzoori</span
+        >
+        <div class="toc-item-dots"></div>
+        <span class="toc-item-page">P 9</span>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Executive Management User Journey</span>
+        <div class="footer-center">
+          <span>File &amp; Case Tracking System</span>
+          <div class="footer-dot"></div>
+          <span>v1.0 · March 2026</span>
+        </div>
+        <span>Page 2</span>
+      </div>
+    </div>
+
+    <!-- PAGE 3 — Steps 01 & 02 -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >Section A — Login &amp; Dashboard</span
+          >
+        </div>
+        <span class="page-header-role">Executive Management</span>
+      </div>
+      <div class="section-break">
+        <span class="section-break-label"
+          >Section A — Login &amp; Dashboard</span
+        >
+        <div class="section-break-line"></div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">01</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Login &amp; Landing on the Executive Dashboard
+          </div>
+          <p class="step-desc">
+            The Executive logs in via browser. The system identifies their
+            <strong>executive level</strong> (1 through 5) from
+            <code>users.executive_level</code> and loads a dashboard showing
+            only cases currently awaiting
+            <strong>their level's</strong> approval.
+          </p>
+          <ul class="details-list">
+            <li>
+              Navigate to the FACTS URL → enter
+              <strong>Email / Username + Password</strong> → click
+              <strong>Login</strong>
+            </li>
+            <li>
+              System reads <code>users.executive_level</code> to scope the
+              dashboard — only cases where
+              <code>cases.current_executive_level</code> matches this user's
+              level are shown
+            </li>
+            <li>
+              <strong>Dashboard stat cards:</strong> Cases Awaiting My Approval
+              · Cover Letters Generated This Month · Sent for Rework · Cases at
+              Other Levels
+            </li>
+            <li>
+              A <strong>Recent Cases</strong> panel shows cases most recently
+              forwarded from the Operations Lead stage, sorted by SLA urgency
+            </li>
+            <li>
+              Bell icon shows unread notifications — cases arriving at the
+              Executive's level trigger an automatic in-app notification
+            </li>
+          </ul>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img src="images/login.png" alt="Login Screen" />
+            </div>
+          </div>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img src="images/dashboard.png" alt="Executive Dashboard" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">02</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Finding Cases in the Queue — Multi-Level Context
+          </div>
+          <p class="step-desc">
+            Cases awaiting the Executive's action are in the
+            <strong>Cases</strong> module. FACTS supports up to 5 executive
+            levels — each level sees only cases at their position in the
+            approval hierarchy.
+          </p>
+          <div class="sub-block">
+            <div class="sub-label">Multi-Level Executive Approval Chain</div>
+            <div class="level-strip">
+              <div class="level-item done-level">
+                <div class="level-num">L1</div>
+                <div class="level-name">Level 1</div>
+                <div class="level-note">Fills CLF + Approves</div>
+              </div>
+              <div class="level-item done-level">
+                <div class="level-num">L2</div>
+                <div class="level-name">Level 2</div>
+                <div class="level-note">Fills CLF + Approves</div>
+              </div>
+              <div class="level-item active-level">
+                <div class="level-num">L3</div>
+                <div class="level-name">Level 3</div>
+                <div class="level-note">Currently Active</div>
+              </div>
+              <div class="level-item">
+                <div class="level-num">L4</div>
+                <div class="level-name">Level 4</div>
+                <div class="level-note">Awaiting L3</div>
+              </div>
+              <div class="level-item">
+                <div class="level-num">L5 (Final)</div>
+                <div class="level-name">Level 5</div>
+                <div class="level-note">Approval → PDF Generated</div>
+              </div>
+            </div>
+          </div>
+          <ul class="details-list">
+            <li>
+              Click <strong>Cases</strong> in the left sidebar → cases
+              pre-filtered to where
+              <code>cases.current_executive_level</code> matches this
+              executive's level
+            </li>
+            <li>
+              Each row shows: Case Number, Applicant Name, Case Type,
+              <strong>SLA badge</strong>, DCM, Current Level badge, Date Reached
+              This Level
+            </li>
+            <li>
+              <span class="perm-chip green">On Track</span>
+              <span class="perm-chip amber">Due Soon</span>
+              <span class="perm-chip red">Breached</span>
+            </li>
+            <li>Click any row → opens <strong>Case Detail View</strong></li>
+          </ul>
+          <div class="context-strip">
+            <span class="context-strip-label">Key Role</span>
+            <span class="context-strip-text"
+              >The Executive is the person who
+              <strong>fills the Cover Letter Form</strong> — entering
+              recommended and approved financial amounts, proposed upliftment
+              plan, non-financial assistance details, and their digital
+              signature. At the <strong>final executive level</strong>, their
+              approval triggers automatic
+              <strong>Cover Letter PDF generation</strong> and advances the case
+              to Manzoori.</span
+            >
+          </div>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img src="images/cases.png" alt="Cases List — Executive Level" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Executive Management User Journey</span>
+        <div class="footer-center">
+          <span>Section A: Login &amp; Dashboard</span>
+        </div>
+        <span>Page 3</span>
+      </div>
+    </div>
+
+    <!-- PAGE 4 — Steps 03 -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title">Section B — Case Review</span>
+        </div>
+        <span class="page-header-role">Executive Management</span>
+      </div>
+      <div class="section-break">
+        <span class="section-break-label">Section B — Case Review</span>
+        <div class="section-break-line"></div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">03</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Case Detail View — Header, Tabs &amp; Workflow Position
+          </div>
+          <p class="step-desc">
+            Clicking a case opens the Case Detail View. All prior field-level
+            stages are shown as completed on the progress bar. The Executive has
+            access to the Counseling Form, Attachments, Comments, Status
+            History, and the <strong>Cover Letter Form</strong> — the document
+            the Executive will fill. The Cover Letter PDF does not exist yet —
+            it will be generated after the final executive approval.
+          </p>
+
+          <div class="sub-block">
+            <div class="sub-label">Case Header</div>
+            <ul class="details-list">
+              <li>
+                <strong>Case Number</strong>, Applicant Name, Case Type,
+                <strong>Stage: Executive Approval — Level N</strong> shown
+                prominently
+              </li>
+              <li>
+                <strong>SLA Timer</strong> — days remaining or overdue for this
+                executive level
+              </li>
+              <li>
+                Full field review chain visible: DCM · Welfare Reviewer · ZI ·
+                KG Reviewer · Operations Lead
+              </li>
+              <li>
+                <strong>Workflow Progress Bar</strong> — Welfare Review ✓ · ZI
+                Approval ✓ · KG Review ✓ · Operations Lead ✓;
+                <strong>Executive Approval (Level N)</strong> is the active
+                stage
+              </li>
+            </ul>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Complete Tab Set — Executive Management</div>
+            <table class="workflow-table">
+              <thead>
+                <tr>
+                  <th>Tab</th>
+                  <th>Content</th>
+                  <th>Executive Access</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Counseling Form</td>
+                  <td>All 7 sections filled by the DCM</td>
+                  <td><span class="perm-chip blue">Read Only</span></td>
+                </tr>
+                <tr>
+                  <td>Attachments</td>
+                  <td>All uploaded documents — mandatory and optional</td>
+                  <td>
+                    <span class="perm-chip blue">View &amp; Download</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Comments</td>
+                  <td>
+                    Full thread — all field reviewer notes and prior executive
+                    level comments
+                  </td>
+                  <td><span class="perm-chip green">Read &amp; Write</span></td>
+                </tr>
+                <tr>
+                  <td>Status History</td>
+                  <td>Full audit trail — every stage transition timestamped</td>
+                  <td><span class="perm-chip blue">Read Only</span></td>
+                </tr>
+                <tr>
+                  <td style="color: #7a5c1e; font-weight: 700">
+                    Cover Letter Form ★
+                  </td>
+                  <td>
+                    Executive fills recommended &amp; approved amounts,
+                    upliftment plan, welfare comments, and signs — this is the
+                    Executive's primary task
+                  </td>
+                  <td><span class="perm-chip gold">Fill &amp; Submit</span></td>
+                </tr>
+                <tr>
+                  <td>Cover Letter (PDF)</td>
+                  <td>
+                    <em>Not yet generated</em> — PDF is auto-created only after
+                    the final executive level approves the case
+                  </td>
+                  <td>
+                    <span class="perm-chip amber"
+                      >Generated on Final Approval</span
+                    >
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Recommended Review Order</div>
+            <div class="flow-path">
+              <div class="flow-node highlight">Open Case</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Status History<br />&amp; Comments</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Counseling<br />Form</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Attachments</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node gold-node">Fill Cover<br />Letter Form</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node gold-node">Sign &amp;<br />Submit CLF</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Post<br />Comment</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node active">Approve /<br />Rework</div>
+            </div>
+          </div>
+
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="images/caseDetail.png"
+                alt="Case Detail View — Executive Approval Stage"
+              />
+            </div>
+          </div>
+
+          <div class="info-box">
+            <strong>Cover Letter Form Is the Executive's Primary Task</strong>
+            Unlike prior reviewers who only review and decide, the Executive
+            must <strong>fill in the Cover Letter Form</strong> before
+            approving. This form captures the recommended and approved financial
+            amounts, the proposed upliftment plan, non-financial assistance, and
+            the Executive's digital signature. The completed form becomes the
+            official case record. At the final executive level, approving the
+            case triggers automatic Cover Letter PDF generation from this data.
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Executive Management User Journey</span>
+        <div class="footer-center"><span>Section B: Case Review</span></div>
+        <span>Page 4</span>
+      </div>
+    </div>
+
+    <!-- PAGE 5 — Step 04 -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >Section B — Status History, Comments &amp; Counseling Form</span
+          >
+        </div>
+        <span class="page-header-role">Executive Management</span>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">04</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Reviewing Status History, Comments &amp; Counseling Form
+          </div>
+          <p class="step-desc">
+            Before filling the Cover Letter Form, the Executive reads the full
+            case history, all prior reviewer comments, and the Counseling Form —
+            especially the financial sections. This review directly informs the
+            recommended and approved amounts they will enter in the Cover Letter
+            Form.
+          </p>
+
+          <div class="sub-block">
+            <div class="sub-label">Status History &amp; Comments</div>
+            <ul class="details-list">
+              <li>
+                Click <strong>Status History</strong> → full audit trail: Case
+                Created → Draft → Counseling Submitted → Welfare Review → ZI
+                Approval → KG Review → Operations Lead → Executive Approval
+                Level 1 (and higher if applicable)
+              </li>
+              <li>
+                Click <strong>Comments</strong> → read all notes: DCM, Welfare,
+                ZI, KG, Operations Lead, and any prior executive level comments
+                (if Level 2+)
+              </li>
+              <li>
+                If at <strong>Level 2 or higher</strong>, read all prior
+                executive level comments and entries carefully before filling
+                the form — understand what amounts and reasoning previous levels
+                used
+              </li>
+            </ul>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Counseling Form — Executive Focus Areas</div>
+            <table class="workflow-table">
+              <thead>
+                <tr>
+                  <th>Section</th>
+                  <th>Executive Focus — Informs Cover Letter Form Entries</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Section 2 — Family Details</td>
+                  <td>
+                    Total family income (income_total_monthly), monthly
+                    surplus/deficit, declared assets and liabilities — the
+                    financial foundation for setting approved Enayat and Qardan
+                    amounts
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 4 — Financial Assistance</td>
+                  <td>
+                    Requested Enayat and Qardan amounts; 5-year repayment
+                    schedule — compare against what the Executive will enter as
+                    recommended and approved figures
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 5 — Economic Growth</td>
+                  <td>
+                    5-year Revenue, Expenses, Profit, and
+                    <strong>Cash Surplus</strong> projections — Year 1 Cash
+                    Surplus must support the proposed Qardan monthly repayment
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 6 — Action Plan &amp; Mentors</td>
+                  <td>
+                    Specific milestones and mentor qualifications — directly
+                    informs the <strong>Proposed Upliftment Plan</strong> the
+                    Executive writes in the Cover Letter Form
+                  </td>
+                </tr>
+                <tr>
+                  <td>Section 7 — Declaration</td>
+                  <td>
+                    All three signatures (Applicant, Counselor, TR Committee)
+                    present with valid sequential dates
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Attachments Check</div>
+            <ul class="details-list">
+              <li>
+                Click <strong>Attachments</strong> → confirm mandatory
+                documents: Business photograph
+                <span class="perm-chip green">Uploaded</span>, Quotation for
+                Qardan end-use <span class="perm-chip green">Uploaded</span>,
+                Product brochure <span class="perm-chip green">Uploaded</span>
+              </li>
+              <li>
+                Verify the Quotation amount matches the Qardan being considered
+                — a mismatch at this stage after all field reviews is a material
+                concern
+              </li>
+              <li>
+                If optional financial documents (ITR, Financial Statements) are
+                present, cross-check declared income against Section 2 figures
+              </li>
+            </ul>
+          </div>
+
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="C:\Users\Admin\Desktop\New folder\User Journey\Excecutive\images\feedback.png"
+                alt="Comments Thread and Status History — Executive View"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Executive Management User Journey</span>
+        <div class="footer-center">
+          <span>Section B: History, Comments &amp; Counseling Form</span>
+        </div>
+        <span>Page 5</span>
+      </div>
+    </div>
+
+    <!-- PAGE 6 — Step 05 -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >Section C — Cover Letter Form: Auto-Populated Fields</span
+          >
+        </div>
+        <span class="page-header-role">Executive Management</span>
+      </div>
+      <div class="section-break">
+        <span class="section-break-label">Section C — Cover Letter Form</span>
+        <div class="section-break-line"></div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">05</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Opening the Cover Letter Form — Auto-Populated Fields
+          </div>
+          <div class="unique-badge">
+            ⭐ The Executive is the person who fills this form — this is unique
+            to Executive Management
+          </div>
+          <p class="step-desc">
+            Click the <strong>Cover Letter Form</strong> tab. A large portion of
+            the form is pre-populated from the counseling form data. The
+            Executive reviews all auto-filled fields — these will appear in the
+            final Cover Letter PDF — before proceeding to fill the editable
+            fields.
+          </p>
+
+          <div class="field-group">
+            <div class="field-group-title">
+              Applicant &amp; Counsellor Profile — from applicants,
+              personal_details, declaration tables
+              <span class="auto-pill">Auto-filled — Read Only</span>
+            </div>
+            <div class="field-row">
+              <div class="field-item">
+                <div class="field-label">Applicant Name</div>
+                <div class="field-value">
+                  Muhammad Hussain <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">ITS Number</div>
+                <div class="field-value">
+                  30123456 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Age</div>
+                <div class="field-value">
+                  38 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Contact</div>
+                <div class="field-value">
+                  +91 98765 43210 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-item">
+                <div class="field-label">Jamiat</div>
+                <div class="field-value">
+                  West Zone <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Jamaat</div>
+                <div class="field-value">
+                  Vasai <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Case ID</div>
+                <div class="field-value">
+                  BS-0042 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-item">
+                <div class="field-label">Counsellor Name</div>
+                <div class="field-value">
+                  Ahmed Saleh <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Counsellor ITS</div>
+                <div class="field-value">
+                  40123456 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Certified</div>
+                <div class="field-value">
+                  Yes ✓ <span class="auto-pill">auto</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-group-title">
+              Family Financial Summary &amp; Business Details — from
+              family_details, assessment tables
+              <span class="auto-pill">Auto-filled — Read Only</span>
+            </div>
+            <div class="field-row">
+              <div class="field-item">
+                <div class="field-label">Personal Income/Month</div>
+                <div class="field-value">
+                  ₹12,000 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Family Income/Month</div>
+                <div class="field-value">
+                  ₹18,500 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Earning Members</div>
+                <div class="field-value">
+                  2 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Dependents</div>
+                <div class="field-value">
+                  4 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-item">
+                <div class="field-label">House</div>
+                <div class="field-value">
+                  Rented <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Shop / Godown</div>
+                <div class="field-value">
+                  Own <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Qardan Liability</div>
+                <div class="field-value">
+                  ₹0 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Goods Credit Liability</div>
+                <div class="field-value">
+                  ₹25,000 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-item">
+                <div class="field-label">Business Name</div>
+                <div class="field-value">
+                  Hussain Textiles <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Industry Segment</div>
+                <div class="field-value">
+                  Retail — Textiles <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Requested Enayat</div>
+                <div class="field-value">
+                  ₹50,000 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Requested Qardan</div>
+                <div class="field-value">
+                  ₹1,50,000 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-group-title">
+              5-Year Projected Incomes — from economic_growth table
+              <span class="auto-pill">Auto-filled — Read Only</span>
+            </div>
+            <div class="field-row">
+              <div class="field-item">
+                <div class="field-label">Applicant Yr 1</div>
+                <div class="field-value">
+                  ₹16,000 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Yr 2</div>
+                <div class="field-value">
+                  ₹20,000 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Yr 3</div>
+                <div class="field-value">
+                  ₹25,000 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Yr 4</div>
+                <div class="field-value">
+                  ₹30,000 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Yr 5</div>
+                <div class="field-value">
+                  ₹35,000 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-item">
+                <div class="field-label">Family Income Yr 1</div>
+                <div class="field-value">
+                  ₹22,500 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Yr 2</div>
+                <div class="field-value">
+                  ₹27,000 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Yr 3</div>
+                <div class="field-value">
+                  ₹32,500 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Yr 4</div>
+                <div class="field-value">
+                  ₹38,000 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+              <div class="field-item">
+                <div class="field-label">Yr 5</div>
+                <div class="field-value">
+                  ₹44,000 <span class="auto-pill">auto</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-box">
+            <strong>Auto-Populated Fields Are Read-Only</strong>All data sourced
+            from the counseling form is display-only. If any figure appears
+            incorrect, raise it via a Rework comment — it cannot be overridden
+            in the Cover Letter Form.
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Executive Management User Journey</span>
+        <div class="footer-center">
+          <span>Section C: Auto-Populated Fields</span>
+        </div>
+        <span>Page 6</span>
+      </div>
+    </div>
+
+    <!-- PAGE 7 — Step 06 -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >Section C — Cover Letter Form: Executive-Filled Fields</span
+          >
+        </div>
+        <span class="page-header-role">Executive Management</span>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">06</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Filling Recommended &amp; Approved Amounts, Upliftment Plan &amp;
+            Comments
+          </div>
+          <div class="unique-badge">
+            ⭐ These fields are filled only by the Executive — unique to
+            Executive Management
+          </div>
+          <p class="step-desc">
+            The Executive now fills the editable fields that form the official
+            financial recommendation and narrative. These are the heart of the
+            Cover Letter Form — they will appear on the final Cover Letter PDF
+            generated after approval.
+          </p>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              1. Recommended Financial Assistance
+              <span class="edit-pill">Executive enters</span>
+            </div>
+            <div class="field-group">
+              <div class="field-group-title">
+                recommended_enayat · recommended_qardan · recommended_total —
+                cover_letter_forms table
+              </div>
+              <div class="field-row">
+                <div class="field-item">
+                  <div class="field-label">Recommended Enayat (₹)</div>
+                  <div class="field-value editable">Enter amount</div>
+                </div>
+                <div class="field-item">
+                  <div class="field-label">Recommended Qardan (₹)</div>
+                  <div class="field-value editable">Enter amount</div>
+                </div>
+                <div class="field-item">
+                  <div class="field-label">Recommended Total (₹)</div>
+                  <div
+                    class="field-value editable"
+                    style="background: rgba(14, 116, 144, 0.05)"
+                  >
+                    Auto-calculated
+                  </div>
+                </div>
+              </div>
+              <p
+                style="
+                  font-size: 9px;
+                  color: var(--muted);
+                  margin-top: 4px;
+                  line-height: 1.5;
+                "
+              >
+                The Executive's recommended amounts — may match or differ from
+                the applicant's requested amounts. These represent the
+                Executive's independent assessment based on the case review.
+              </p>
+            </div>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              2. Final Approved Amounts — The Sanctioned Figures
+              <span class="edit-pill">Final Executive Level enters</span>
+            </div>
+            <div class="field-group">
+              <div class="field-group-title">
+                approved_enayat · approved_qardan · approved_qh_months —
+                cover_letter_forms table
+              </div>
+              <div class="field-row">
+                <div class="field-item">
+                  <div class="field-label">Approved Enayat (₹)</div>
+                  <div class="field-value editable">
+                    Enter final approved amount
+                  </div>
+                </div>
+                <div class="field-item">
+                  <div class="field-label">Approved Qardan (₹)</div>
+                  <div class="field-value editable">
+                    Enter final approved amount
+                  </div>
+                </div>
+                <div class="field-item">
+                  <div class="field-label">Approved QH Months</div>
+                  <div class="field-value editable">
+                    Number of repayment months
+                  </div>
+                </div>
+              </div>
+              <p
+                style="
+                  font-size: 9px;
+                  color: var(--muted);
+                  margin-top: 4px;
+                  line-height: 1.5;
+                "
+              >
+                The <strong>binding sanctioned amounts</strong> that flow into
+                Manzoori and financial disbursement. Entered by the final
+                (highest) executive level. These become the official approved
+                figures on the Cover Letter PDF.
+              </p>
+            </div>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              3. Proposed Upliftment Plan
+              <span class="edit-pill">Executive enters</span>
+            </div>
+            <div class="field-group">
+              <div class="field-group-title">
+                proposed_upliftment_plan — cover_letter_forms table
+              </div>
+              <div class="field-row">
+                <div class="field-item" style="flex: 1">
+                  <div class="field-label">
+                    Proposed Upliftment Plan — long-form text, informed by
+                    Section 6 Action Plan in the Counseling Form
+                  </div>
+                  <div class="field-value editable textarea-field">
+                    Write a specific, time-bound plan: include milestones,
+                    expected income growth targets aligned with 5-year
+                    projections, support mechanisms per year, and monitoring
+                    checkpoints. Reference the action_plan timeline periods
+                    (upto_1st_year_end, 2nd_and_3rd_year, 4th_and_5th_year) from
+                    the Counseling Form's financial_assistance_action_plan data.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              4. Non-Financial Assistance
+              <span class="edit-pill">Executive enters</span>
+            </div>
+            <div class="field-group">
+              <div class="field-group-title">
+                non_financial_assistance — cover_letter_forms table
+              </div>
+              <div class="field-row">
+                <div class="field-item" style="flex: 1">
+                  <div class="field-label">
+                    Types of non-financial support — reference support_needed
+                    JSON in financial_assistance table
+                  </div>
+                  <div class="field-value editable textarea-field">
+                    E.g., Mentorship (mentor name from Section 6
+                    financial_assistance_mentors), Industry Knowledge training,
+                    Sourcing assistance, Sales &amp; Market support, Internship
+                    placement, Bookkeeping support, Handholding. Match what the
+                    applicant selected in Section 4.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              5. Welfare Department Comments
+              <span class="edit-pill">Executive enters</span>
+            </div>
+            <div class="field-group">
+              <div class="field-group-title">
+                welfare_department_comments — cover_letter_forms table
+              </div>
+              <div class="field-row">
+                <div class="field-item" style="flex: 1">
+                  <div class="field-label">
+                    Official executive-level comments — appears on the final
+                    Cover Letter PDF
+                  </div>
+                  <div class="field-value editable textarea-field">
+                    E.g., "After thorough review of the full case file, I
+                    recommend approving Enayat ₹50,000 and Qardan ₹1,50,000. The
+                    applicant's financial position, business viability, and
+                    repayment capacity support this assistance. The upliftment
+                    plan with quarterly monitoring benchmarks is in place.
+                    Approval subject to fund availability."
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="warning-box">
+            <strong
+              >Recommended vs. Approved Amounts — Important Distinction</strong
+            >The <strong>recommended amounts</strong> are the Executive's
+            assessment. The <strong>approved amounts</strong> (approved_enayat,
+            approved_qardan, approved_qh_months) are the final binding figures
+            for Manzoori and disbursement. These are entered by the
+            final/highest executive level and become the official sanctioned
+            amounts on the Cover Letter PDF.
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Executive Management User Journey</span>
+        <div class="footer-center">
+          <span>Section C: Executive-Filled Fields</span>
+        </div>
+        <span>Page 7</span>
+      </div>
+    </div>
+
+    <!-- PAGE 8 — Step 07 -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >Section C — Cover Letter Form: Signature &amp; Submission</span
+          >
+        </div>
+        <span class="page-header-role">Executive Management</span>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">07</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Signing the Cover Letter Form &amp; Submitting It
+          </div>
+          <div class="unique-badge">
+            ⭐ Required before the Approve button is enabled
+          </div>
+          <p class="step-desc">
+            After filling all required fields, the Executive adds their
+            <strong>digital signature</strong> to the Cover Letter Form and
+            clicks <strong>Submit</strong>. Submission permanently locks the
+            form and enables the Approve button in the workflow action panel.
+          </p>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              Three Signature Blocks on the Cover Letter Form
+            </div>
+            <p
+              style="
+                font-size: 10.5px;
+                color: var(--muted);
+                margin-bottom: 6px;
+                line-height: 1.5;
+              "
+            >
+              The Cover Letter Form has three signature blocks representing the
+              welfare department authority chain. The Executive signs the block
+              that corresponds to their role designation in the organisation.
+            </p>
+            <div class="sig-box">
+              <div class="sig-block">
+                <div class="sig-block-label">Welfare Department</div>
+                <div class="sig-area">welfare_department_signature</div>
+                <div class="sig-block-name">welfare_department_name</div>
+                <div class="sig-block-sub">
+                  ITS: welfare_department_its<br />Date: welfare_department_date
+                </div>
+              </div>
+              <div class="sig-block">
+                <div class="sig-block-label">Zonal Incharge</div>
+                <div class="sig-area">zonal_incharge_signature</div>
+                <div class="sig-block-name">zonal_incharge_name</div>
+                <div class="sig-block-sub">
+                  ITS: zonal_incharge_its<br />Date: zonal_incharge_date
+                </div>
+              </div>
+              <div class="sig-block exec-sig">
+                <div class="sig-block-label">
+                  Operations Head ★ Executive Signs Here
+                </div>
+                <div
+                  class="sig-area"
+                  style="border-color: rgba(201, 168, 76, 0.5)"
+                >
+                  operations_head_signature_file_path / drawing_data
+                </div>
+                <div class="sig-block-name">
+                  operations_head_name (auto from profile)
+                </div>
+                <div class="sig-block-sub">
+                  ITS: operations_head_its (auto)<br />Date:
+                  operations_head_date (auto = today)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              Two Signature Methods — operations_head_signature_type
+            </div>
+            <table class="workflow-table">
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>Steps</th>
+                  <th>Stored in DB</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>📁 Upload (type = "upload")</td>
+                  <td>
+                    Click <em>Upload Signature</em> → select PNG/JPG from device
+                    → preview renders in block → confirm
+                  </td>
+                  <td>
+                    operations_head_signature_type = "upload";
+                    operations_head_signature_file_path = path in uploads/
+                  </td>
+                </tr>
+                <tr>
+                  <td>✍️ Draw (type = "draw")</td>
+                  <td>
+                    Click <em>Draw Signature</em> → signature pad canvas opens →
+                    draw with mouse/stylus → click <em>Save Signature</em>
+                  </td>
+                  <td>
+                    operations_head_signature_type = "draw";
+                    operations_head_signature_drawing_data = SVG/canvas data
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="images/coverSign.png"
+                alt="Signature Pad — Executive Draw Mode"
+              />
+            </div>
+          </div>
+          <div class="img-placeholder">
+            <div class="img-placeholder-inner">
+              <img
+                src="images/approved.png"
+                alt="Cover Letter Form — Submitted State"
+              />
+            </div>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">Submitting the Form</div>
+            <ul class="details-list">
+              <li>
+                Review all filled fields one final time — once submitted, all
+                fields lock permanently
+              </li>
+              <li>
+                Click <strong>Submit Cover Letter Form</strong> → confirmation
+                dialog:
+                <em
+                  >"Submit this Cover Letter Form? All fields will be locked and
+                  your signature will be recorded."</em
+                >
+                → click <strong>Confirm</strong>
+              </li>
+              <li>
+                System calls
+                <span class="api-tag"
+                  >PUT /api/cover-letter-forms/:formId/submit</span
+                >
+                → records submitted_by = Executive user ID, submitted_at =
+                timestamp, sets is_complete = 1
+              </li>
+              <li>
+                The Cover Letter Form tab shows a
+                <strong>Submitted</strong> banner — all fields are now read-only
+              </li>
+              <li>
+                The <strong>Approve</strong> button in the workflow action panel
+                becomes <strong>active</strong>
+              </li>
+            </ul>
+          </div>
+
+          <div class="info-box">
+            <strong>Form Submission ≠ Case Approval</strong>Submitting the Cover
+            Letter Form only locks the data and records the signature. The case
+            does not advance yet. The Executive must click
+            <strong>Approve</strong> in the workflow action panel to formally
+            advance the case — and at the final level, that approval triggers
+            Cover Letter PDF generation.
+          </div>
+          <div class="warning-box">
+            <strong
+              >Approve Button Disabled Until Form Is Submitted (is_complete =
+              1)</strong
+            >The system enforces a hard dependency. If the Executive clicks
+            Approve before submitting the form, the button is greyed out with
+            tooltip:
+            <em>"Please complete and submit the Cover Letter Form first."</em>
+            Rework does not require form submission, but does require a comment.
+          </div>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Executive Management User Journey</span>
+        <div class="footer-center">
+          <span>Section C: Signature &amp; Submission</span>
+        </div>
+        <span>Page 8</span>
+      </div>
+    </div>
+
+    <!-- PAGE 9 — Steps 08 & 09 -->
+    <div class="page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-header-dot"></div>
+          <span class="page-header-title"
+            >Section D — Decision &amp; Outcome</span
+          >
+        </div>
+        <span class="page-header-role">Executive Management</span>
+      </div>
+      <div class="section-break">
+        <span class="section-break-label"
+          >Section D — Decision &amp; Outcome</span
+        >
+        <div class="section-break-line"></div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">08</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            Adding Comments &amp; Making the Decision
+          </div>
+          <p class="step-desc">
+            With the Cover Letter Form submitted, the Executive posts a comment
+            and uses the action panel to approve, rework, or reject the case.
+          </p>
+          <div class="sub-block">
+            <ul class="details-list">
+              <li>
+                Click <strong>Comments</strong> tab → read all prior notes →
+                scroll to bottom → type comment → click
+                <strong>Post Comment</strong>
+              </li>
+              <li>
+                System calls
+                <span class="api-tag">POST /api/cases/:caseId/comments</span>
+                with role_name = "Executive Management", executive_level = this
+                user's level
+              </li>
+              <li>
+                Summarise the reasoning for the recommended and approved
+                amounts; note any conditions attached to the approval
+              </li>
+            </ul>
+          </div>
+          <div class="decision-box">
+            <div class="decision-option approve">
+              <div class="decision-option-label">✅ Approve</div>
+              <p>
+                Cover Letter Form submitted. Calls
+                <span class="api-tag"
+                  >PUT /api/cases/:caseId/executive-approve</span
+                >. System checks <code>cases.current_executive_level</code> — if
+                intermediate, advances to next level. If final level, triggers
+                Cover Letter PDF generation and advances to Manzoori.
+              </p>
+            </div>
+            <div class="decision-option rework">
+              <div class="decision-option-label">🔁 Request Rework</div>
+              <p>
+                Issues found. Calls
+                <span class="api-tag"
+                  >PUT /api/cases/:caseId/executive-rework</span
+                >
+                → case status → Rework Required → DCM notified. After
+                correction, the full field review chain restarts and the case
+                returns to Executive Level 1 before working back up.
+              </p>
+            </div>
+          </div>
+          <table class="workflow-table" style="margin-top: 8px">
+            <thead>
+              <tr>
+                <th>Scenario</th>
+                <th>Immediate Action</th>
+                <th>Case Status After</th>
+                <th>Notified</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span
+                    class="perm-chip blue"
+                    style="
+                      background: rgba(14, 116, 144, 0.1);
+                      color: var(--teal);
+                      border: 1px solid rgba(14, 116, 144, 0.25);
+                    "
+                    >Intermediate Level Approves</span
+                  >
+                </td>
+                <td>
+                  current_executive_level incremented; status_history updated
+                </td>
+                <td>Executive Approval (Level N+1)</td>
+                <td>Next Level Executive Approvers</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="perm-chip green">Final Level Approves</span>
+                </td>
+                <td>
+                  Cover Letter PDF auto-generated; approved amounts sanctioned;
+                  case advances
+                </td>
+                <td>Manzoori (Sanction)</td>
+                <td>Finance team, DCM, Admin</td>
+              </tr>
+              <tr>
+                <td><span class="perm-chip amber">Any Level Reworks</span></td>
+                <td>
+                  Case → Rework Required; restarts from Welfare Review after DCM
+                  correction
+                </td>
+                <td>Rework Required</td>
+                <td>DCM</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-left">
+          <div class="step-number">09</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <div class="step-title">
+            What Happens After — Cover Letter PDF Generation &amp; Manzoori
+          </div>
+          <p class="step-desc">
+            When the <strong>final executive level</strong> approves the case,
+            FACTS immediately and automatically generates the Cover Letter PDF
+            from the completed Cover Letter Form data and advances the case to
+            Manzoori.
+          </p>
+
+          <div class="trigger-banner">
+            <div class="trigger-banner-icon">⚡</div>
+            <div class="trigger-banner-text">
+              <strong
+                >Final Executive clicks Approve → System auto-triggers:</strong
+              >
+              (1) Cover Letter PDF compiled from all Cover Letter Form data →
+              (2) Cover Letter tab activates on the case — downloadable by all
+              parties → (3) approved_enayat, approved_qardan, approved_qh_months
+              become the official sanctioned figures → (4) Case status advances
+              to Manzoori (Sanction) → (5) Finance team and DCM notified.
+            </div>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              What the Generated Cover Letter PDF Contains
+            </div>
+            <table class="workflow-table">
+              <thead>
+                <tr>
+                  <th>PDF Section</th>
+                  <th>Data Source — cover_letter_forms table fields</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Applicant &amp; Counsellor Profiles</td>
+                  <td>
+                    applicant_name, applicant_its, applicant_jamiat/jamaat,
+                    applicant_photo, counsellor_name, counsellor_its,
+                    counsellor_certified, counsellor_photo
+                  </td>
+                </tr>
+                <tr>
+                  <td>Family Financial Summary</td>
+                  <td>
+                    current_personal_income, current_family_income,
+                    earning_family_members, dependents, asset_*, liability_*
+                  </td>
+                </tr>
+                <tr>
+                  <td>Business Details</td>
+                  <td>business_name, industry_segment, present_occupation</td>
+                </tr>
+                <tr>
+                  <td>Requested vs. Recommended vs. Approved Amounts</td>
+                  <td>
+                    requested_enayat/qardan vs. recommended_enayat/qardan vs.
+                    approved_enayat/qardan
+                  </td>
+                </tr>
+                <tr>
+                  <td>5-Year Projected Incomes (Applicant + Family)</td>
+                  <td>
+                    applicant_projected_income_after_1–5_years;
+                    family_projected_income_after_1–5_years
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    Proposed Upliftment Plan &amp; Non-Financial Assistance
+                  </td>
+                  <td>proposed_upliftment_plan, non_financial_assistance</td>
+                </tr>
+                <tr>
+                  <td>Welfare Department Comments</td>
+                  <td>welfare_department_comments</td>
+                </tr>
+                <tr>
+                  <td>Three Signature Blocks</td>
+                  <td>
+                    welfare_department_* · zonal_incharge_* · operations_head_*
+                    (name, ITS, date, signature image)
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="sub-block">
+            <div class="sub-label">
+              Full Workflow — Executive's Position in the Complete FACTS Chain
+            </div>
+            <div class="flow-path">
+              <div class="flow-node done">Case ID<br />&amp; Draft</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node done">Counseling<br />Form</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node done">Welfare<br />Review ✓</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node done">ZI<br />Approval ✓</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node done">KG<br />Review ✓</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node done">Operations<br />Lead ✓</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node highlight">Executive<br />Approval ✓</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node active">
+                Cover Letter<br />PDF Generated
+              </div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Manzoori<br />(Sanction)</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Financial<br />Disbursement</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Payment<br />Tracking</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Fund<br />Utilization</div>
+              <div class="flow-arrow">›</div>
+              <div class="flow-node">Case<br />Closure</div>
+            </div>
+          </div>
+
+          <div class="milestone-strip">
+            <div class="milestone-item">
+              <div class="milestone-label">Form Submitted</div>
+              <div class="milestone-value" style="color: var(--teal)">
+                Locked
+              </div>
+              <div class="milestone-note">Signature captured</div>
+            </div>
+            <div class="milestone-item">
+              <div class="milestone-label">Intermediate Approve</div>
+              <div class="milestone-value" style="color: var(--teal)">
+                Next Level
+              </div>
+              <div class="milestone-note">Next exec notified</div>
+            </div>
+            <div class="milestone-item">
+              <div class="milestone-label">Final Level Approve</div>
+              <div class="milestone-value" style="color: var(--green)">
+                PDF Generated
+              </div>
+              <div class="milestone-note">→ Manzoori</div>
+            </div>
+            <div class="milestone-item">
+              <div class="milestone-label">Rework</div>
+              <div class="milestone-value" style="color: var(--amber)">
+                Full Restart
+              </div>
+              <div class="milestone-note">Chain restarts</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="end-banner">
+        <div class="end-banner-icon">👑</div>
+        <div class="end-banner-text">
+          <h3>End of Executive Management User Journey</h3>
+          <p>
+            9 steps · Login (level-scoped) → Cases queue → Case Detail (tabs,
+            progress bar) → Status History, Comments &amp; Counseling Form
+            review → Open Cover Letter Form → Executive fills Recommended
+            Amounts, Approved Amounts, Upliftment Plan, Non-Financial Assistance
+            &amp; Welfare Comments → Signs (upload or draw) → Submits form
+            (is_complete = 1, Approve unlocked) → Posts comment → Approves to
+            next level OR final approval → Cover Letter PDF auto-generated →
+            Case advances to Manzoori (Sanction).
+          </p>
+        </div>
+      </div>
+
+      <div class="page-footer">
+        <span>FACTS — Executive Management User Journey</span>
+        <div class="footer-center">
+          <span>Section D: Decision &amp; Outcome</span>
+        </div>
+        <span>Page 9</span>
+      </div>
+    </div>
+  </body>
+</html>
