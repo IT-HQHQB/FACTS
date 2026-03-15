@@ -2167,7 +2167,7 @@ const CounselingForm = () => {
       // Save all sections
       const sections = [
         'personal_details',
-        'family_details', 
+        'family_details',
         'assessment',
         'financial_assistance',
         'economic_growth',
@@ -2177,6 +2177,16 @@ const CounselingForm = () => {
 
       for (const section of sections) {
         if (data[section]) {
+          // For financial_assistance, attach the separate state-managed sub-table data
+          // (qhGroups, actionPlanItems, timelineAssistanceItems) which are not part of
+          // react-hook-form but are managed via useState. Without this, the backend
+          // receives stale/misformatted data and deletes existing records.
+          if (section === 'financial_assistance') {
+            data[section].qh_fields = qhGroups;
+            data[section].timeline = timelineItems;
+            data[section].action_plan = actionPlanItems;
+            data[section].timeline_assistance = timelineAssistanceItems;
+          }
           await handleSectionSave(section, data[section]);
         }
       }
